@@ -54,6 +54,78 @@ exception Error of error
 
 
 (* ---------------------------------------------------------------------- *)
+(** {1 System commands} *)
+
+(** {2 Files} *)
+
+val open_in : 'a conn -> string -> in_channel
+  (** [open_in conn fname] opens the file named [fname] on the brick
+      for reading.
+
+      @raise Invalid_argument if [fname] is not a ASCIIZ string with
+      maximum 15.3 characters.  *)
+
+val in_channel_length : in_channel -> int
+  (** [in_channel_length ch] returns the length of the channel [ch]. *)
+
+val close_in : in_channel -> unit
+  (** [close_in ch] closes the channel [ch]. *)
+
+val input : in_channel -> string -> int -> int -> int
+
+val open_out : 'a conn -> length:int -> string -> out_channel
+  (** [open_out conn fname] opens the file [fname] for writing.  If
+      the file exists, it is truncated to zero length.  *)
+
+val close_out : out_channel -> unit
+  (** [close_out ch] closes the channel [ch]. *)
+
+val output : out_channel -> string -> int -> int -> unit
+
+
+val remove : 'a conn -> string -> unit
+  (** [remove conn fname] remove the file [fname] from the brick. *)
+
+type file_iterator
+
+val find : 'a conn -> string -> file_iterator
+
+val filename : file_iterator -> string
+val size : file_iterator -> int
+val next : file_iterator -> unit
+val close_iterator : file_iterator -> unit
+
+
+val open_out_linear : 'a conn -> length:int -> string -> out_channel
+val open_data_linear : 'a conne -> length:int -> string -> out_channel
+val open_append_data : 'a conn -> string -> out_channel
+  (* These should be folded into open_out, especially if no special
+     write commands are defined *)
+
+(** {2 Brick} *)
+
+val firmware_version : 'a conn -> int * int * int * int
+val boot : usb conn -> unit
+val set_brick_name : 'a conn -> string -> unit
+
+type brick_info = {
+  brick_name : string;
+  bluetooth_addr : string; (* ??? *)
+  signal_strength : int;
+  free_user_flash : int;
+}
+val get_device_info : 'a conn -> brick_info
+
+val delete_user_flash : 'a conn -> unit
+
+val poll_length : 'a conn -> [`Poll_buffer | `High_speed_buffer] -> int
+val poll_cmd : 'a conn -> [`Poll_buffer | `High_speed_buffer] -> int
+  -> int * string
+
+val bluetooth_reset : usb conn -> unit
+
+
+(* ---------------------------------------------------------------------- *)
 (** {1 Direct commands} *)
 
 type command_error =
