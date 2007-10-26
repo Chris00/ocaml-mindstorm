@@ -18,6 +18,19 @@
 type usb
 type bluetooth
 
+(* hciconfig - displays status information on your bluetooth interface
+   (similar to ifconfig)
+
+   hcitool - used to query all kinds of information about bluetooth
+   devices in your piconet
+
+   sdptool - used to create and query "service description protocol"
+   bluetooth services, like SP=serial port
+
+   rfcomm - establishes connections to remote bluetooth services or
+   listens for incomming service connections
+*)
+
 type 'a conn = Unix.file_descr
     (* we want to distinguish usb and bluetooth connections as some
        commands are only available through USB. *)
@@ -68,6 +81,7 @@ let connect_usb socket =
 
 let connect_bluetooth socket =
   Unix.openfile socket [] 0
+
 
 (* ---------------------------------------------------------------------- *)
 (** Direct Command *)
@@ -132,6 +146,7 @@ struct
   let name conn =
     "" 
 end
+
 
 module Motor =
 struct
