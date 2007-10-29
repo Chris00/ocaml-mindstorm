@@ -15,6 +15,11 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the file
    LICENSE for more details. *)
 
+
+(** OCaml-mindstorm is a library that enables you to drive Lego
+    mindsotrm NXT bricks from OCaml. Communication with the NXT brick is
+    done through bluetooth (and possibly eventually USB).  *)
+
 type usb
 type bluetooth
 
@@ -27,7 +32,7 @@ val connect_usb : string -> usb conn
 val connect_bluetooth : string -> bluetooth conn
 
 
-(** {1 Error exception} *)
+(** {2 Exception for errors} *)
 
 type error =
     | No_more_handles
@@ -50,13 +55,36 @@ type error =
     | Illegal_file_name
     | Illegal_handle
 
+    (** Command error *)
+    | Pending (** Pending communication transaction in progress *)
+    | Empty_mailbox (** Specified mailbox queue is empty *)
+    | Failed (** Request failed (i.e. specified file not found) *)
+    | Unknown (** Unknown command opcode *)
+    | Insane (** Insane packet *)
+    | Out_of_range (** Data contains out-of-range values *)
+    | Bus_error (** Communication bus error *)
+    | Buffer_full (** No free memory in communication buffer *)
+    | Invalid_conn (** Specified channel/connection is not valid *)
+    | Busy_conn (** Specified channel/connection not configured or busy *)
+    | Bad_size (** Illegal size specified *)
+    | Bad_mailbox (** Illegal mailbox queue ID specified *)
+    | Bad_field (** Attempted to access invalid field of a structure *)
+(*     | Bad_io (\** Bad input or output specified *\) *)
+    | Out_of_memory (** Insufficient memory available *)
+    | Bad_arg (** Bad arguments *)
+
+
 exception Error of error
+  (** This exception can be raised by any of the functions below
+      except when the optional argument [~check_error] is set to
+      false.  Note that checking for errors leads to up to
+      approximately a 60ms latency between two commands.  *)
 
 
 (* ---------------------------------------------------------------------- *)
-(** {1 System commands} *)
+(** {2 System commands} *)
 
-(** {2 Files} *)
+(** {3 Files} *)
 
 val open_in : 'a conn -> string -> in_channel
   (** [open_in conn fname] opens the file named [fname] on the brick
@@ -73,9 +101,18 @@ val close_in : in_channel -> unit
 
 val input : in_channel -> string -> int -> int -> int
 
-val open_out : 'a conn -> length:int -> string -> out_channel
+val open_out : 'a conn -> ?linear:bool -> length:int -> string -> out_channel
   (** [open_out conn fname] opens the file [fname] for writing.  If
-      the file exists, it is truncated to zero length.  *)
+      the the file exists, [Error(File_exists,...,...)] is raised.
+
+      The standard NXT firmware requires that executable files and
+      icons are linear but all other types of files (including sound
+      files) can be non-contiguous (i.e., fragmented).  *)
+val open_out_linear : 'a conn -> length:int -> string -> out_channel
+val open_data_linear : 'a conn -> length:int -> string -> out_channel
+val open_append_data : 'a conn -> string -> out_channel
+  (* These should be folded into open_out, especially since no special
+     write commands are defined *)
 
 val close_out : out_channel -> unit
   (** [close_out ch] closes the channel [ch]. *)
@@ -96,13 +133,7 @@ val next : file_iterator -> unit
 val close_iterator : file_iterator -> unit
 
 
-val open_out_linear : 'a conn -> length:int -> string -> out_channel
-val open_data_linear : 'a conne -> length:int -> string -> out_channel
-val open_append_data : 'a conn -> string -> out_channel
-  (* These should be folded into open_out, especially if no special
-     write commands are defined *)
-
-(** {2 Brick} *)
+(** {3 Brick information} *)
 
 val firmware_version : 'a conn -> int * int * int * int
 val boot : usb conn -> unit
@@ -117,40 +148,20 @@ type brick_info = {
 val get_device_info : 'a conn -> brick_info
 
 val delete_user_flash : 'a conn -> unit
+val bluetooth_reset : usb conn -> unit
+
+(** {3 Polling} *)
 
 val poll_length : 'a conn -> [`Poll_buffer | `High_speed_buffer] -> int
-val poll_cmd : 'a conn -> [`Poll_buffer | `High_speed_buffer] -> int
+  (** Returns the number of bytes for a command in the low-speed
+      buffer or the high-speed buffer (0 = no command is ready).  *)
+val poll_command : 'a conn -> [`Poll_buffer | `High_speed_buffer] -> int
   -> int * string
-
-val bluetooth_reset : usb conn -> unit
+  (** Reads bytes from the low-speed or high-speed buffer. *)
 
 
 (* ---------------------------------------------------------------------- *)
-(** {1 Direct commands} *)
-
-type command_error =
-    | Pending (** Pending communication transaction in progress *)
-    | Empty_mailbox (** Specified mailbox queue is empty *)
-    | Failed (** Request failed (i.e. specified file not found) *)
-    | Unknown (** Unknown command opcode *)
-    | Insane (** Insane packet *)
-    | Out_of_range (** Data contains out-of-range values *)
-    | Bus_error (** Communication bus error *)
-    | Buffer_full (** No free memory in communication buffer *)
-    | Invalid_conn (** Specified channel/connection is not valid *)
-    | Busy_conn (** Specified channel/connection not configured or busy *)
-    | Bad_size (** Illegal size specified *)
-    | Bad_mailbox (** Illegal mailbox queue ID specified *)
-    | Bad_field (** Attempted to access invalid field of a structure *)
-(*     | Bad_io (\** Bad input or output specified *\) *)
-    | Out_of_memory (** Insufficient memory available *)
-    | Bad_arg (** Bad arguments *)
-
-exception Command of command_error
-  (** This exception can be raised by any of the functions below
-      except when the optional argument ~check_error is set to false.
-      Note that checking for errors leads to up to approximately a
-      60ms latency between two commands.  *)
+(** {2 Direct commands} *)
 
 (** Starting and stopping programs on the brick. *)
 module Program :
@@ -164,10 +175,13 @@ sig
 end
 
 
-(** {2 Output ports} *)
+(** {3 Output ports} *)
 module Motor :
 sig
-  type t = [ `A | `B | `C ]
+  type t
+  type port = [ `A | `B | `C ]
+
+  val make : 'a conn -> port -> t
 
   type mode = [ `Motor_on | `Brake | `Regulated ]
   type regulation = [ `Idle | `Motor_speed | `Motor_sync ]
@@ -182,17 +196,19 @@ sig
     tacho_limit : int;
   }
 
-  val set : 'a conn -> t -> state -> unit
+  val set : t -> state -> unit
 
-  val get : 'a conn -> t -> state * int * int * int
+  val get : t -> state * int * int * int
 
-  val reset_pos : 'a conn -> t -> unit
+  val reset_pos : t -> unit
 end
 
-(** {2 Input ports} *)
+(** Input ports. *)
 module Sensor :
 sig
-  type t = [ `One | `Two | `Three | `Four ]
+  type t
+  type port = [ `In1 | `In2 | `In3 | `In4 ]
+
   type sensor_type =
       [ `No_sensor
       | `Switch
@@ -219,18 +235,20 @@ sig
       | `Slope_mask
       | `Mode_mask ]
 
-  val set : 'a conn -> t -> sensor_type -> sensor_mode -> unit
+  val set : 'a conn -> port -> sensor_type -> sensor_mode -> t
 
-  val get : 'a conn -> t -> sensor_type * sensor_mode
+  val get : 'a conn -> port -> sensor_type * sensor_mode
 
-  (** {3 Low speed} *)
+  (** {4 Low speed} *)
+  (** Commands dealing with the I2C bus available on every sensor.
+      (The port 4 may also be high speed.) *)
 
-  val get_status : 'a conn -> t -> int
-  val write : 'a conn -> t -> string -> unit (* Rx??? *)
-  val read : 'a conn -> t -> string
+  val get_status : 'a conn -> port -> int
+  val write : 'a conn -> port -> string -> unit (* Rx??? *)
+  val read : 'a conn -> port -> string
 end
 
-(** {2 Sounds} *)
+(** Play sounds. *)
 module Sound :
 sig
   val play : 'a conn -> ?loop:bool -> string -> unit
@@ -242,6 +260,14 @@ sig
     (** [play_tone conn freq duration] *)
 end
 
-val message_write : 'a conn -> int -> string -> unit
-val message_read : 'a conn -> ?remove:bool -> int -> string
+(** Read and write messages from the 10 message queues.  This can be
+    thought as advanced direct commands.  *)
+module Message :
+sig
+  val write : 'a conn -> int -> string -> unit
+  val read : 'a conn -> ?remove:bool -> int -> string
+end
+
 val battery_level : 'a conn -> int
+  (** [battery_level conn] return the voltages in millivolts of the
+      battery on the brick. *)

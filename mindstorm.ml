@@ -31,25 +31,22 @@ type bluetooth
    listens for incomming service connections
 *)
 
-type 'a conn = Unix.file_descr
-    (* we want to distinguish usb and bluetooth connections as some
-       commands are only available through USB. *)
+(* the type parameter is because we want to distinguish usb and
+   bluetooth connections as some commands are only available through USB. *)
+type 'a conn = {
+  is_usb : bool;
+  (* We need to know whether a connection is USB or bluetooth because
+     bluetooth requires a prefix of 2 bytes indicating the length of
+     the packet. *)
+  fd : Unix.file_descr;
+}
 
-module Filename :
-sig
-  type t = string
 
-  val is_valid : t -> bool
-    (** Returns true if the filename is valid according to the brick
-        limitations. *)
-
-  val compare : t -> t -> int
-    (** Compare two filenames as the brick, that is in a case
-        insensitive way. *)
-end =
-struct
-
-end
+let filename_is_valid : string -> bool =
+  (** Returns true if the filename is valid according to the brick
+      limitations. *)
+  fun fname ->
+    true
 
 
 type error =
@@ -73,24 +70,11 @@ type error =
     | Illegal_file_name
     | Illegal_handle
 
-exception Error of error
-
-let connect_usb socket =
-  Unix.openfile socket [] 0
-
-
-let connect_bluetooth socket =
-  Unix.openfile socket [] 0
-
-
-(* ---------------------------------------------------------------------- *)
-(** Direct Command *)
-
-type command_error =
+    (** command_error *)
     | Pending (** Pending communication transaction in progress *)
     | Empty_mailbox (** Specified mailbox queue is empty *)
     | Failed (** Request failed (i.e. specified file not found) *)
-    | Unknown (** Unknown command opcode *)
+(*     | Unknown (\** Unknown command opcode *\) CANNOT HAPPEN*)
     | Insane (** Insane packet *)
     | Out_of_range (** Data contains out-of-range values *)
     | Bus_error (** Communication bus error *)
@@ -105,7 +89,41 @@ type command_error =
     | Out_of_memory (** Insufficient memory available *)
     | Bad_arg (** Bad arguments *)
 
-exception Command of command_error
+exception Error of error
+
+let connect_usb socket =
+  Unix.openfile socket [] 0
+
+
+let connect_bluetooth socket =
+  Unix.openfile socket [] 0
+
+
+(* Generic wrapper for commands with a reply packet *)
+let cmd_with_reply conn ~byte1 ~n f ~reply_n g =
+  assert(n <= 63);
+  let buf = String.make n '\x00' in
+  buf.(1) <- byte1;
+  f buf;
+  ignore(Unix.write conn buf 0 n);
+  (* read the anwser *)
+  let ret = String.make reply_n '\000' in
+  really_read conn ret 0 reply_n;
+  (* Check for errors and tranform them into exceptions *)
+  match Char.code(ret.(1)) with
+  | 0 -> g ret
+  | 0x20 -> raise 
+
+
+(* ---------------------------------------------------------------------- *)
+(** System commands *)
+
+
+
+
+
+(* ---------------------------------------------------------------------- *)
+(** Direct commands *)
 
 (* Generic function to send a command without answer (or which answer
    only consists of a success/failure code). *)
@@ -122,17 +140,6 @@ let cmd conn ~response ~byte1 ~n f =
       failwith "Mindstorm.Command: invalid return package";
     
   )
-
-(* Generic wrapper for commands with a reply packet *)
-let cmd_with_reply conn ~byte1 ~n f ~reply_n g =
-  assert(n <= 63);
-  let buf = String.make n '\x00' in
-  buf.(1) <- byte1;
-  f buf;
-  (* send buf on conn *)
-  let ret = "" in
-  g ret
-
 
 
 module Program =
@@ -168,10 +175,10 @@ struct
   let set conn num state =
     () 
 
-  val get conn num =
+  let get conn num =
     assert false
 
-  val reset_pos conn num =
+  let reset_pos conn num =
     ()
 end
 
@@ -208,22 +215,22 @@ struct
   let set conn num sensor_type sensor_mode =
     () 
 
-  val get conn num =
+  let get conn num =
     assert false
 
   (** {3 Low speed} *)
 
-  val get_status conn num =
+  let get_status conn num =
     assert false
-  val write conn num tx_data =
+  let write conn num tx_data =
     ()
-  val read conn num =
+  let read conn num =
     "" 
 end
 
-module Sound :
-sig
-  let play conn ?(loop:false) filename =
+module Sound =
+struct
+  let play conn ?(loop=false) filename =
     () 
 
   let stop conn =
