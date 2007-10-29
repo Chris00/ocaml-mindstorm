@@ -1,0 +1,44 @@
+{1 OCaml-mindstorm}
+
+OCaml Mindstorm is a library that enables to drive LEGO® mindstorm
+robots from OCaml through a Bluetooth or USB connection.
+
+{!modules:
+  Mindstorm}
+
+{!indexlist}
+
+
+{2 How to connect the brick through bluetooth}
+
+You need to create a serial port connection using the instructions
+below for your platform.  Then use {!Mindstorm.connect_bluetooth} to
+create a handle for the brick.
+
+{3 Linux}
+
+Follow the instructions on the page
+{{:http://juju.org/articles/2006/10/22/bluetooth-serial-port-to-nxt-in-linux}
+Bluetooth Serial Port To NXT in Linux}.
+In summary, 
+- do [hcitool scan] to discover the address of your brick;
+- modify [/etc/bluetooth/rfcomm.conf] to create a device, say
+  [/dev/rfcomm0], to talk to the brick;
+- Use [Mindstorm.connect_bluetooth "/dev/rfcomm0"] to establish the
+  connection.
+
+{3 MacOS}
+
+See
+{{:http://juju.org/articles/2006/08/01/mindstorms-nxt-bluetooth-on-osx}
+Mindstorms NXT Bluetooth on OSX}.
+
+{3 Windows}
+
+See {{: ruby-serialport/nxt on Windows} ruby-serialport/nxt on
+Windows}
+
+
+{2 How to connect the brick through USB}
+
+TBD.
