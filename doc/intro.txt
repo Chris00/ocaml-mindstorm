@@ -1,7 +1,8 @@
 {1 OCaml-mindstorm}
 
-OCaml Mindstorm is a library that enables to drive LEGO® mindstorm
-robots from OCaml through a Bluetooth or USB connection.
+{{:http://sourceforge.net/projects/ocaml-mindstorm}OCaml Mindstorm}
+is a library that enables to drive LEGO® mindstorm robots from OCaml
+through a Bluetooth or USB connection.
 
 {!modules:
   Mindstorm}
@@ -17,17 +18,46 @@ create a handle for the brick.
 
 {3 Linux}
 
-Follow the instructions on the page
-{{:http://juju.org/articles/2006/10/22/bluetooth-serial-port-to-nxt-in-linux}
-Bluetooth Serial Port To NXT in Linux}.
-In summary, 
-- do [hcitool scan] to discover the address of your brick;
-- modify [/etc/bluetooth/rfcomm.conf] to create a device, say
-  [/dev/rfcomm0], to talk to the brick;
-- Use [Mindstorm.connect_bluetooth "/dev/rfcomm0"] to establish the
-  connection.
+First make sure your kernel has bluetooth support (this is likely) and
+that the bluez and bluez-gnome (or kdebluetooth) pakages are
+installed.  You should see a bluetooth applet icon.  Then do (the
+text after the $ sign is what you type, underneath is the answer):
+{v
+	$ hcitool scan
+	Scanning ...
+        	00:16:53:03:A5:32     NXT
+v}
+to discover the address of your brick.  Then create/modify the file
+/etc/bluetooth/rfcomm.conf so it contains
+{v
+	rfcomm0 \{
+		# Automatically bind the device at startup
+		bind yes;
+	
+		# Bluetooth address of the device
+		device xx:xx:xx:xx:xx:xx;
+	
+		# RFCOMM channel for the connection
+		channel	1;
+	
+		# Description of the connection
+		comment "NXT";
+	\}
+v}
+where xx:xx:xx:xx:xx:xx needs to be replaced with address of the
+brick, in this example "00:16:53:03:A5:32".  Also, in the file
+/etc/bluetooth/hcid.conf, put in the "options" section
+{v
+        security auto;
+        pin_helper /usr/bin/bluez-pin
+v}
+Finally use [Mindstorm.connect_bluetooth "/dev/rfcomm0"] to establish
+the connection -- the first time, the brick will ask you to enter a
+code and the bluetooth applet will pop up a box in which you need to
+copy the very same code (this is to forbid unwanted connections).
 
-{3 MacOS}
+
+{3 MacOSX}
 
 See
 {{:http://juju.org/articles/2006/08/01/mindstorms-nxt-bluetooth-on-osx}
@@ -35,10 +65,33 @@ Mindstorms NXT Bluetooth on OSX}.
 
 {3 Windows}
 
-See {{: ruby-serialport/nxt on Windows} ruby-serialport/nxt on
+From windows, create a new connection to the NXT brick and look on
+which serial port it is connected, for example on COM40.  Then use
+[Mindstorm.connect_bluetooth "\\\\.\\COM40"].
+
+See also {{: ruby-serialport/nxt on Windows} ruby-serialport/nxt on
 Windows}
 
 
 {2 How to connect the brick through USB}
 
-TBD.
+{3 Linux}
+
+Create a [lego] group, add your user to it and create a file
+[/etc/udev/rules.d/70-lego.rules] containing
+
+{v
+	# Lego NXT                                               -*-conf-*-
+	BUS=="usb", SYSFS{idVendor}=="0694", GROUP="lego", MODE="0660"
+	
+	# Links for specific bricks (use udevinfo to find the serial)
+	SYSFS{idVendor}=="0694", SYSFS{serial}=="xxxxxxxxxxxx", SYMLINK+="lego1"
+v}
+
+
+{3 MacOSX}
+
+{3 Windows}
+
+you need the LEGO® Mindstorms NXT software installed, as its USB
+drivers are used. ???

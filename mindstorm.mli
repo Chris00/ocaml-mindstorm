@@ -28,8 +28,9 @@ type 'a conn
         brick.  The type parameter indicates whether this connection
         is a USB or a bluetooth one. *)
 
+val connect_bluetooth : ?retry:int -> string -> bluetooth conn
+  (** [connect_bluetooth dev] connects *)
 val connect_usb : string -> usb conn
-val connect_bluetooth : string -> bluetooth conn
 
 
 (** {2 Exception for errors} *)
