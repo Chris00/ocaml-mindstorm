@@ -42,7 +42,6 @@ type error =
     | No_space
     | No_more_files
     | EOF_expected
-    | EOF
     | Not_a_linear_file
     | File_not_found
     | Handle_already_closed
@@ -69,6 +68,7 @@ type error =
     | Buffer_full (** No free memory in communication buffer *)
     | Invalid_conn (** Specified channel/connection is not valid *)
     | Busy_conn (** Specified channel/connection not configured or busy *)
+    | No_program (** No active program *)
     | Bad_size (** Illegal size specified *)
     | Bad_mailbox (** Illegal mailbox queue ID specified *)
     | Bad_field (** Attempted to access invalid field of a structure *)
@@ -89,9 +89,14 @@ exception Error of error
 
 (** {3 Files} *)
 
+type in_channel
+    (** Handle for reading from the brick. *)
+
 val open_in : 'a conn -> string -> in_channel
   (** [open_in conn fname] opens the file named [fname] on the brick
-      for reading.
+      for reading.  The channel must be closed with
+      {!Mindstorm.close_in}.  Close it as soon as possible as channels
+      are a scarce resource.
 
       @raise Invalid_argument if [fname] is not a ASCIIZ string with
       maximum 15.3 characters.  *)
@@ -103,28 +108,45 @@ val close_in : in_channel -> unit
   (** [close_in ch] closes the channel [ch]. *)
 
 val input : in_channel -> string -> int -> int -> int
+  (** [input ch buf ofs len] reads a block of data of length [len]
+      from the channel [ch] and write it to [buf] starting at position
+      [ofs].
 
-val open_out : 'a conn -> ?linear:bool -> length:int -> string -> out_channel
-  (** [open_out conn fname] opens the file [fname] for writing.  If
-      the the file exists, [Error(File_exists,...,...)] is raised.
+      @raise End_of_file if there is no more data to read. *)
 
-      The standard NXT firmware requires that executable files and
-      icons are linear but all other types of files (including sound
-      files) can be non-contiguous (i.e., fragmented).  *)
-val open_out_linear : 'a conn -> length:int -> string -> out_channel
-val open_data_linear : 'a conn -> length:int -> string -> out_channel
-val open_append_data : 'a conn -> string -> out_channel
-  (* These should be folded into open_out, especially since no special
-     write commands are defined *)
+type out_channel
+    (** Handle for writing data to the brick. *)
+
+(** The standard NXT firmware requires that executable files and icons
+    are linear but all other types of files (including sound files)
+    can be non-contiguous (i.e., fragmented).  *)
+type out_flag =
+    [ `File of int (** Default file, the parameter is its length. *)
+    | `Linear of int (** Write a linear file, the parameter is its length. *)
+    | `Data of int
+    | `Append
+    ]
+
+val open_out : 'a conn -> out_flag -> string -> out_channel
+  (** [open_out conn flag fname] opens the file [fname] for writing.
+      The channel must be closed with {!Mindstorm.close_in}.  Close it
+      as soon as possible as channels are a scarce resource.
+
+      If the the file exists, [Error(File_exists,...,...)] is raised.
+
+      @param linear Default: [false]. *)
 
 val close_out : out_channel -> unit
   (** [close_out ch] closes the channel [ch]. *)
 
-val output : out_channel -> string -> int -> int -> unit
-
+val output : out_channel -> string -> int -> int -> int
+  (** [output ch buf ofs len] ouputs the substring [buf.[ofs
+      .. ofs+len-1]] to the channel [fd].  Returns the number of bytes
+      actually written.  *)
 
 val remove : 'a conn -> string -> unit
   (** [remove conn fname] remove the file [fname] from the brick. *)
+
 
 type file_iterator
 
