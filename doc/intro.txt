@@ -65,9 +65,10 @@ Mindstorms NXT Bluetooth on OSX}.
 
 {3 Windows}
 
-From windows, create a new connection to the NXT brick and look on
-which serial port it is connected, for example on COM40.  Then use
-[Mindstorm.connect_bluetooth "\\\\.\\COM40"].
+From windows, open the bluetooth control panel, create a new
+connection to the NXT brick, tight click on your connection and select
+"details" to see which serial port is used, for example COM40.  Then
+use [Mindstorm.connect_bluetooth "\\\\.\\COM40"].
 
 See also {{: ruby-serialport/nxt on Windows} ruby-serialport/nxt on
 Windows}

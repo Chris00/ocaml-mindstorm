@@ -15,26 +15,11 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the file
    LICENSE for more details. *)
 
-type usb
-type bluetooth
-
-(* The type parameter is because we want to distinguish usb and
-   bluetooth connections as some commands are only available through USB. *)
-type 'a conn = {
-  is_usb : bool;
-  (* We need to know whether a connection is USB or bluetooth because
-     bluetooth requires a prefix of 2 bytes indicating the length of
-     the packet. *)
-  fd : Unix.file_descr;
-}
-
-
-let filename_is_valid : string -> bool =
-  (** Returns true if the filename is valid according to the brick
-      limitations. *)
-  fun fname ->
-    true
-
+(*
+  http://www.nabble.com/Bluetooth-Direct-and-System-Commands-t2288117.html
+  http://mynxt.matthiaspaulscholz.eu/tools/index.html
+  http://news.lugnet.com/robotics/nxt/nxthacking/?n=14
+*)
 
 type error =
     | No_more_handles
@@ -44,7 +29,7 @@ type error =
     | EOF
     | Not_a_linear_file
     | File_not_found
-    | Handle_all_ready_closed
+    | Handle_already_closed
     | No_linear_space
     | Undefined_error
     | File_is_busy
@@ -78,11 +63,54 @@ type error =
 
 exception Error of error
 
+(* Dichotomy search worth? *)
+let exn_if_error = function
+  | '\x00' -> () (* success *)
+  | '\x81' -> raise(Error No_more_handles)
+  | '\x82' -> raise(Error No_space)
+  | '\x83' -> raise(Error No_more_files)
+  | '\x84' -> raise(Error EOF_expected)
+  | '\x85' -> raise(Error EOF)
+  | '\x86' -> raise(Error Not_a_linear_file)
+  | '\x87' -> raise(Error File_not_found)
+  | '\x88' -> raise(Error Handle_already_closed)
+  | '\x89' -> raise(Error No_linear_space)
+  | '\x8A' -> raise(Error Undefined_error)
+  | '\x8B' -> raise(Error )
+  | '\x8C' -> raise(Error )
+  | '\x8D' -> raise(Error )
+  | '\x8E' -> raise(Error )
+  | '\x8F' -> raise(Error )
+  | '\x90' -> raise(Error )
+  | '\x91' -> raise(Error )
+  | '\x92' -> raise(Error )
+  | '\x93' -> raise(Error )
+  | _ -> assert false
+
+
+type usb
+type bluetooth
+
+(* The type parameter is because we want to distinguish usb and
+   bluetooth connections as some commands are only available through USB. *)
+type 'a conn = {
+  fd : Unix.file_descr;
+  (* We need specialized function depending on the fact that the
+     connection is USB or bluetooth because bluetooth requires a
+     prefix of 2 bytes indicating the length of the packet. *)
+  send_cmd : ;
+  recv_ans : ;
+}
+
+
+external socket_bluetooth : string -> Unix.file_descr
+  = "ocaml_mindstorm_connect"
+
+let connect_bluetooth addr =
+  let fd = socket_bluetooth addr in
+  { fd = fd;  }
+
 let connect_usb socket =
-  Unix.openfile socket [] 0
-
-
-let connect_bluetooth socket =
   Unix.openfile socket [] 0
 
 
@@ -100,6 +128,14 @@ let cmd_with_reply conn ~byte1 ~n f ~reply_n g =
   match Char.code(ret.(1)) with
   | 0 -> g ret
   | 0x20 -> raise 
+
+
+let filename_is_valid : string -> bool =
+  (** Returns true if the filename is valid according to the brick
+      limitations. *)
+  fun fname ->
+    true
+
 
 
 (* ---------------------------------------------------------------------- *)
