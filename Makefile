@@ -2,6 +2,14 @@
 INTERFACES = mindstorm.mli
 DOC_DIR = doc
 
+CAML_H = $(shell ocamlc -where)
+
+test.exe: mindstorm_unix.c test.ml
+	$(OCAMLC) -o $@ -custom unix.cma -I $(CAML_H) -cclib -lbluetooth $^
+
+mindstorm.cma: mindstorm_unix.c mindstorm.ml
+	$(OCAMLC) -o $@ -custom unix.cma -I $(CAML_H) -cclib -lbluetooth $^
+
 # Generate HTML documentation
 .PHONY: doc
 doc:

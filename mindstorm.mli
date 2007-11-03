@@ -29,7 +29,9 @@ type 'a conn
         is a USB or a bluetooth one. *)
 
 val connect_bluetooth : ?retry:int -> string -> bluetooth conn
-  (** [connect_bluetooth dev] connects *)
+  (** [connect_bluetooth bdaddr] connects through bluetooth to the
+      brick with bluetooth address [bdaddr].  *)
+
 val connect_usb : string -> usb conn
 
 
