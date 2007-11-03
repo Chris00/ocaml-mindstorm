@@ -28,7 +28,7 @@ type error =
     | EOF_expected
 (*     | EOF *)
     | Not_a_linear_file
-    | File_not_found
+(*     | File_not_found *)
     | Handle_already_closed
     | No_linear_space
     | Undefined_error
@@ -63,6 +63,8 @@ type error =
 
 exception Error of error
 
+exception File_not_found
+
 let undocumented_error = Failure "Mindstorm: undocumented error"
 
 let error =
@@ -74,7 +76,7 @@ let error =
   e.(0x84) <- Error EOF_expected;
   e.(0x85) <- End_of_file (* Error EOF *);
   e.(0x86) <- Error Not_a_linear_file;
-  e.(0x87) <- Error File_not_found;
+  e.(0x87) <- File_not_found;
   e.(0x88) <- Error Handle_already_closed;
   e.(0x89) <- Error No_linear_space;
   e.(0x8A) <- Error Undefined_error;
@@ -129,9 +131,11 @@ let really_read fd n =
 (* Converts the 2 bytes s.[i] (least significative byte) and s.[i+1]
    (most significative byte) into the corresponding integer. *)
 let int16 s i =
+  assert(i + 1 < String.length s);
   Char.code s.[i] land (Char.code s.[i+1] lsl 8)
 
 let copy_int16 i s ofs =
+  assert(ofs + 1 < String.length s);
   s.[ofs] <- Char.unsafe_chr(i land 0xFF); (* LSB *)
   s.[ofs + 1] <- Char.unsafe_chr((i lsr 8) land 0xFF) (* MSB *)
 
@@ -154,6 +158,16 @@ let copy_int32 i s ofs =
   let i = i lsr 8 in
   s.[ofs + 2] <- Char.unsafe_chr(i land 0xFF);
   s.[ofs + 3] <- Char.unsafe_chr((i lsr 8) land 0xFF) (* MSB *)
+
+(* Extracts the filename in [s.[ofs .. ofs+19]] *)
+let get_filename s ofs =
+  try
+    let i = String.index_from s ofs '\000' in
+    if i > ofs + 19 then
+      failwith "Mindstorm: invalid filename send by the brick!";
+    String.sub s ofs (i - ofs)
+  with Not_found ->
+    failwith "Mindstorm: invalid filename send by the brick!"
 
 let blit_filename : string -> string -> string -> int -> unit =
   (** [check_filename funname fname pkg ofs] raises
@@ -198,19 +212,6 @@ type 'a conn = {
 }
 
 
-(* [conn_input conn hd buf ofs] reads a variable length package ;
-   first read [hd] bytes for the length that must be in bytes [hd-1]
-   (MSB) and [hd-2] (LSB), then reads the variable length data and
-   store it into [buf] starting at position [ofs].  Returns the actual
-   number of bytes read.  [read] checks the status byte and raise an
-   exception accordingly (if needed).  *)
-let conn_input conn hd buf ofs =
-  let pkg = conn.recv conn.fd hd in
-  let len = int16 pkg (hd-2) in
-  assert(ofs + len <= String.length buf);
-  really_input fd buf ofs len;
-  len
-
 
 (** USB ---------- *)
 
@@ -253,6 +254,7 @@ type in_channel = {
   in_recv : Unix.file_descr -> int -> string;
   in_handle : char; (* the handle given by the brick *)
   in_length : int; (* file size *)
+  mutable in_closed : bool;
 }
 
 let open_in conn fname =
@@ -269,33 +271,44 @@ let open_in conn fname =
     in_recv = conn.recv;
     in_handle = ans.[3];
     in_length = int32 ans 4;
+    in_closed = false;
   }
 
-let in_channel_length ch = ch.in_length
+let in_channel_length ch =
+  if ch.in_closed then raise(Sys_error "Closed NXT in_channel");
+  ch.in_length
 
 let close_in ch =
-  let pkg = String.create 5 in
-  pkg.[0] <- '\003'; (* size, LSB *)
-  pkg.[1] <- '\000'; (* size, MSB *)
-  pkg.[2] <- '\x01';
-  pkg.[3] <- '\x84'; (* CLOSE *)
-  pkg.[4] <- ch.in_handle;
-  ch.in_send ch.in_fd pkg;
-  ignore(ch.in_recv ch.in_fd 4) (* check status *)
+  if not ch.in_closed then begin
+    let pkg = String.create 5 in
+    pkg.[0] <- '\003'; (* size, LSB *)
+    pkg.[1] <- '\000'; (* size, MSB *)
+    pkg.[2] <- '\x01';
+    pkg.[3] <- '\x84'; (* CLOSE *)
+    pkg.[4] <- ch.in_handle;
+    ch.in_send ch.in_fd pkg;
+    ignore(ch.in_recv ch.in_fd 4); (* check status *)
+    ch.in_closed <- true;
+  end
 
 let input ch buf ofs len =
   if ofs < 0 || len < 0 || ofs + len > String.length buf || len > 0xFFFF then
     invalid_arg "Mindstorm.input";
+  if ch.in_closed then raise(Sys_error "Closed NXT in_channel");
   let pkg = String.create 7 in
   pkg.[0] <- '\005'; (* size, LSB *)
   pkg.[1] <- '\000'; (* size, MSB *)
   pkg.[2] <- '\x01';
   pkg.[3] <- '\x82'; (* READ *)
   pkg.[4] <- ch.in_handle;
-  pkg.[5] <- Char.unsafe_chr(len land 0xFF); (* LSB *)
-  pkg.[6] <- Char.unsafe_chr(len lsr 8); (* MSB *)
+  copy_int16 len pkg 5;
   ch.in_send ch.in_fd pkg;
-  ch.in_input ch.in_fd 6 buf ofs
+  (* Variable length return package *)
+  let ans = ch.in_recv ch.in_fd 6 in
+  let r = int16 ans 4 in (* # bytes read *)
+  assert(ofs + r <= len);
+  really_input ch.in_fd buf ofs len;
+  r
 
 
 type out_channel = {
@@ -304,6 +317,7 @@ type out_channel = {
   out_recv : Unix.file_descr -> int -> string;
   out_handle : char; (* the handle given by the brick *)
   out_length : int; (* size provided by the user of the brick *)
+  mutable out_closed : bool;
 }
 
 type out_flag =
@@ -329,7 +343,8 @@ let open_out_gen conn flag_byte length fname =
     out_send = conn.send;
     out_recv = conn.recv;
     out_handle = ans.[3];
-    out_length = length
+    out_length = length;
+    out_closed = false;
   }
 
 let open_out_append conn fname =
@@ -346,6 +361,7 @@ let open_out_append conn fname =
     out_recv = conn.recv;
     out_handle = ans.[3];
     out_length = int32 ans 4;
+    out_closed = false;
   }
 
 let open_out conn (flag: out_flag) fname =
@@ -355,21 +371,27 @@ let open_out conn (flag: out_flag) fname =
   | `Data len -> open_out_gen conn '\x8B' len fname (* OPEN WRITE DATA *)
   | `Append -> open_out_append conn fname
 
-let out_channel_length ch = ch.out_length
+let out_channel_length ch =
+  if ch.out_closed then raise(Sys_error "Closed NXT out_channel");
+  ch.out_length
 
 let close_out ch =
-  let pkg = String.create 5 in
-  pkg.[0] <- '\003'; (* size, LSB *)
-  pkg.[1] <- '\000'; (* size, MSB *)
-  pkg.[2] <- '\x01';
-  pkg.[3] <- '\x84'; (* CLOSE *)
-  pkg.[4] <- ch.out_handle;
-  ch.out_send ch.out_fd pkg;
-  ignore(ch.out_recv ch.out_fd 4) (* check status *)
+  if not ch.out_closed then begin
+    let pkg = String.create 5 in
+    pkg.[0] <- '\003'; (* size, LSB *)
+    pkg.[1] <- '\000'; (* size, MSB *)
+    pkg.[2] <- '\x01';
+    pkg.[3] <- '\x84'; (* CLOSE *)
+    pkg.[4] <- ch.out_handle;
+    ch.out_send ch.out_fd pkg;
+    ignore(ch.out_recv ch.out_fd 4); (* check status *)
+    ch.out_closed <- true;
+  end
 
 let output ch buf ofs len =
   if ofs < 0 || len < 0 || ofs + len > String.length buf || len > 0xFFFC then
     invalid_arg "Mindstorm.output";
+  if ch.out_closed then raise(Sys_error "Closed NXT out_channel");
   let pkg = String.create 5 in
   copy_int16 (len + 3) pkg 0; (* 2 BT length bytes; len+3 <= 0xFFFF *)
   pkg.[2] <- '\x01';
@@ -382,24 +404,137 @@ let output ch buf ofs len =
   int16 ans 4
 
 
+let remove conn fname =
+  let pkg = String.create 24 in
+  pkg.[0] <- '\026'; (* size, LSB *)
+  pkg.[1] <- '\000'; (* size, MSB *)
+  pkg.[2] <- '\x01';
+  pkg.[3] <- '\x85'; (* DELETE *)
+  blit_filename "Mindstorm.remove" fname pkg 4;
+  ignore(conn.recv conn.fd 22) (* check status *)
+
+
+type file_iterator = {
+  it_fd : Unix.file_descr;
+  it_send : Unix.file_descr -> string -> unit;
+  it_recv : Unix.file_descr -> int -> string;
+  it_handle : char;
+  mutable it_closed : bool;
+  mutable it_fname : string; (* current filename *)
+  mutable it_flength : int; (* current filename length. *)
+}
+
+
+let close_iterator it =
+  if not it.it_closed && it.it_flength >= 0 then begin
+    (* The iterator is not closed and has requested a handle. *)
+    let pkg = String.create 5 in
+    pkg.[0] <- '\003'; (* size, LSB *)
+    pkg.[1] <- '\000'; (* size, MSB *)
+    pkg.[2] <- '\x01';
+    pkg.[3] <- '\x84'; (* CLOSE *)
+    pkg.[4] <- it.it_handle;
+    it.it_send it.it_fd pkg;
+    ignore(it.it_recv it.it_fd 4); (* check status *)
+    it.it_closed <- true
+  end
+
+let find conn fpatt =
+  let pkg = String.create 24 in
+  pkg.[0] <- '\022'; (* size, LSB *)
+  pkg.[1] <- '\000'; (* size, MSB *)
+  pkg.[2] <- '\x01';
+  pkg.[3] <- '\x86'; (* FIND FIRST *)
+  blit_filename "Mindstorm.find" fpatt pkg 4;
+  conn.send conn.fd pkg;
+  let ans = conn.recv conn.fd 28 in (* might raise File_not_found *)
+  { it_fd = conn.fd;
+    it_send = conn.send;
+    it_recv = conn.recv;
+    it_handle = ans.[3];
+    it_closed = false;
+    it_fname = get_filename ans 4;
+    it_flength = int32 ans 24;
+  }
+
+
+let filename i =
+  if i.it_closed then raise(Sys_error "Closed NXT file_iterator");
+  i.it_fname
+
+let filesize i =
+  if i.it_closed then raise(Sys_error "Closed NXT file_iterator");
+  i.it_flength
+
+let next i =
+  if i.it_closed then raise(Sys_error "Closed NXT file_iterator");
+  let pkg = String.create 5 in
+  pkg.[0] <- '\003'; (* size, LSB *)
+  pkg.[1] <- '\000'; (* size, MSB *)
+  pkg.[2] <- '\x01';
+  pkg.[3] <- '\x87'; (* FIND NEXT *)
+  pkg.[4] <- i.it_handle;
+  i.it_send i.it_fd pkg;
+  let ans = i.it_recv i.it_fd 28 in (* might raise File_not_found in
+                                       which case the handle is closed
+                                       by the brick (FIXME: confirm?) *)
+  i.it_fname <- get_filename ans 4;
+  i.it_flength <- int32 ans 24
+
+
+(* ---------------------------------------------------------------------- *)
+(** Brick info *)
+
+let firmware_version conn =
+  failwith "TBD"
+
+let boot conn =
+  failwith "TBD"
+
+let set_brick_name conn =
+  failwith "TBD"
+
+type brick_info = {
+  brick_name : string;
+  bluetooth_addr : string; (* ??? *)
+  signal_strength : int;
+  free_user_flash : int;
+}
+
+let get_device_info conn =
+  failwith "TBD"
+
+let delete_user_flash conn =
+  failwith "TBD"
+
+let bluetooth_reset conn =
+  failwith "TBD"
+
+let poll_length conn buf =
+  failwith "TBD"
+
+let poll_command conn buf len =
+  failwith "TBD"
+
+
 (* ---------------------------------------------------------------------- *)
 (** Direct commands *)
 
-(* Generic function to send a command without answer (or which answer
-   only consists of a success/failure code). *)
-let cmd conn ~response ~byte1 ~n f =
-  assert(n <= 63);
-  let buf = String.make n (if response then '\x00' else '\x80') in
-  buf.(1) <- byte1;
-  f buf;
-  (* send buf on conn *)
-  if response then (
-    (* Return package expected *)
-    let ret = "" (* read return package *) in
-    if String.length ret <> 3 || ret.(0) <> '\x02' || ret.(1) <> byte1 then
-      failwith "Mindstorm.Command: invalid return package";
-    
-  )
+(* Generic function to send a command of [n] bytes without an answer
+   (but with the option of checking the return status).  [fill] is
+   responsible for filling [pkg] according to the command.  Beware
+   that because of the 2 BT bytes, all indexes are shifted by +2
+   w.r.t. the spec. *)
+let cmd conn ~check_status ~byte1 ~n fill =
+  assert(n <= 0xFF); (* all fixed length commands *)
+  let pkg = String.create (n + 2) in
+  pkg.[0] <- Char.unsafe_chr n; (* size, LSB *)
+  pkg.[1] <- '\000'; (* size, MSB *)
+  pkg.[2] <- if check_status then '\x00' else '\x80';
+  pkg.[3] <- byte1;
+  fill pkg;
+  conn.send conn.fd pkg;
+  if check_status then ignore(conn.recv conn.fd 3)
 
 
 module Program =
@@ -417,7 +552,24 @@ end
 
 module Motor =
 struct
-  type t = [ `A | `B | `C ]
+  type t = {
+    m_fd : Unix.file_descr;
+    m_send : Unix.file_descr -> string -> unit;
+    m_recv : Unix.file_descr -> int -> string;
+    port : char; (* output port as expected by the brick *)
+  }
+
+  let make conn port =
+    { m_fd = conn.fd;
+      m_send = conn.send;
+      m_recv = conn.recv;
+      port =
+        (match port with
+        | `A -> '\x00'
+        | `B -> '\x01'
+        | `C -> '\x02'
+        | `All -> '\xFF');
+    }
 
   type mode = [ `Motor_on | `Brake | `Regulated ]
   type regulation = [ `Idle | `Motor_speed | `Motor_sync ]
@@ -425,27 +577,28 @@ struct
 
   type state = {
     power : int;
-    mode : mode;
+    mode : mode list;
     regulation : regulation;
     turn_ratio : int;
     run_state : run_state;
     tacho_limit : int;
   }
 
-  let set conn num state =
+  let set motor state =
     () 
 
-  let get conn num =
+  let get motor =
     assert false
 
-  let reset_pos conn num =
+  let reset_pos motor =
     ()
 end
 
 
 module Sensor =
 struct
-  type t = [ `One | `Two | `Three | `Four ]
+  type t
+  type port = [ `In1 | `In2 | `In3 | `In4 ]
   type sensor_type =
       [ `No_sensor
       | `Switch
@@ -473,10 +626,11 @@ struct
       | `Mode_mask ]
 
   let set conn num sensor_type sensor_mode =
-    () 
+    failwith "TBD"
 
   let get conn num =
-    assert false
+    failwith "TBD"
+
 
   (** {3 Low speed} *)
 
@@ -490,20 +644,34 @@ end
 
 module Sound =
 struct
-  let play conn ?(loop=false) filename =
-    () 
+  let play ?(check_status=false) conn ?(loop=false) fname =
+    cmd conn ~check_status ~byte1:'\x02' ~n:23 (fun pkg ->
+      pkg.[4] <- if loop then '\x01' else '\x00';
+      blit_filename "Mindstorm.Sound.play" fname pkg 5
+    )
 
-  let stop conn =
-    () 
+  let stop ?(check_status=false) conn =
+    cmd conn ~check_status ~byte1:'\x0C' ~n:2 (fun _ -> ())
 
-  let play_tone conn freq duration =
-    ()
+  let play_tone ?(check_status=false) conn freq duration =
+    if freq < 200 || freq > 14000 then
+      invalid_arg "Mindstorm.Sound.play_tone: frequency not in [200, 14000]";
+    cmd conn ~check_status ~byte1:'\x03' ~n:7 (fun pkg ->
+      copy_int16 freq pkg 4;
+      copy_int16 duration pkg 6
+    )
 end
 
-let message_write conn mailbox msg =
-  ()
-let message_read conn ?(remove=false) mailbox =
-  "" 
+module Message =
+struct
+  let write conn mailbox msg =
+    ()
+
+  let read conn ?(remove=false) mailbox =
+    "" 
+end
 
 let battery_level conn =
-  0 
+  conn.send conn.fd "\002\000\x00\x0B";
+  let ans = conn.recv conn.fd 5 in
+  int16 ans 3
