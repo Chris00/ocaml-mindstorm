@@ -1,12 +1,15 @@
-
 INTERFACES = mindstorm.mli
 DOC_DIR = doc
 
 CAML_H = $(shell ocamlc -where)
+OCAMLC_FLAGS = -g
 
-mindstorm.cma: mindstorm_unix.c mindstorm.ml
-	$(OCAMLC) -o $@ -custom unix.cma -I $(CAML_H) -cclib -lbluetooth \
-	  unix.cma $^
+mindstorm.cma: mindstorm_unix.c mindstorm.cmo
+	$(OCAMLC) -a -o $@ $(OCAMLC_FLAGS) -custom unix.cma \
+	  -I $(CAML_H) -cclib -lbluetooth unix.cma $^
+
+test_sound.exe: mindstorm.cma test_sound.cmo
+	$(OCAMLC) -o $@ $(OCAMLC_FLAGS) $^
 
 test.exe: mindstorm_unix.c test.ml
 	$(OCAMLC) -o $@ -custom unix.cma -I $(CAML_H) -cclib -lbluetooth $^

@@ -28,9 +28,13 @@ type 'a conn
         brick.  The type parameter indicates whether this connection
         is a USB or a bluetooth one. *)
 
-val connect_bluetooth : ?retry:int -> string -> bluetooth conn
+val connect_bluetooth : string -> bluetooth conn
   (** [connect_bluetooth bdaddr] connects through bluetooth to the
-      brick with bluetooth address [bdaddr].  *)
+      brick with bluetooth address [bdaddr].
+
+      @raise [Unix.Unix_error] in case of a connection problem.  In
+      particular, [Unix.Unix_error(Unix.EHOSTDOWN, _,_)] is raised if
+      the brick is not turned on.  *)
 
 val connect_usb : string -> usb conn
 
@@ -43,7 +47,6 @@ type error =
     | No_more_files
     | EOF_expected
     | Not_a_linear_file
-    | File_not_found
     | Handle_already_closed
     | No_linear_space
     | Undefined_error
@@ -72,7 +75,7 @@ type error =
     | Bad_size (** Illegal size specified *)
     | Bad_mailbox (** Illegal mailbox queue ID specified *)
     | Bad_field (** Attempted to access invalid field of a structure *)
-(*     | Bad_io (\** Bad input or output specified *\) *)
+     | Bad_io (** Bad input or output specified *)
     | Out_of_memory (** Insufficient memory available *)
     | Bad_arg (** Bad arguments *)
 
@@ -82,6 +85,9 @@ exception Error of error
       except when the optional argument [~check_error] is set to
       false.  Note that checking for errors leads to up to
       approximately a 60ms latency between two commands.  *)
+
+exception File_not_found
+  (** Raised to indicate that a file is not present on the brick. *)
 
 
 (* ---------------------------------------------------------------------- *)
@@ -105,7 +111,8 @@ val in_channel_length : in_channel -> int
   (** [in_channel_length ch] returns the length of the channel [ch]. *)
 
 val close_in : in_channel -> unit
-  (** [close_in ch] closes the channel [ch]. *)
+  (** [close_in ch] closes the channel [ch].  Closing an already
+      closed channel does nothing.  *)
 
 val input : in_channel -> string -> int -> int -> int
   (** [input ch buf ofs len] reads a block of data of length [len]
@@ -137,7 +144,8 @@ val open_out : 'a conn -> out_flag -> string -> out_channel
       @param linear Default: [false]. *)
 
 val close_out : out_channel -> unit
-  (** [close_out ch] closes the channel [ch]. *)
+  (** [close_out ch] closes the channel [ch].  Closing an already
+      closed channel does nothing. *)
 
 val output : out_channel -> string -> int -> int -> int
   (** [output ch buf ofs len] ouputs the substring [buf.[ofs
@@ -149,13 +157,30 @@ val remove : 'a conn -> string -> unit
 
 
 type file_iterator
+    (** An iterator to allow to enumerate the files on the brick. *)
 
 val find : 'a conn -> string -> file_iterator
+  (** [find conn fpatt] returns an iterator listing the filenames
+      mathing the pattern [fpatt].  The following types of wildcards
+      are accepted:
+      - filename.extension
+      - *.\[file type name\]
+      - filename.*
+      - *.*
 
+      @raise File_not_found if no file was found *)
 val filename : file_iterator -> string
-val size : file_iterator -> int
+  (** [filename i] returns the current filename. *)
+val filesize : file_iterator -> int
+  (** [filesize i] returns the current filename size. *)
 val next : file_iterator -> unit
+  (** Retrieve the next filename matching the pattern.
+
+      @raise File_not_found if no more file was found.  When this
+      exception is raised, the iterator is closed. *)
 val close_iterator : file_iterator -> unit
+  (** [close_iterator i] closes the iterator [i].  Closing an already
+      closed iterator does nothing. *)
 
 
 (** {3 Brick information} *)
@@ -204,17 +229,29 @@ end
 module Motor :
 sig
   type t
-  type port = [ `A | `B | `C ]
+      (** Handle for devices connected to the ports A, B, or C. *)
 
-  val make : 'a conn -> port -> t
+  val make : 'a conn -> [ `A | `B | `C | `All ] -> t
+    (** [make conn port] creates a handle for the motor connected to
+        the [port].  It is recommended to use a descriptive names to
+        bind the return value of this function. *)
 
   type mode = [ `Motor_on | `Brake | `Regulated ]
+      (** Motor mode.
+          - [`Motor_on]: Turn the motor on.
+          - [`Brake]: Use run/brake instead of run/float.
+          - [`Regulated]: Turns on regulation.  *)
   type regulation = [ `Idle | `Motor_speed | `Motor_sync ]
+      (** Regulation mode.
+          - [`Idle]: No regulation will be enabled.
+          - [`Motor_speed]: enable power control.
+          - [`Motor_sync]: enable synchronization (needs to be enabled
+                           on two motors). *)
   type run_state = [ `Idle | `Ramp_up | `Running | `Ramp_down ]
 
   type state = {
     power : int;
-    mode : mode;
+    mode : mode list;
     regulation : regulation;
     turn_ratio : int;
     run_state : run_state;
@@ -264,6 +301,8 @@ sig
 
   val get : 'a conn -> port -> sensor_type * sensor_mode
 
+(* convenience functions for touch, ultrasonic, sound, light *)
+
   (** {4 Low speed} *)
   (** Commands dealing with the I2C bus available on every sensor.
       (The port 4 may also be high speed.) *)
@@ -276,12 +315,12 @@ end
 (** Play sounds. *)
 module Sound :
 sig
-  val play : 'a conn -> ?loop:bool -> string -> unit
+  val play : ?check_status:bool -> 'a conn -> ?loop:bool -> string -> unit
     (** [play_soundfile conn file] *)
-  val stop : 'a conn -> unit
+  val stop : ?check_status:bool -> 'a conn -> unit
     (** Stop the current playback.  Does nothing if no sound file is
         playing. *)
-  val play_tone : 'a conn -> int -> int -> unit
+  val play_tone : ?check_status:bool -> 'a conn -> int -> int -> unit
     (** [play_tone conn freq duration] *)
 end
 
