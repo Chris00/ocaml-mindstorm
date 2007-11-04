@@ -32,11 +32,14 @@ val connect_bluetooth : string -> bluetooth conn
   (** [connect_bluetooth bdaddr] connects through bluetooth to the
       brick with bluetooth address [bdaddr].
 
-      @raise [Unix.Unix_error] in case of a connection problem.  In
+      @raise Unix.Unix_error in case of a connection problem.  In
       particular, [Unix.Unix_error(Unix.EHOSTDOWN, _,_)] is raised if
       the brick is not turned on.  *)
 
 val connect_usb : string -> usb conn
+
+val close : 'a conn -> unit
+  (** [close conn] closes the connection [conn] to the brick. *)
 
 
 (** {2 Exception for errors} *)
@@ -172,7 +175,7 @@ val find : 'a conn -> string -> file_iterator
 val filename : file_iterator -> string
   (** [filename i] returns the current filename. *)
 val filesize : file_iterator -> int
-  (** [filesize i] returns the current filename size. *)
+  (** [filesize i] returns the current filename size (number of bytes). *)
 val next : file_iterator -> unit
   (** Retrieve the next filename matching the pattern.
 
@@ -186,19 +189,40 @@ val close_iterator : file_iterator -> unit
 (** {3 Brick information} *)
 
 val firmware_version : 'a conn -> int * int * int * int
-val boot : usb conn -> unit
-val set_brick_name : 'a conn -> string -> unit
+
+val set_brick_name : ?check_status:bool -> 'a conn -> string -> unit
+  (** [set_brick_name conn name] change the name to which one is
+      connected through [conn] to [name].
+
+      @param check_status whether to check the status returned by the
+      brick (and raise [Error] accordingly.  Default: [false].  *)
 
 type brick_info = {
-  brick_name : string;
-  bluetooth_addr : string; (* ??? *)
-  signal_strength : int;
-  free_user_flash : int;
+  brick_name : string;   (** NXT name (set with {!Mindstorm.set_brick_name}) *)
+  bluetooth_addr : string; (** Bluetooth address *)
+  signal_strength : int; (** Bluetooth signal strength (for some reason
+                             is always 0) *)
+  free_user_flash : int; (** Free user FLASH *)
 }
+
 val get_device_info : 'a conn -> brick_info
+  (** [get_device_info conn] returns some informations about the brick
+      connected through [conn]. *)
+
+val keep_alive : 'a conn -> int
+  (** [keep_alive conn] returns the current sleep time limit in
+      milliseconds. *)
+
+val battery_level : 'a conn -> int
+  (** [battery_level conn] return the voltages in millivolts of the
+      battery on the brick. *)
 
 val delete_user_flash : 'a conn -> unit
 val bluetooth_reset : usb conn -> unit
+
+val boot : usb conn -> unit
+
+
 
 (** {3 Polling} *)
 
@@ -213,7 +237,7 @@ val poll_command : 'a conn -> [`Poll_buffer | `High_speed_buffer] -> int
 (* ---------------------------------------------------------------------- *)
 (** {2 Direct commands} *)
 
-(** Starting and stopping programs on the brick. *)
+(** Starting and stopping programs (.rxe files) on the brick. *)
 module Program :
 sig
   val start : 'a conn -> string -> unit
@@ -225,7 +249,7 @@ sig
 end
 
 
-(** {3 Output ports} *)
+(** Output ports. *)
 module Motor :
 sig
   type t
@@ -250,20 +274,28 @@ sig
   type run_state = [ `Idle | `Ramp_up | `Running | `Ramp_down ]
 
   type state = {
-    power : int;
-    mode : mode list;
+    power : int; (** Power set point.  Range: -100 -- 100. *)
+    mode : mode list; (** [] means idle *)
     regulation : regulation;
-    turn_ratio : int;
+    turn_ratio : int; (** Range: -100 -- 100. *)
     run_state : run_state;
-    tacho_limit : int;
+    tacho_limit : int; (** [0]: run forever. *)
   }
 
-  val set : t -> state -> unit
+  val set : ?check_status:bool -> t -> state -> unit
 
   val get : t -> state * int * int * int
 
-  val reset_pos : t -> unit
+  val reset_pos : ?check_status:bool -> ?relative:bool -> t -> unit
+    (** [reset_pos motor] reset the position of the motor.
+
+        @param relative if [true], relative to the last movement,
+        otherwise absilute position.  Default: [false].
+
+        @param check_status whether to check the status returned by
+        the brick.  Default: [false].  *)
 end
+
 
 (** Input ports. *)
 module Sensor :
@@ -273,17 +305,17 @@ sig
 
   type sensor_type =
       [ `No_sensor
-      | `Switch
+      | `Switch	      (** Touch sensor *)
       | `Temperature
       | `Reflection
       | `Angle
       | `Light_active
       | `Light_inactive
-      | `Sound_db
-      | `Sound_dba
+      | `Sound_db     (** Includes sounds too high or too low for our ears *)
+      | `Sound_dba    (** Microphone, focuses on sounds within human hearing *)
       | `Custom
       | `Lowspeed
-      | `Lowspeed_9v
+      | `Lowspeed_9v  (** Ultrasonic *)
       | `No_of_sensor_types ]
   type sensor_mode =
       [ `Raw
@@ -301,6 +333,8 @@ sig
 
   val get : 'a conn -> port -> sensor_type * sensor_mode
 
+  val ultrasonic : 'a conn -> port -> t
+
 (* convenience functions for touch, ultrasonic, sound, light *)
 
   (** {4 Low speed} *)
@@ -309,29 +343,41 @@ sig
 
   val get_status : 'a conn -> port -> int
   val write : 'a conn -> port -> string -> unit (* Rx??? *)
+    (** Write data to lowspeed I2C port (e.g. for talking to the
+        ultrasonic sensor).  *)
   val read : 'a conn -> port -> string
+    (** Read data from from lowspeed I2C port (e.g. for receiving data
+        from the ultrasonic sensor).  *)
 end
 
-(** Play sounds. *)
+
+(** Play sounds (.rso files) and tones. *)
 module Sound :
 sig
   val play : ?check_status:bool -> 'a conn -> ?loop:bool -> string -> unit
-    (** [play_soundfile conn file] *)
+    (** [play_soundfile conn file] plays the sound file named [file].
+        @param loop if [true] repeat the play indefinitely.
+        Default: [false].  *)
   val stop : ?check_status:bool -> 'a conn -> unit
     (** Stop the current playback.  Does nothing if no sound file is
         playing. *)
   val play_tone : ?check_status:bool -> 'a conn -> int -> int -> unit
-    (** [play_tone conn freq duration] *)
+    (** [play_tone conn freq duration] play a tone with [freq] Hz
+        lasting [duration] miliseconds. *)
 end
+
 
 (** Read and write messages from the 10 message queues.  This can be
     thought as advanced direct commands.  *)
 module Message :
 sig
   val write : 'a conn -> int -> string -> unit
+    (** [write conn box msg] writes the message [msg] to the inbox
+        [box] on the NXT.  This is used to send messages to a
+        currently running program. *)
   val read : 'a conn -> ?remove:bool -> int -> string
+    (** [read conn box] returns the message from the inbox [box] on
+        the NXT.
+        @param if true, clears the message from the remote inbox.
+        Default: [false]. *)
 end
-
-val battery_level : 'a conn -> int
-  (** [battery_level conn] return the voltages in millivolts of the
-      battery on the brick. *)

@@ -16,7 +16,7 @@ mindstorm.cmxa: $(STUBS:.c=.o) mindstorm.cmx
 
 .PHONY: tests
 tests: mindstorm.cma
-	$(CD) tests; $(MAKE) byte
+	$(CD) tests; $(MAKE) -B byte
 
 test.exe: mindstorm_unix.c test.ml
 	$(OCAMLC) -o $@ -custom unix.cma -I $(CAML_H) -cclib -lbluetooth $^

@@ -21,6 +21,11 @@
   http://news.lugnet.com/robotics/nxt/nxthacking/?n=14
 *)
 
+
+(* Specialised implementation for speed *)
+let min i j = if (i:int) < j then i else j
+
+
 type error =
     | No_more_handles
     | No_space
@@ -120,7 +125,12 @@ let check_status status =
 let really_input =
   let rec loop fd buf i n =
     let r = Unix.read fd buf i n in
-    if r < n then loop fd buf (i + r) (n - r) in
+    if r < n then (
+      (* The doc says 60ms are needed to switch from receive to
+         transmit mode. *)
+      ignore(Unix.select [fd] [] [] 0.060); (* FIXME: harmful on windows? *)
+      loop fd buf (i + r) (n - r)
+    ) in
   fun fd buf ofs n -> loop fd buf ofs n
 
 let really_read fd n =
@@ -132,7 +142,7 @@ let really_read fd n =
    (most significative byte) into the corresponding integer. *)
 let int16 s i =
   assert(i + 1 < String.length s);
-  Char.code s.[i] land (Char.code s.[i+1] lsl 8)
+  Char.code s.[i] lor (Char.code s.[i+1] lsl 8)
 
 let copy_int16 i s ofs =
   assert(ofs + 1 < String.length s);
@@ -145,9 +155,9 @@ let copy_int16 i s ofs =
 let int32 s i =
   if s.[i + 3] >= '\x80' then failwith "Mindstorm.int32: int overflow";
   Char.code s.[i]
-  land (Char.code s.[i + 1] lsl 8)
-  land (Char.code s.[i + 2] lsl 16)
-  land (Char.code s.[i + 3] lsl 32)
+  lor (Char.code s.[i + 1] lsl 8)
+  lor (Char.code s.[i + 2] lsl 16)
+  lor (Char.code s.[i + 3] lsl 32)
 
 (* Copy the int [i] as 4 bytes (little endian) to [s] starting at
    position [ofs].   We assume [i < 2^32].*)
@@ -181,8 +191,9 @@ let blit_filename : string -> string -> string -> int -> unit =
       if fname.[i] < ' ' || fname.[i] >= '\127' then invalid_arg funname;
     done;
     String.blit fname 0 pkg ofs len;
-    (* All filenames must be 19 bytes long, pad if needed. *)
-    String.fill pkg (ofs + len) (19 - len) '\000'
+    (* All filenames must be 19 bytes long + null terminator, pad if
+       needed. *)
+    String.fill pkg (ofs + len) (20 - len) '\000'
 
 
 (* ---------------------------------------------------------------------- *)
@@ -206,11 +217,13 @@ type 'a conn = {
   recv : Unix.file_descr -> int -> string;
   (* [recv fd n] reads a package a length [n] and return it as a
      string.  For bluetooth, the prefix of 2 bytes indicating the
-     length is also read but not returned (and not counted in [n]).
+     length are also read but not returned (and not counted in [n]).
      [recv] checks the status byte and raise an exception accordingly
      (if needed). *)
 }
 
+let close conn =
+  Unix.close conn.fd
 
 
 (** USB ---------- *)
@@ -491,18 +504,54 @@ let firmware_version conn =
 let boot conn =
   failwith "TBD"
 
-let set_brick_name conn =
-  failwith "TBD"
+let set_brick_name ?(check_status=false) conn name =
+  let len = String.length name in
+  if len > 15 then
+    invalid_arg "Mindstorm.set_brick_name: name too long (max 15 chars)";
+  for i = 0 to len - 1 do
+    if name.[i] < ' ' || name.[i] >= '\127' then
+      invalid_arg "Mindstorm.set_brick_name: name contains invalid chars";
+  done;
+  let pkg = String.create 20 in
+  pkg.[0] <- '\018'; (* size, LSB *)
+  pkg.[1] <- '\000'; (* size, MSB *)
+  pkg.[2] <- if check_status then '\x01' else '\x81';
+  pkg.[3] <- '\x98'; (* SET BRICK NAME *)
+  String.blit name 0 pkg 4 len;
+  String.fill pkg (4 + len) (16 - len) '\000'; (* pad if needed *)
+  conn.send conn.fd pkg;
+  if check_status then ignore(conn.recv conn.fd 3)
 
 type brick_info = {
   brick_name : string;
-  bluetooth_addr : string; (* ??? *)
+  bluetooth_addr : string;
   signal_strength : int;
   free_user_flash : int;
 }
 
+let get_brick_name s i0 i1 =
+  (** Extract the brick name of "" if it fails (should not happen). *)
+  try
+    let j = min i1 (String.index_from s i0 '\000') in
+    String.sub s i0 (j - i0)
+  with Not_found -> ""
+
+let string_of_bluetooth_addr =
+  let u s i = Char.code(String.unsafe_get s i) in
+  fun addr ->
+    assert(String.length addr = 6);
+    Printf.sprintf "%02x:%02x:%02x:%02x:%02x:%02x"
+      (u addr 0) (u addr 1) (u addr 2) (u addr 3) (u addr 4) (u addr 5)
+
 let get_device_info conn =
-  failwith "TBD"
+  conn.send conn.fd "\002\000\x01\x9B"; (* GET DEVICE INFO *)
+  let ans = conn.recv conn.fd 33 in
+  { brick_name = get_brick_name ans 3 17; (* 14 chars + null *)
+    bluetooth_addr = (* ans.[18 .. 24], drop null terminator *)
+      string_of_bluetooth_addr(String.sub ans 18 6);
+    signal_strength = int32 ans 25;
+    free_user_flash = int32 ans 29;
+  }
 
 let delete_user_flash conn =
   failwith "TBD"
@@ -584,14 +633,59 @@ struct
     tacho_limit : int;
   }
 
-  let set motor state =
-    () 
+  let state = {
+    power = 0;   mode = [];   regulation = `Idle;
+    turn_ratio = 0;   run_state = `Idle;  tacho_limit = 0 (* run forever *)
+  }
+
+  let int_of_mode = function
+      `Motor_on -> 0x01 | `Brake -> 0x02 | `Regulated -> 0x04
+
+  let char_of_mode_list ml =
+    let i = List.fold_left (fun i m -> i lor (int_of_mode m)) 0 ml in
+    Char.unsafe_chr i
+
+  let set ?(check_status=false) motor st =
+    if st.power < -100 || st.power > 100 then
+      invalid_arg "Mindstorm.Motor.set: state.power not in [-100, 100]";
+    if st.turn_ratio < -100 || st.turn_ratio > 100 then
+      invalid_arg "Mindstorm.Motor.set: state.turn_ratio not in [-100, 100]";
+    if st.tacho_limit < 0 then
+      invalid_arg "Mindstorm.Motor.set: state.tacho_limit must be >= 0";
+    let pkg = String.create 14 in
+    pkg.[0] <- '\012'; (* size, LSB *)
+    pkg.[1] <- '\000'; (* size, MSB *)
+    pkg.[2] <- if check_status then '\x00' else '\x80';
+    pkg.[3] <- '\x04'; (* SETOUTPUTSTATE *)
+    pkg.[4] <- motor.port;
+    pkg.[5] <- Char.unsafe_chr(127 + st.power);
+    pkg.[6] <- char_of_mode_list st.mode;
+    pkg.[7] <-
+      (match st.regulation with
+      | `Idle -> '\x00' | `Motor_speed -> '\x01' | `Motor_sync -> '\x02');
+    pkg.[8] <- Char.unsafe_chr(127 + st.turn_ratio);
+    pkg.[9] <-
+      (match st.run_state with
+      | `Idle -> '\x00' | `Ramp_up -> '\x10'
+      | `Running -> '\x20' | `Ramp_down -> '\x40');
+    copy_int32 st.tacho_limit pkg 10;
+    motor.m_send motor.m_fd pkg;
+    if check_status then ignore(motor.m_recv motor.m_fd 3)
 
   let get motor =
     assert false
 
-  let reset_pos motor =
-    ()
+  let reset_pos ?(check_status=false) ?(relative=false) motor =
+    let pkg = String.create 6 in
+    pkg.[0] <- '\004'; (* size, LSB *)
+    pkg.[1] <- '\000'; (* size, MSB *)
+    pkg.[2] <- if check_status then '\x00' else '\x80';
+    pkg.[3] <- '\x0A'; (* RESETMOTORPOSITION *)
+    pkg.[4] <- motor.port;
+    pkg.[5] <- if relative then '\x01' else '\x00';
+    motor.m_send motor.m_fd pkg;
+    if check_status then ignore(motor.m_recv motor.m_fd 3)
+
 end
 
 
@@ -629,6 +723,18 @@ struct
     failwith "TBD"
 
   let get conn num =
+    failwith "TBD"
+
+  let touch conn num =
+    failwith "TBD"
+
+  let sound conn num =
+    failwith "TBD"
+
+  let light conn num =
+    failwith "TBD"
+
+  let ultrasonic conn num =
     failwith "TBD"
 
 
@@ -670,6 +776,13 @@ struct
   let read conn ?(remove=false) mailbox =
     "" 
 end
+
+
+let keep_alive conn =
+  conn.send conn.fd "\002\000\x00\x0D";
+  let ans = conn.recv conn.fd 7 in
+  int32 ans 3
+
 
 let battery_level conn =
   conn.send conn.fd "\002\000\x00\x0B";
