@@ -2,17 +2,14 @@
 # shared library dllmindstorm.so
 OCAMLC_FLAGS = -g -I .. -dllpath .. -custom
 
-LIBS=unix.cma mindstorm.cma
+TESTS=$(wildcard *.ml)
+LIBS_CMA=unix.cma mindstorm.cma
+LIBS_CMXA=$(LIBS_CMA:.cma=.cmxa)
 
 .PHONY: byte
-byte: sound.exe
-native: sound.com
+byte: $(TESTS:.ml=.exe)
+native: $(TESTS:.ml=.com)
 
-sound.exe: sound.cmo
-	$(OCAMLC) -o $@ $(OCAMLC_FLAGS) $(LIBS) $^
-
-sound.com: sound.cmx
-	$(OCAMLOPT) -o $@ $(OCAMLOPT_FLAGS) $(LIBS:.cma=.cmxa) $^
 
 
 include ../Makefile.ocaml

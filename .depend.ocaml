@@ -1,4 +1,2 @@
 mindstorm.cmo: mindstorm.cmi 
 mindstorm.cmx: mindstorm.cmi 
-test_sound.cmo: mindstorm.cmi 
-test_sound.cmx: mindstorm.cmx 
