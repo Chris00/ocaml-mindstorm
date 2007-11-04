@@ -158,33 +158,37 @@ val output : out_channel -> string -> int -> int -> int
 val remove : 'a conn -> string -> unit
   (** [remove conn fname] remove the file [fname] from the brick. *)
 
+(** List files on the brick matching a given pattern. *)
+module Find :
+sig
+  type iterator
+      (** An iterator to allow to enumerate files on the brick. *)
 
-type file_iterator
-    (** An iterator to allow to enumerate the files on the brick. *)
+  val patt : 'a conn -> string -> iterator
+    (** [Find.patt conn fpatt] returns an iterator listing the filenames
+        mathing the pattern [fpatt].  The following types of wildcards
+        are accepted:
+        - filename.extension
+        - *.\[file type name\]
+        - filename.*
+        - *.*
 
-val find : 'a conn -> string -> file_iterator
-  (** [find conn fpatt] returns an iterator listing the filenames
-      mathing the pattern [fpatt].  The following types of wildcards
-      are accepted:
-      - filename.extension
-      - *.\[file type name\]
-      - filename.*
-      - *.*
+        @raise File_not_found if no file was found *)
+  val current : iterator -> string
+    (** [Find.current i] returns the current filename. *)
+  val current_size : iterator -> int
+    (** [Find.current_size i] returns the current filename size
+        (number of bytes). *)
+  val next : iterator -> unit
+    (** Execute a new request to the brick to retrieve the next
+        filename matching the pattern.
 
-      @raise File_not_found if no file was found *)
-val filename : file_iterator -> string
-  (** [filename i] returns the current filename. *)
-val filesize : file_iterator -> int
-  (** [filesize i] returns the current filename size (number of bytes). *)
-val next : file_iterator -> unit
-  (** Retrieve the next filename matching the pattern.
-
-      @raise File_not_found if no more file was found.  When this
-      exception is raised, the iterator is closed. *)
-val close_iterator : file_iterator -> unit
+        @raise File_not_found if no more file was found.  When this
+        exception is raised, the iterator is closed. *)
+  val close : iterator -> unit
   (** [close_iterator i] closes the iterator [i].  Closing an already
       closed iterator does nothing. *)
-
+end
 
 (** {3 Brick information} *)
 
@@ -274,10 +278,10 @@ sig
   type run_state = [ `Idle | `Ramp_up | `Running | `Ramp_down ]
 
   type state = {
-    power : int; (** Power set point.  Range: -100 -- 100. *)
+    power : int; (** Power set point.  Range: -100 .. 100. *)
     mode : mode list; (** [] means idle *)
     regulation : regulation;
-    turn_ratio : int; (** Range: -100 -- 100. *)
+    turn_ratio : int; (** Range: -100 .. 100. *)
     run_state : run_state;
     tacho_limit : int; (** [0]: run forever. *)
   }

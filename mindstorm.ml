@@ -427,73 +427,74 @@ let remove conn fname =
   ignore(conn.recv conn.fd 22) (* check status *)
 
 
-type file_iterator = {
-  it_fd : Unix.file_descr;
-  it_send : Unix.file_descr -> string -> unit;
-  it_recv : Unix.file_descr -> int -> string;
-  it_handle : char;
-  mutable it_closed : bool;
-  mutable it_fname : string; (* current filename *)
-  mutable it_flength : int; (* current filename length. *)
-}
+module Find =
+struct
+  type iterator = {
+    it_fd : Unix.file_descr;
+    it_send : Unix.file_descr -> string -> unit;
+    it_recv : Unix.file_descr -> int -> string;
+    it_handle : char;
+    mutable it_closed : bool;
+    mutable it_fname : string; (* current filename *)
+    mutable it_flength : int; (* current filename length. *)
+  }
 
+  let close it =
+    if not it.it_closed && it.it_flength >= 0 then begin
+      (* The iterator is not closed and has requested a handle. *)
+      let pkg = String.create 5 in
+      pkg.[0] <- '\003'; (* size, LSB *)
+      pkg.[1] <- '\000'; (* size, MSB *)
+      pkg.[2] <- '\x01';
+      pkg.[3] <- '\x84'; (* CLOSE *)
+      pkg.[4] <- it.it_handle;
+      it.it_send it.it_fd pkg;
+      ignore(it.it_recv it.it_fd 4); (* check status *)
+      it.it_closed <- true
+    end
 
-let close_iterator it =
-  if not it.it_closed && it.it_flength >= 0 then begin
-    (* The iterator is not closed and has requested a handle. *)
+  let patt conn fpatt =
+    let pkg = String.create 24 in
+    pkg.[0] <- '\022'; (* size, LSB *)
+    pkg.[1] <- '\000'; (* size, MSB *)
+    pkg.[2] <- '\x01';
+    pkg.[3] <- '\x86'; (* FIND FIRST *)
+    blit_filename "Mindstorm.find" fpatt pkg 4;
+    conn.send conn.fd pkg;
+    let ans = conn.recv conn.fd 28 in (* might raise File_not_found *)
+    { it_fd = conn.fd;
+      it_send = conn.send;
+      it_recv = conn.recv;
+      it_handle = ans.[3];
+      it_closed = false;
+      it_fname = get_filename ans 4;
+      it_flength = int32 ans 24;
+    }
+
+  let current i =
+    if i.it_closed then raise(Sys_error "Closed NXT file_iterator");
+    i.it_fname
+
+  let current_size i =
+    if i.it_closed then raise(Sys_error "Closed NXT file_iterator");
+    i.it_flength
+
+  let next i =
+    if i.it_closed then raise(Sys_error "Closed NXT file_iterator");
     let pkg = String.create 5 in
     pkg.[0] <- '\003'; (* size, LSB *)
     pkg.[1] <- '\000'; (* size, MSB *)
     pkg.[2] <- '\x01';
-    pkg.[3] <- '\x84'; (* CLOSE *)
-    pkg.[4] <- it.it_handle;
-    it.it_send it.it_fd pkg;
-    ignore(it.it_recv it.it_fd 4); (* check status *)
-    it.it_closed <- true
-  end
+    pkg.[3] <- '\x87'; (* FIND NEXT *)
+    pkg.[4] <- i.it_handle;
+    i.it_send i.it_fd pkg;
+    let ans = i.it_recv i.it_fd 28 in (* might raise File_not_found in
+                                         which case the handle is closed
+                                         by the brick (FIXME: confirm?) *)
+    i.it_fname <- get_filename ans 4;
+    i.it_flength <- int32 ans 24
 
-let find conn fpatt =
-  let pkg = String.create 24 in
-  pkg.[0] <- '\022'; (* size, LSB *)
-  pkg.[1] <- '\000'; (* size, MSB *)
-  pkg.[2] <- '\x01';
-  pkg.[3] <- '\x86'; (* FIND FIRST *)
-  blit_filename "Mindstorm.find" fpatt pkg 4;
-  conn.send conn.fd pkg;
-  let ans = conn.recv conn.fd 28 in (* might raise File_not_found *)
-  { it_fd = conn.fd;
-    it_send = conn.send;
-    it_recv = conn.recv;
-    it_handle = ans.[3];
-    it_closed = false;
-    it_fname = get_filename ans 4;
-    it_flength = int32 ans 24;
-  }
-
-
-let filename i =
-  if i.it_closed then raise(Sys_error "Closed NXT file_iterator");
-  i.it_fname
-
-let filesize i =
-  if i.it_closed then raise(Sys_error "Closed NXT file_iterator");
-  i.it_flength
-
-let next i =
-  if i.it_closed then raise(Sys_error "Closed NXT file_iterator");
-  let pkg = String.create 5 in
-  pkg.[0] <- '\003'; (* size, LSB *)
-  pkg.[1] <- '\000'; (* size, MSB *)
-  pkg.[2] <- '\x01';
-  pkg.[3] <- '\x87'; (* FIND NEXT *)
-  pkg.[4] <- i.it_handle;
-  i.it_send i.it_fd pkg;
-  let ans = i.it_recv i.it_fd 28 in (* might raise File_not_found in
-                                       which case the handle is closed
-                                       by the brick (FIXME: confirm?) *)
-  i.it_fname <- get_filename ans 4;
-  i.it_flength <- int32 ans 24
-
+end
 
 (* ---------------------------------------------------------------------- *)
 (** Brick info *)
