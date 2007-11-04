@@ -1,6 +1,11 @@
 open Printf
 
-let bt = "00:16:53:03:A5:32"
+let bt =
+  if Array.length Sys.argv < 2 then (
+    printf "%s <bluetooth addr>\n" Sys.argv.(0);
+    exit 1;
+  )
+  else Sys.argv.(1)
 
 let () =
   let conn = Mindstorm.connect_bluetooth bt in
