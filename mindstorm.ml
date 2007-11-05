@@ -635,24 +635,11 @@ end
 
 module Motor =
 struct
-  type t = {
-    m_fd : Unix.file_descr;
-    m_send : Unix.file_descr -> string -> unit;
-    m_recv : Unix.file_descr -> int -> string;
-    port : char; (* output port as expected by the brick *)
-  }
-
-  let make conn port =
-    { m_fd = conn.fd;
-      m_send = conn.send;
-      m_recv = conn.recv;
-      port =
-        (match port with
-        | `A -> '\x00'
-        | `B -> '\x01'
-        | `C -> '\x02'
-        | `All -> '\xFF');
-    }
+  type port = char
+  let a = '\x00'
+  let b = '\x01'
+  let c = '\x02'
+  let all = '\xFF'
 
   type mode = [ `Motor_on | `Brake | `Regulated ]
   type regulation = [ `Idle | `Motor_speed | `Motor_sync ]
@@ -679,47 +666,38 @@ struct
     let i = List.fold_left (fun i m -> i lor (int_of_mode m)) 0 ml in
     Char.unsafe_chr i
 
-  let set ?(check_status=false) motor st =
+  let set conn ?(check_status=false) port st =
     if st.power < -100 || st.power > 100 then
       invalid_arg "Mindstorm.Motor.set: state.power not in [-100, 100]";
     if st.turn_ratio < -100 || st.turn_ratio > 100 then
       invalid_arg "Mindstorm.Motor.set: state.turn_ratio not in [-100, 100]";
     if st.tacho_limit < 0 then
       invalid_arg "Mindstorm.Motor.set: state.tacho_limit must be >= 0";
-    let pkg = String.create 14 in
-    pkg.[0] <- '\012'; (* size, LSB *)
-    pkg.[1] <- '\000'; (* size, MSB *)
-    pkg.[2] <- if check_status then '\x00' else '\x80';
-    pkg.[3] <- '\x04'; (* SETOUTPUTSTATE *)
-    pkg.[4] <- motor.port;
-    pkg.[5] <- Char.unsafe_chr(127 + st.power);
-    pkg.[6] <- char_of_mode_list st.mode;
-    pkg.[7] <-
-      (match st.regulation with
-      | `Idle -> '\x00' | `Motor_speed -> '\x01' | `Motor_sync -> '\x02');
-    pkg.[8] <- Char.unsafe_chr(127 + st.turn_ratio);
-    pkg.[9] <-
-      (match st.run_state with
-      | `Idle -> '\x00' | `Ramp_up -> '\x10'
-      | `Running -> '\x20' | `Ramp_down -> '\x40');
-    copy_int32 st.tacho_limit pkg 10;
-    motor.m_send motor.m_fd pkg;
-    if check_status then ignore(motor.m_recv motor.m_fd 3)
+    (* SETOUTPUTSTATE *)
+    cmd conn ~check_status ~byte1:'\x04' ~n:12 (fun pkg ->
+      pkg.[4] <- port;
+      pkg.[5] <- Char.unsafe_chr(127 + st.power);
+      pkg.[6] <- char_of_mode_list st.mode;
+      pkg.[7] <-
+        (match st.regulation with
+        | `Idle -> '\x00' | `Motor_speed -> '\x01' | `Motor_sync -> '\x02');
+      pkg.[8] <- Char.unsafe_chr(127 + st.turn_ratio);
+      pkg.[9] <-
+        (match st.run_state with
+        | `Idle -> '\x00' | `Ramp_up -> '\x10'
+        | `Running -> '\x20' | `Ramp_down -> '\x40');
+      copy_int32 st.tacho_limit pkg 10;
+    )
 
   let get motor =
     assert false
 
-  let reset_pos ?(check_status=false) ?(relative=false) motor =
-    let pkg = String.create 6 in
-    pkg.[0] <- '\004'; (* size, LSB *)
-    pkg.[1] <- '\000'; (* size, MSB *)
-    pkg.[2] <- if check_status then '\x00' else '\x80';
-    pkg.[3] <- '\x0A'; (* RESETMOTORPOSITION *)
-    pkg.[4] <- motor.port;
-    pkg.[5] <- if relative then '\x01' else '\x00';
-    motor.m_send motor.m_fd pkg;
-    if check_status then ignore(motor.m_recv motor.m_fd 3)
-
+  let reset_pos conn ?(check_status=false) ?(relative=false) port =
+    (* RESETMOTORPOSITION *)
+    cmd conn ~check_status ~byte1:'\x0A' ~n:4 (fun pkg ->
+      pkg.[4] <- port;
+      pkg.[5] <- if relative then '\x01' else '\x00';
+    )
 end
 
 
