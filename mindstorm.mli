@@ -186,9 +186,17 @@ sig
         @raise File_not_found if no more file was found.  When this
         exception is raised, the iterator is closed. *)
   val close : iterator -> unit
-  (** [close_iterator i] closes the iterator [i].  Closing an already
-      closed iterator does nothing. *)
+    (** [close_iterator i] closes the iterator [i].  Closing an
+        already closed iterator does nothing. *)
+
+  val fold : 'a conn -> f:(string -> int -> 'a -> 'a) -> string -> 'a -> 'a
+    (** [fold f fpatt a0] folds [f] on all the filenames matching the
+        pattern [fpatt]. *)
+  val iter : 'a conn -> f:(string -> int -> unit) -> string -> unit
+    (** [iter f fpatt] iterates [f name size] on all the filenames
+        matching the pattern [fpatt]. *)
 end
+
 
 (** {3 Brick information} *)
 
@@ -305,7 +313,7 @@ end
 module Sensor :
 sig
   type t
-  type port = [ `In1 | `In2 | `In3 | `In4 ]
+  type port = [ `S1 | `S2 | `S3 | `S4 ]
 
   type sensor_type =
       [ `No_sensor

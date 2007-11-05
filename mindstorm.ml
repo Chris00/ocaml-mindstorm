@@ -488,11 +488,43 @@ struct
     pkg.[3] <- '\x87'; (* FIND NEXT *)
     pkg.[4] <- i.it_handle;
     i.it_send i.it_fd pkg;
-    let ans = i.it_recv i.it_fd 28 in (* might raise File_not_found in
-                                         which case the handle is closed
-                                         by the brick (FIXME: confirm?) *)
-    i.it_fname <- get_filename ans 4;
-    i.it_flength <- int32 ans 24
+    try
+      let ans = i.it_recv i.it_fd 28 in
+      i.it_fname <- get_filename ans 4;
+      i.it_flength <- int32 ans 24
+    with File_not_found ->
+      (* In the case File_not_found is raised, the doc says the handle
+         is closed by the brick (FIXME: confirm?) *)
+      i.it_closed <- true;
+      raise File_not_found
+
+  let iter conn ~f fpatt =
+    match (try Some(patt conn fpatt) with File_not_found -> None) with
+    | None -> ()
+    | Some i ->
+        try
+          while true do
+            f i.it_fname i.it_flength;
+            next i;
+          done
+        with
+        | File_not_found -> ()
+        | e -> close i; raise e (* exn raised by [f] must close the iterator *)
+
+  let fold conn ~f fpatt a0 =
+    match (try Some(patt conn fpatt) with File_not_found -> None) with
+    | None -> a0
+    | Some i ->
+        let a = ref a0 in
+        try
+          while true do
+            a := f i.it_fname i.it_flength !a;
+            next i;
+          done;
+          assert false
+        with
+        | File_not_found -> !a
+        | e -> close i; raise e
 
 end
 
@@ -522,6 +554,7 @@ let set_brick_name ?(check_status=false) conn name =
   String.fill pkg (4 + len) (16 - len) '\000'; (* pad if needed *)
   conn.send conn.fd pkg;
   if check_status then ignore(conn.recv conn.fd 3)
+
 
 type brick_info = {
   brick_name : string;
@@ -693,7 +726,7 @@ end
 module Sensor =
 struct
   type t
-  type port = [ `In1 | `In2 | `In3 | `In4 ]
+  type port = [ `S1 | `S2 | `S3 | `S4 ]
   type sensor_type =
       [ `No_sensor
       | `Switch
