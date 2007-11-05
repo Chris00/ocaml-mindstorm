@@ -264,13 +264,15 @@ end
 (** Output ports. *)
 module Motor :
 sig
-  type t
-      (** Handle for devices connected to the ports A, B, or C. *)
-
-  val make : 'a conn -> [ `A | `B | `C | `All ] -> t
-    (** [make conn port] creates a handle for the motor connected to
-        the [port].  It is recommended to use a descriptive names to
-        bind the return value of this function. *)
+  type port
+      (** The three motor ports (immutable).  For more readability of
+          your program, it is recommended you give appropriate aliases
+          to the ports of interest at the beginning of your program,
+          e.g. [let motor_right = Mindstorm.Motor.a]. *)
+  val a : port (** The motor port A. *)
+  val b : port (** The motor port B. *)
+  val c : port (** The motor port C. *)
+  val all : port (** Special value representing all 3 ports. *)
 
   type mode = [ `Motor_on | `Brake | `Regulated ]
       (** Motor mode.
@@ -294,12 +296,14 @@ sig
     tacho_limit : int; (** [0]: run forever. *)
   }
 
-  val set : ?check_status:bool -> t -> state -> unit
+  val set : 'a conn -> ?check_status:bool -> port -> state -> unit
+    (** [set conn p st] *)
 
-  val get : t -> state * int * int * int
+  val get : 'a conn -> port -> state * int * int * int
 
-  val reset_pos : ?check_status:bool -> ?relative:bool -> t -> unit
-    (** [reset_pos motor] reset the position of the motor.
+  val reset_pos : 'a conn -> ?check_status:bool -> ?relative:bool -> port -> unit
+    (** [reset_pos conn p] reset the position of the motor connected
+        to port [p].
 
         @param relative if [true], relative to the last movement,
         otherwise absilute position.  Default: [false].
