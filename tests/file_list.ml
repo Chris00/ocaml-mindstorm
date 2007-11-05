@@ -10,11 +10,6 @@ let bt =
 let () =
   let conn = Mindstorm.connect_bluetooth bt in
   printf "Files on the brick:\n%!";
-  let it = Mindstorm.Find.patt conn "*.*" in
-  try
-    while true do
-      printf " - %-20S  %-5i bytes\n%!"
-        (Mindstorm.Find.current it) (Mindstorm.Find.current_size it);
-      Mindstorm.Find.next it;
-    done
-  with Mindstorm.File_not_found -> ()
+  Mindstorm.Find.iter conn "*.*" ~f:(fun fname fsize ->
+    printf " - %-20S  %-5i bytes\n%!" fname fsize
+  )
