@@ -15,10 +15,14 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the file
    LICENSE for more details. *)
 
-(*
-  http://www.nabble.com/Bluetooth-Direct-and-System-Commands-t2288117.html
-  http://mynxt.matthiaspaulscholz.eu/tools/index.html
-  http://news.lugnet.com/robotics/nxt/nxthacking/?n=14
+(* Implementation based on the "Bluetooth Developer Kit" available at
+   http://mindstorms.lego.com/Overview/NXTreme.aspx
+
+   See also:
+
+   http://www.nabble.com/Bluetooth-Direct-and-System-Commands-t2288117.html
+   http://mynxt.matthiaspaulscholz.eu/tools/index.html
+   http://news.lugnet.com/robotics/nxt/nxthacking/?n=14
 *)
 
 
@@ -603,6 +607,10 @@ let poll_command conn buf len =
 (* ---------------------------------------------------------------------- *)
 (** Direct commands *)
 
+(* More documentation about the system commands is provided in the
+   "Executable File and Bytecode Reference" downloadable from
+   http://mindstorms.lego.com/Overview/NXTreme.aspx.  *)
+
 (* Generic function to send a command of [n] bytes without an answer
    (but with the option of checking the return status).  [fill] is
    responsible for filling [pkg] according to the command.  Beware
@@ -641,8 +649,12 @@ struct
   let c = '\x02'
   let all = '\xFF'
 
-  type mode = [ `Motor_on | `Brake | `Regulated ]
-  type regulation = [ `Idle | `Motor_speed | `Motor_sync ]
+  type mode = [ `Motor_on | `Brake | `Regulate of regulation ]
+      (** [Regulate]: Enables active power regulation according to
+          value of REG_MODE (interactive motors only).  You must use
+          the REGULATED bit in conjunction with the REG_MODE property
+          => [regulation] was made a param of [Regulate] *)
+  and regulation = [ `Idle | `Motor_speed | `Motor_sync ]
   type run_state = [ `Idle | `Ramp_up | `Running | `Ramp_down ]
 
   type state = {
@@ -662,6 +674,7 @@ struct
   let int_of_mode = function
       `Motor_on -> 0x01 | `Brake -> 0x02 | `Regulated -> 0x04
 
+  (* If [ml = []], then motors are in COAST mode (0x00). *)
   let char_of_mode_list ml =
     let i = List.fold_left (fun i m -> i lor (int_of_mode m)) 0 ml in
     Char.unsafe_chr i
@@ -718,7 +731,7 @@ struct
       | `Custom
       | `Lowspeed
       | `Lowspeed_9v
-      | `No_of_sensor_types ]
+      | `Highspeed ]
   type sensor_mode =
       [ `Raw
       | `Boolean

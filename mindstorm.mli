@@ -18,7 +18,8 @@
 
 (** OCaml-mindstorm is a library that enables you to drive Lego
     mindsotrm NXT bricks from OCaml. Communication with the NXT brick is
-    done through bluetooth (and possibly eventually USB).  *)
+    done through bluetooth (and possibly eventually USB).
+*)
 
 type usb
 type bluetooth
@@ -274,22 +275,35 @@ sig
   val c : port (** The motor port C. *)
   val all : port (** Special value representing all 3 ports. *)
 
-  type mode = [ `Motor_on | `Brake | `Regulated ]
-      (** Motor mode.
-          - [`Motor_on]: Turn the motor on.
-          - [`Brake]: Use run/brake instead of run/float.
-          - [`Regulated]: Turns on regulation.  *)
-  type regulation = [ `Idle | `Motor_speed | `Motor_sync ]
+  type mode = [ `Motor_on | `Brake | `Regulate of regulation ]
+      (** Motor mode.  By default motors are in COAST mode: motors
+          connected to the specified port(s) will rotate freely.
+
+          - [`Motor_on]: Turn the motor on: enables pulse-width
+          modulation (PWM) power according to speed.
+
+          - [`Brake]: Use run/brake instead of run/float.  "Braking"
+          in this sense means that the output voltage is not allowed
+          to float between active PWM pulses.  Electronic braking
+          improves the accuracy of motor output, but uses slightly
+          more battery power.
+
+          - [`Regulated]: Turns on the chosen regulation.  *)
+  and regulation = [ `Idle | `Motor_speed | `Motor_sync ]
       (** Regulation mode.
           - [`Idle]: No regulation will be enabled.
-          - [`Motor_speed]: enable power control.
-          - [`Motor_sync]: enable synchronization (needs to be enabled
-                           on two motors). *)
+
+          - [`Motor_speed]: enable power control: auto adjust PWM duty
+          cycle if motor is affected by physical load.
+
+          - [`Motor_sync]: enable synchronization: attempt to keep
+          rotation in sync with another motor that has this set, also
+          involves turn ratio (needs to be enabled on two motors). *)
   type run_state = [ `Idle | `Ramp_up | `Running | `Ramp_down ]
 
   type state = {
     power : int; (** Power set point.  Range: -100 .. 100. *)
-    mode : mode list; (** [] means idle *)
+    mode : mode list;
     regulation : regulation;
     turn_ratio : int; (** Range: -100 .. 100. *)
     run_state : run_state;
@@ -313,26 +327,36 @@ sig
 end
 
 
-(** Input ports. *)
+(** Input ports.
+
+    The NXT brick also accepts the sensors for the previous version of
+    the mindstorm brick, called RCX, so several options refer to RCX.
+ *)
 module Sensor :
 sig
   type t
   type port = [ `S1 | `S2 | `S3 | `S4 ]
 
+  (** This property specifies the sensor type for a port.  The sensor
+      type primarily affects scaling factors used to calculate the
+      normalized sensor value [`Raw], but some values have other side
+      effects.  *)
   type sensor_type =
       [ `No_sensor
-      | `Switch	      (** Touch sensor *)
-      | `Temperature
-      | `Reflection
-      | `Angle
-      | `Light_active
-      | `Light_inactive
-      | `Sound_db     (** Includes sounds too high or too low for our ears *)
-      | `Sound_dba    (** Microphone, focuses on sounds within human hearing *)
+      | `Switch	      (** NXT or RCX touch sensor *)
+      | `Temperature  (** RCX temperature sensor *)
+      | `Reflection   (** RCX light sensor *)
+      | `Angle        (** RCX rotation sensor *)
+      | `Light_active (** NXT light sensor with floodlight enabled *)
+      | `Light_inactive (** NXT light sensor with floodlight disabled *)
+      | `Sound_db     (** NXT sound sensor; includes sounds too high
+                          or too low for our ears *)
+      | `Sound_dba    (** NXT sound sensor; focuses on sounds within
+                          human hearing *)
       | `Custom
-      | `Lowspeed
-      | `Lowspeed_9v  (** Ultrasonic *)
-      | `No_of_sensor_types ]
+      | `Lowspeed     (** I2C digital sensor *)
+      | `Lowspeed_9v  (** I2C digital sensor, 9V power (e.g. ultrasonic) *)
+      | `Highspeed ]
   type sensor_mode =
       [ `Raw
       | `Boolean
