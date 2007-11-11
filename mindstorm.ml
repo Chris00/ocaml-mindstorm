@@ -680,6 +680,7 @@ struct
     tach_limit : int;
   }
 
+  (* FIXME: Is a default state useful ? *)
   let state = {
     speed = 0;   mode = [];
     turn_ratio = 0;   run_state = `Idle;  tach_limit = 0 (* run forever *)
@@ -689,13 +690,12 @@ struct
   (* If [ml = []], then motors are in COAST mode (0x00). *)
   let chars_of_mode_list ml =
     let update (mode, reg) (m: mode) = match m with
-      | `Motor_on ->    mode lor 0x01, reg
-      | `Brake ->       mode lor 0x02, reg
-      | `Regulate r ->
-          let reg = match r with
-            | `Idle -> '\x00' | `Motor_speed -> '\x01' | `Motor_sync -> '\x02' in
-          mode lor 0x04, reg
-    in
+      | `Motor_on ->   mode lor 0x01, reg
+      | `Brake ->      mode lor 0x02, reg
+      | `Regulate r -> mode lor 0x04, (match r with
+                                       | `Idle -> '\x00'
+                                       | `Motor_speed -> '\x01'
+                                       | `Motor_sync -> '\x02')  in
     let mode, reg = List.fold_left update (0x00, '\x00') ml in
     (Char.unsafe_chr mode, reg)
 
@@ -714,10 +714,9 @@ struct
       pkg.[6] <- mode;
       pkg.[7] <- regulation;
       pkg.[8] <- Char.unsafe_chr(127 + st.turn_ratio);
-      pkg.[9] <-
-        (match st.run_state with
-        | `Idle -> '\x00' | `Ramp_up -> '\x10'
-        | `Running -> '\x20' | `Ramp_down -> '\x40');
+      pkg.[9] <- (match st.run_state with
+                  | `Idle -> '\x00' | `Ramp_up -> '\x10'
+                  | `Running -> '\x20' | `Ramp_down -> '\x40');
       copy_int32 st.tach_limit pkg 10;
     )
 
