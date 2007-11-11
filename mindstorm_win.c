@@ -32,16 +32,26 @@ CAMLprim value ocaml_mindstorm_connect(value vdest)
 {
   /* noalloc */
   HANDLE h;
+  DCB serial_params = {0};
 
   h = CreateFile(String_val(vdest), GENERIC_READ | GENERIC_WRITE,
-                 NULL, NULL, OPEN_EXISTING,
+                 0, NULL, OPEN_EXISTING,
                  FILE_FLAG_WRITE_THROUGH | FILE_FLAG_OVERLAPPED
                  | FILE_FLAG_NO_BUFFERING, NULL);
 
   /* Error functions available in windows unix.cm[x]a */
   if (h == INVALID_HANDLE_VALUE) {
     win32_maperr(GetLastError());
-    uerror("open", path);
+    uerror("Mindstorm.connect_bluetooth", vdest);
   }
+
+  serial_params.BaudRate = CBR_19200;
+  serial_params.ByteSize = 8;
+  serial_params.StopBits = ONESTOPBIT;
+  serial_params.Parity   = NOPARITY;
+  if(!SetCommState(hSerial, &serial_params)){
+    uerror("Mindstorm.connect_bluetooth", vdest);
+  }
+
   return win_alloc_handle(h);
 }
