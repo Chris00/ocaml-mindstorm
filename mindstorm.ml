@@ -793,11 +793,64 @@ struct
       | `Slope_mask
       | `Mode_mask ]
 
-  let set conn num sensor_type sensor_mode =
-    failwith "TBD"
+
+  let set ?(check_status=false) conn num sensor_type sensor_mode =
+    cmd conn ~check_status ~byte1:'\x05' ~n:5  begin fun pkg ->
+      pkg.[4] <- (match num with
+                  | `S1 -> '\000' | `S2 -> '\001'
+                  | `S3 -> '\002' | `S4 -> '\003');
+      pkg.[5] <- (match sensor_type with
+                  | `No_sensor -> '\x00'
+                  | `Switch -> '\x01'
+                  | `Temperature -> '\x02'
+                  | `Reflection -> '\x03'
+                  | `Angle -> '\x04'
+                  | `Light_active -> '\x05'
+                  | `Light_inactive -> '\x06'
+                  | `Sound_db -> '\x07'
+                  | `Sound_dba -> '\x08'
+                  | `Custom -> '\x09'
+                  | `Lowspeed -> '\x0A'
+                  | `Lowspeed_9v -> '\x0B'
+                  | `Highspeed -> '\x0C');
+      pkg.[6] <- (match sensor_mode with
+                  | `Raw -> '\x00'
+                  | `Boolean -> '\x20'
+                  | `Transition_cnt -> '\x40'
+                  | `Period_counter -> '\x60'
+                  | `Pct_full_scale -> '\x80'
+                  | `Celsius -> '\xA0'
+                  | `Fahrenheit -> '\xC0'
+                  | `Angle_steps -> '\xE0'
+                  | `Slope_mask -> '\x1F'
+                  | `Mode_mask -> '\xE0');
+    end
+
+  type data = {
+    sensor_type : sensor_type;
+    mode : mode;
+    valid : bool;
+    (* is_calibrated : bool; *)
+    raw : int;
+    normalized : int;
+    scaled : int;
+    (* calibrated: int *)
+  }
 
   let get conn num =
     failwith "TBD"
+
+
+  (** {3 Low speed} *)
+
+  let get_status conn num =
+    failwith "TBD"
+  let write conn num tx_data =
+    failwith "TBD"
+  let read conn num =
+    failwith "TBD"
+
+  (** Convenience *)
 
   let touch conn num =
     failwith "TBD"
@@ -811,15 +864,6 @@ struct
   let ultrasonic conn num =
     failwith "TBD"
 
-
-  (** {3 Low speed} *)
-
-  let get_status conn num =
-    failwith "TBD"
-  let write conn num tx_data =
-    failwith "TBD"
-  let read conn num =
-    failwith "TBD"
 end
 
 module Sound =
