@@ -33,6 +33,7 @@ CAMLprim value ocaml_mindstorm_connect(value vdest)
   /* noalloc */
   HANDLE h;
   DCB serial_params = {0};
+  COMMTIMEOUTS timeouts={0};
 
   h = CreateFile(String_val(vdest), GENERIC_READ | GENERIC_WRITE,
                  0, NULL, OPEN_EXISTING,
@@ -44,13 +45,26 @@ CAMLprim value ocaml_mindstorm_connect(value vdest)
     win32_maperr(GetLastError());
     uerror("Mindstorm.connect_bluetooth", vdest);
   }
-
+  /* Set port parameters  */
+  serial_params.DCBlength= sizeof(serial_params);
+  if (!GetCommState(h, &serial_params)) {
+    uerror("Mindstorm.connect_bluetooth (get port params)", vdest);
+  }
   serial_params.BaudRate = CBR_19200;
   serial_params.ByteSize = 8;
   serial_params.StopBits = ONESTOPBIT;
   serial_params.Parity   = NOPARITY;
   if(!SetCommState(hSerial, &serial_params)){
-    uerror("Mindstorm.connect_bluetooth", vdest);
+    uerror("Mindstorm.connect_bluetooth (set port params)", vdest);
+  }
+  /* Set timeouts (in milliseconds) */
+  timeouts.ReadIntervalTimeout        = 50;
+  timeouts.ReadTotalTimeoutConstant   = 50;
+  timeouts.ReadTotalTimeoutMultiplier = 10;
+  timeouts.WriteTotalTimeoutConstant  = 50;
+  timeouts.WriteTotalTimeoutMultiplier= 10;
+  if(!SetCommTimeouts(hSerial, &timeouts)){
+    uerror("Mindstorm.connect_bluetooth (set timeouts)", vdest);    
   }
 
   return win_alloc_handle(h);
