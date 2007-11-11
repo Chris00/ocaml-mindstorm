@@ -47,33 +47,36 @@ connections).
 
 {3 MacOS X}
 
-First you need to create a Bluetooth Serial Port To NXT:
+We follow here the instructions
+"{{:http://juju.org/articles/2006/10/22/bluetooth-serial-port-to-nxt-in-osx}Bluetooth
+Serial Port To NXT in OSX}":
 {ol 
-{- turn on the NXT and make sure bluetooth is turned on (you should 
-see a bluetooth icon at the top left corner);}
-{- click the bluetooth icon in the menubar, select "Setup bluetooth device";}
-{- when it asks for Select Device Type, choose "Any device";}
-{- select the NXT from the list, click continue;}
-{- the nxt will beep and ask for a passkey, choose 1234, press orange button;}
-{- click continue in osx, enter 1234;}
-{- the NXT will beep again, press orange button to use 1234 again;}
-{- the mac will complain "There were no supported services found on your 
-device"; don't worry about that and click continue and then click Quit;}
-{- in OSX click the bluetooth icon, select "Open bluetooth preferences", you 
-should see the THE_NAME_OF_THE_BRICK listed, select it, then click "Edit 
-Serial Ports";}
-{- it should show THE_OF_THE_BRICK-DevB-1, if not click add, use Port Name: 
-THE_NAME_OF_THE_BRICK-DevB-1, Device Service: Dev B, Port type: RS-232. 
-Click Apply;}}
-You're done! You should now have a /dev/tty.THE_NAME_OF_THE_BRICK-DevB-1.
-(reference : 
-{{:http://juju.org/articles/2006/10/22/bluetooth-serial-port-to-nxt-in-osx}
-Bluetooth Serial Port To NXT in OSX} )
+{- Turn on the NXT brick and make sure bluetooth is on (you should 
+   see a bluetooth icon at the top left corner);}
+{- Click the bluetooth icon in the menubar, select "Setup bluetooth device";}
+{- When it asks for Select Device Type, choose "Any device";}
+{- Select [NXT] (or whatever your brick is called but [NXT] is the factory
+    setting so we'll use that from now on) from the list and click continue;}
+{- The NXT will beep and ask for a passkey, choose 1234 (the default but
+   you can choose anything you like) and press the orange button;}
+{- Click continue in OSX, enter same passkey as above (1234 by default);}
+{- The NXT will beep again, press orange button to use 1234 again;}
+{- The mac will complain "There were no supported services found on your 
+   device"; don't worry about that and click continue and then click Quit;}
+{- In OSX click the bluetooth icon, select "Open bluetooth
+   preferences", you should see [NXT] (or whatever your brick is
+   called) listed, select it, then click "Edit Serial Ports";}
+{- It should show [NXT-DevB-1] (replace [NXT] by the name of your
+   brick), if not click add, use Port Name: [NXT-DevB-1], Device
+   Service: Dev B, Port type: RS-232.  Click Apply.}}
 
+You're done! You should now have a [/dev/tty.NXT-DevB-1].
 
-Now you can create a file descriptor with [Unix.openfile 
-"/dev/tty.THE_NAME_OF_THE_BRICK-DevB-1" [UnixO_RDWR] 0o660]. After that you 
-can use the NXT with [Unix.write] and [Unix.read].
+Now you can connect to the brick using [Mindstorm.connect_bluetooth
+"/dev/tty.NXT-DevB-1"].  Beware that if you rename the brick with
+{!Mindstorm.set_brick_name}, you will have to change the TTY device
+accordingly.
+
 
 {3 Windows}
 
