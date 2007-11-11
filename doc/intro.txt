@@ -47,9 +47,33 @@ connections).
 
 {3 MacOS X}
 
-See
-{{:http://juju.org/articles/2006/08/01/mindstorms-nxt-bluetooth-on-osx}
-Mindstorms NXT Bluetooth on OSX}.
+First you need to create a Bluetooth Serial Port To NXT:
+{ol 
+{- turn on the NXT and make sure bluetooth is turned on (you should 
+see a bluetooth icon at the top left corner);}
+{- click the bluetooth icon in the menubar, select "Setup bluetooth device";}
+{- when it asks for Select Device Type, choose "Any device";}
+{- select the NXT from the list, click continue;}
+{- the nxt will beep and ask for a passkey, choose 1234, press orange button;}
+{- click continue in osx, enter 1234;}
+{- the NXT will beep again, press orange button to use 1234 again;}
+{- the mac will complain "There were no supported services found on your 
+device"; don't worry about that and click continue and then click Quit;}
+{- in OSX click the bluetooth icon, select "Open bluetooth preferences", you 
+should see the THE_NAME_OF_THE_BRICK listed, select it, then click "Edit 
+Serial Ports";}
+{- it should show THE_OF_THE_BRICK-DevB-1, if not click add, use Port Name: 
+THE_NAME_OF_THE_BRICK-DevB-1, Device Service: Dev B, Port type: RS-232. 
+Click Apply;}}
+You're done! You should now have a /dev/tty.THE_NAME_OF_THE_BRICK-DevB-1.
+(reference : 
+{{:http://juju.org/articles/2006/10/22/bluetooth-serial-port-to-nxt-in-osx}
+Bluetooth Serial Port To NXT in OSX} )
+
+
+Now you can create a file descriptor with [Unix.openfile 
+"/dev/tty.THE_NAME_OF_THE_BRICK-DevB-1" [UnixO_RDWR] 0o660]. After that you 
+can use the NXT with [Unix.write] and [Unix.read].
 
 {3 Windows}
 
