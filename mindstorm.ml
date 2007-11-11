@@ -518,13 +518,13 @@ struct
     | None -> ()
     | Some i ->
         try
-          while true do
+          let has_more = ref true in
+          while !has_more do
             f i.it_fname i.it_flength;
-            next i;
+            (try next i with File_not_found -> has_more := false)
           done
-        with
-        | File_not_found -> ()
-        | e -> close i; raise e (* exn raised by [f] must close the iterator *)
+        with e ->
+          close i; raise e (* exn raised by [f] must close the iterator *)
 
   let fold conn ~f fpatt a0 =
     match (try Some(patt conn fpatt) with File_not_found -> None) with
@@ -532,14 +532,13 @@ struct
     | Some i ->
         let a = ref a0 in
         try
-          while true do
+          let has_more = ref true in
+          while !has_more do
             a := f i.it_fname i.it_flength !a;
-            next i;
+            (try next i with File_not_found -> has_more := false)
           done;
-          assert false
-        with
-        | File_not_found -> !a
-        | e -> close i; raise e
+          !a
+        with e -> close i; raise e
 
 end
 
