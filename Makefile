@@ -35,5 +35,6 @@ doc:
 include Makefile.ocaml
 
 clean::
+	$(RM) *.so
 	cd doc/; $(RM) *~ *.html *.css
 	cd tests/; $(MAKE) clean

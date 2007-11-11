@@ -279,48 +279,92 @@ sig
       (** Motor mode.  By default motors are in COAST mode: motors
           connected to the specified port(s) will rotate freely.
 
-          - [`Motor_on]: Turn the motor on: enables pulse-width
-          modulation (PWM) power according to speed.
-
-          - [`Brake]: Use run/brake instead of run/float.  "Braking"
-          in this sense means that the output voltage is not allowed
-          to float between active PWM pulses.  Electronic braking
-          improves the accuracy of motor output, but uses slightly
-          more battery power.
-
-          - [`Regulated]: Turns on the chosen regulation.  *)
+          - [`Motor_on]:
+          Turn the motor on: enables pulse-width modulation (PWM) power
+          according to speed.
+          - [`Brake]:
+          Use run/brake instead of run/float.  "Braking" in this sense means
+          that the output voltage is not allowed to float between
+          active PWM pulses.  Electronic braking improves the accuracy
+          of motor output, but uses slightly more battery power.
+          - [`Regulated]:
+          Turns on the chosen regulation.  *)
   and regulation = [ `Idle | `Motor_speed | `Motor_sync ]
       (** Regulation mode.
           - [`Idle]: No regulation will be enabled.
-
           - [`Motor_speed]: enable power control: auto adjust PWM duty
           cycle if motor is affected by physical load.
-
           - [`Motor_sync]: enable synchronization: attempt to keep
-          rotation in sync with another motor that has this set, also
-          involves turn ratio (needs to be enabled on two motors). *)
+          rotation in sync with another motor.  You typically use this
+          mode is to maintain a straight path for a vehicle robot
+          automatically.  You also can use this mode with the
+          {!Mindstorm.Motor.state} [turn_ratio] property to provide
+          proportional turning.  You must set [`Motor_sync] on at
+          least two motor ports to have the desired affect.  If it is
+          set on all three motor ports, only the first two (A and B)
+          are synchronized.  . *)
   type run_state = [ `Idle | `Ramp_up | `Running | `Ramp_down ]
+      (** Specifies an auxiliary "state" to use with {!Mindstorm.Motor.mode}.
+
+          - [`Running] enables power to any output device connected to
+          the specified port(s).
+
+          - [`Ramp_up] enables automatic ramping to a new speed
+          set-point that is greater than the current speed set-point.
+          When you use [`Ramp_up] in conjunction with appropriate
+          [tach_limit] and [speed] values, the NXT firmware attempts
+          to increase the actual power smoothly to the [speed]
+          set-point over the number of degrees specified by
+          [tach_limit].
+
+          - [`Ramp_down] enables automatic ramping to a new speed
+          set-point that is less than the current speed set-point.
+          When you use [`Ramp_down] in conjunction with appropriate
+          [tach_limit] and [speed] values, the NXT firmware attempts
+          to smoothly decrease the actual power to the [speed]
+          set-point over the number of degrees specified by
+          [tach_limit].  *)
 
   type state = {
-    power : int; (** Power set point.  Range: -100 .. 100. *)
-    mode : mode list;
-    regulation : regulation;
-    turn_ratio : int; (** Range: -100 .. 100. *)
+    speed : int; (** Power set-point.  Range: -100 .. 100. *)
+    mode : mode list; (** See {!Mindstorm.Motor.mode}. *)
+    turn_ratio : int; (** Range: -100 .. 100.
+                          See {!Mindstorm.Motor.regulation}. *)
     run_state : run_state;
-    tacho_limit : int; (** [0]: run forever. *)
+    tach_limit : int; (** Number of degrees to rotate; [0]: run forever.
+                          Range: 0 .. 4294967295 (unsigned 32 bits).
+                          See {!Mindstorm.Motor.run_state}. *)
   }
+      (** The absolute value of [speed] is used as a percentage of the
+          full power capabilities of the motor.  The sign of [speed]
+          specifies rotation direction.  You must set some other
+          properties appropriately for the [speed] set-point to have the
+          desired effect:
+          - [mode] must include [`Motor_on]; [`Brake] is optional.
+          - [run_state] must be set to a non-[`Idle] value.  *)
 
   val set : 'a conn -> ?check_status:bool -> port -> state -> unit
-    (** [set conn p st] *)
+    (** [set conn p st] sets the state of the motor connected to the
+        port [p] to [st]. *)
 
   val get : 'a conn -> port -> state * int * int * int
+    (** [get conn p] returns [(state, tach_count, block_tach_count,
+        rotation_count)] where
+        - [state] is the current state of the motors;
+        - [tach_count] is the number of counts since the last reset of the
+        motor counter (the reset occurs when a new [tach_limit] is set);
+        - [block_tach_count] is the current position relative to the
+        last programmed movement.
+        - [rotation_count] is the current position relative to the last
+        reset of the rotation sensor for motor [p].
+    *)
 
   val reset_pos : 'a conn -> ?check_status:bool -> ?relative:bool -> port -> unit
-    (** [reset_pos conn p] reset the position of the motor connected
+    (** [reset_pos conn p] resets the position of the motor connected
         to port [p].
 
         @param relative if [true], relative to the last movement,
-        otherwise absilute position.  Default: [false].
+        otherwise absolute position.  Default: [false].
 
         @param check_status whether to check the status returned by
         the brick.  Default: [false].  *)

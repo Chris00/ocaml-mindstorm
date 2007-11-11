@@ -642,13 +642,13 @@ let cmd conn ~check_status ~byte1 ~n fill =
 module Program =
 struct
   let start conn name =
-    () 
+    failwith "TBD"
 
   let stop conn =
-    () 
+    failwith "TBD"
 
   let name conn =
-    "" 
+    failwith "TBD"
 end
 
 
@@ -661,25 +661,29 @@ struct
   let all = '\xFF'
 
   type mode = [ `Motor_on | `Brake | `Regulate of regulation ]
-      (** [Regulate]: Enables active power regulation according to
-          value of REG_MODE (interactive motors only).  You must use
-          the REGULATED bit in conjunction with the REG_MODE property
-          => [regulation] was made a param of [Regulate] *)
+      (* [Regulate]: Enables active power regulation according to
+         value of REG_MODE (interactive motors only).  You must use
+         the REGULATED bit in conjunction with the REG_MODE property
+         => [regulation] was made a param of [Regulate] *)
   and regulation = [ `Idle | `Motor_speed | `Motor_sync ]
+      (* It is a bit strange one does not seem to be allowed to specify
+         [`Motor_speed] and [`Motor_sync] at the same time... but the
+         "NXT Executable File Specification" says clearly "Unlike the
+         MODE property, REG_MODE is not a bitfield. You can set only
+         one REG_MODE value at a time." *)
   type run_state = [ `Idle | `Ramp_up | `Running | `Ramp_down ]
 
   type state = {
     power : int;
     mode : mode list;
-    regulation : regulation;
     turn_ratio : int;
     run_state : run_state;
-    tacho_limit : int;
+    tach_limit : int;
   }
 
   let state = {
-    power = 0;   mode = [];   regulation = `Idle;
-    turn_ratio = 0;   run_state = `Idle;  tacho_limit = 0 (* run forever *)
+    power = 0;   mode = [];
+    turn_ratio = 0;   run_state = `Idle;  tach_limit = 0 (* run forever *)
   }
 
 
@@ -698,11 +702,11 @@ struct
 
   let set conn ?(check_status=false) port st =
     if st.power < -100 || st.power > 100 then
-      invalid_arg "Mindstorm.Motor.set: state.power not in [-100, 100]";
+      invalid_arg "Mindstorm.Motor.set: state.power not in -100 .. 100";
     if st.turn_ratio < -100 || st.turn_ratio > 100 then
-      invalid_arg "Mindstorm.Motor.set: state.turn_ratio not in [-100, 100]";
-    if st.tacho_limit < 0 then
-      invalid_arg "Mindstorm.Motor.set: state.tacho_limit must be >= 0";
+      invalid_arg "Mindstorm.Motor.set: state.turn_ratio not in -100 .. 100";
+    if st.tach_limit < 0 then
+      invalid_arg "Mindstorm.Motor.set: state.tach_limit must be >= 0";
     (* SETOUTPUTSTATE *)
     cmd conn ~check_status ~byte1:'\x04' ~n:12 (fun pkg ->
       pkg.[4] <- port;
@@ -715,11 +719,42 @@ struct
         (match st.run_state with
         | `Idle -> '\x00' | `Ramp_up -> '\x10'
         | `Running -> '\x20' | `Ramp_down -> '\x40');
-      copy_int32 st.tacho_limit pkg 10;
+      copy_int32 st.tach_limit pkg 10;
     )
 
-  let get motor =
-    assert false
+  let get conn motor =
+    let pkg = "\003\000\x00\x06 " in
+    pkg.[4] <- motor;
+    conn.send conn.fd pkg;
+    let ans = conn.recv conn.fd 25 in
+    let mode =
+      let m = Char.code ans.[5] in
+      let l = if m land 0x04 = 0 then [] else (
+        match ans.[5] with
+        | '\x00' -> [`Regulate `Idle]
+        | '\x01' -> [`Regulate `Motor_speed]
+        | '\x02' -> [`Regulate `Motor_sync]
+        | _ -> [`Regulate `Idle]
+      ) in
+      let l = if m land 0x02 = 0 then l else `Brake :: l in
+      if m land 0x01 = 0 then l else `Motor_on :: l in
+    let st =
+      { power = Char.code ans.[4] - 127;
+        mode = mode;
+        turn_ratio = Char.code ans.[7] - 127;
+        run_state = (match ans.[8] with
+                     | '\x00' -> `Idle | '\x10' -> `Ramp_up
+                     | '\x20' -> `Running | '\x40' -> `Ramp_down
+                     | _ -> `Idle);
+        tach_limit = int32 ans 9;
+      }
+    and tach_count = int32 ans 13
+    and block_tach_count = int32 ans 17
+    and rotation_count = int32 ans 21
+      (* The Exec. File Spec. says ROTATION_COUNT Legal value range is
+         [-2147483648, 2147483647] so all 32 bits may be used. *) in
+    (st, tach_count, block_tach_count, rotation_count)
+
 
   let reset_pos conn ?(check_status=false) ?(relative=false) port =
     (* RESETMOTORPOSITION *)
@@ -782,11 +817,11 @@ struct
   (** {3 Low speed} *)
 
   let get_status conn num =
-    assert false
+    failwith "TBD"
   let write conn num tx_data =
-    ()
+    failwith "TBD"
   let read conn num =
-    "" 
+    failwith "TBD"
 end
 
 module Sound =
@@ -802,7 +837,7 @@ struct
 
   let play_tone ?(check_status=false) conn freq duration =
     if freq < 200 || freq > 14000 then
-      invalid_arg "Mindstorm.Sound.play_tone: frequency not in [200, 14000]";
+      invalid_arg "Mindstorm.Sound.play_tone: frequency not in 200 .. 14000";
     cmd conn ~check_status ~byte1:'\x03' ~n:6 (fun pkg ->
       copy_int16 freq pkg 4;
       copy_int16 duration pkg 6
@@ -812,10 +847,10 @@ end
 module Message =
 struct
   let write conn mailbox msg =
-    ()
+    failwith "TBD"
 
   let read conn ?(remove=false) mailbox =
-    "" 
+    failwith "TBD"
 end
 
 
