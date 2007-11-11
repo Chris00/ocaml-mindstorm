@@ -381,13 +381,15 @@ module Sensor :
 sig
   type t
   type port = [ `S1 | `S2 | `S3 | `S4 ]
+      (** The four sensor ports, labeled 1 to 4 on the brick.  It is
+          recommended you give meaningful names to these ports through
+          let bindings. *)
 
-  (** This property specifies the sensor type for a port.  The sensor
-      type primarily affects scaling factors used to calculate the
-      normalized sensor value [`Raw], but some values have other side
-      effects.  *)
+  (** Sensor type for a port.  The sensor type primarily affects
+      scaling factors used to calculate the normalized sensor value
+      [`Raw], but some values have other side effects.  *)
   type sensor_type =
-      [ `No_sensor
+      [ `No_sensor    (** No sensor configured *)
       | `Switch	      (** NXT or RCX touch sensor *)
       | `Temperature  (** RCX temperature sensor *)
       | `Reflection   (** RCX light sensor *)
@@ -402,37 +404,77 @@ sig
       | `Lowspeed     (** I2C digital sensor *)
       | `Lowspeed_9v  (** I2C digital sensor, 9V power (e.g. ultrasonic) *)
       | `Highspeed ]
-  type sensor_mode =
-      [ `Raw
-      | `Boolean
-      | `Transition_cnt
-      | `Period_counter
-      | `Pct_full_scale
-      | `Celsius
-      | `Fahrenheit
-      | `Angle_steps
+  type mode =
+      [ `Raw          (** Report scaled value equal to raw value. *)
+      | `Boolean (** Report scaled value as 1 (TRUE) or 0 (FALSE).
+                     The firmware uses inverse Boolean logic to match
+                     the physical characteristics of NXT sensors.
+                     Readings are FALSE if raw value exceeds 55% of
+                     total range; readings are TRUE if raw value is
+                     less than 45% of total range.  *)
+      | `Transition_cnt (** Report scaled value as number of
+                            transitions between TRUE and FALSE.  *)
+      | `Period_counter (** Report scaled value as number of
+                            transitions from FALSE to TRUE, then back
+                            to FALSE.  *)
+      | `Pct_full_scale (** Report scaled value as percentage of full
+                            scale reading for configured sensor type.  *)
+      | `Celsius    (** Scale temperature reading to degrees Celsius. *)
+      | `Fahrenheit (** Scale temperature reading to degrees Fahrenheit. *)
+      | `Angle_steps (** Report scaled value as count of ticks on
+                         RCX-style rotation sensor. *)
       | `Slope_mask
       | `Mode_mask ]
 
-  val set : 'a conn -> port -> sensor_type -> sensor_mode -> t
+  (** Data read from sensors. *)
+  type data = {
+    sensor_type : sensor_type;
+    mode : mode;
+    valid : bool; (** [true] if new data value should be seen as valid *)
+    raw : int; (** Raw A/D value.  Device dependent.  Range: 0 .. 1023 *)
+    normalized : int; (** Normalized A/D value.  Range: 0 .. 1023 *)
+    scaled : int;
+    (** Scaled value.  Its range depend on the {!Mindstorm.Sensor.mode}
+        chosen:
+        - [`Raw]: 0 .. 1023
+        - [`Boolean]: 0 or 1
+        - [`Transition_cnt]: 0 .. 65535
+        - [`Period_counter]: 0 .. 65535
+        - [`Pct_full_scale]: 0 .. 100
+        - [`Celsius]: -200 .. 700 (10th of degree Celsius)
+        - [`Fahrenheit]: -400 .. 1580 (10th of degree Fahrenheit)
+        - [`Angle_steps]: 0 .. 65535
+    *)
+  }
 
-  val get : 'a conn -> port -> sensor_type * sensor_mode
+  val set : ?check_status:bool -> 'a conn -> port -> sensor_type -> mode -> unit
+    (** [set conn p ty m] set the sensor connected to port [p] to type
+        [ty] and mode [m].
 
-  val ultrasonic : 'a conn -> port -> t
+        @param check_status whether to check the status returned by
+        the brick.  Default: [false].  *)
 
-(* convenience functions for touch, ultrasonic, sound, light *)
+  val get : 'a conn -> port ->  data
+    (** [get conn p] returns the data read on port [p]. *)
 
   (** {4 Low speed} *)
   (** Commands dealing with the I2C bus available on every sensor.
       (The port 4 may also be high speed.) *)
 
   val get_status : 'a conn -> port -> int
+
   val write : 'a conn -> port -> string -> unit (* Rx??? *)
     (** Write data to lowspeed I2C port (e.g. for talking to the
         ultrasonic sensor).  *)
   val read : 'a conn -> port -> string
     (** Read data from from lowspeed I2C port (e.g. for receiving data
         from the ultrasonic sensor).  *)
+
+  (** {4 Convenience} *)
+
+  val ultrasonic : 'a conn -> port -> t
+
+(* convenience functions for touch, ultrasonic, sound, light *)
 end
 
 
@@ -463,6 +505,6 @@ sig
   val read : 'a conn -> ?remove:bool -> int -> string
     (** [read conn box] returns the message from the inbox [box] on
         the NXT.
-        @param if true, clears the message from the remote inbox.
+        @param remove if true, clears the message from the remote inbox.
         Default: [false]. *)
 end
