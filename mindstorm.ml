@@ -247,19 +247,30 @@ let connect_usb socket =
 
 (** Bluetooth ---------- *)
 
-external socket_bluetooth : string -> Unix.file_descr
-  = "ocaml_mindstorm_connect"
-
 let bt_send fd pkg = ignore(Unix.write fd pkg 0 (String.length pkg))
 
 let bt_recv fd n =
   let size = really_read fd 2 in
   assert(int16 size 0 = n);
   usb_recv fd n
+;;
+
+IFDEF MACOSX THEN
+(* Mac OSX *)
+let connect_bluetooth tty =
+  let fd = Unix.openfile tty [Unix.O_RDWR] 0o660 in
+  { fd = fd;  send = bt_send;  recv = bt_recv }
+
+ELSE
+(* Windows and Unix *)
+external socket_bluetooth : string -> Unix.file_descr
+  = "ocaml_mindstorm_connect"
 
 let connect_bluetooth addr =
   let fd = socket_bluetooth addr in
   { fd = fd;  send = bt_send;  recv = bt_recv }
+
+ENDIF
 
 
 (* ---------------------------------------------------------------------- *)
@@ -613,8 +624,8 @@ let poll_command conn buf len =
 
 (* Generic function to send a command of [n] bytes without an answer
    (but with the option of checking the return status).  [fill] is
-   responsible for filling [pkg] according to the command.  Beware
-   that because of the 2 BT bytes, all indexes are shifted by +2
+   responsible for filling [pkg] according to the command.  BEWARE
+   that because of the 2 BT bytes, all indexes must be shifted by +2
    w.r.t. the spec. *)
 let cmd conn ~check_status ~byte1 ~n fill =
   assert(n <= 0xFF); (* all fixed length commands *)
@@ -671,13 +682,19 @@ struct
     turn_ratio = 0;   run_state = `Idle;  tacho_limit = 0 (* run forever *)
   }
 
-  let int_of_mode = function
-      `Motor_on -> 0x01 | `Brake -> 0x02 | `Regulated -> 0x04
 
   (* If [ml = []], then motors are in COAST mode (0x00). *)
-  let char_of_mode_list ml =
-    let i = List.fold_left (fun i m -> i lor (int_of_mode m)) 0 ml in
-    Char.unsafe_chr i
+  let chars_of_mode_list ml =
+    let update (mode, reg) (m: mode) = match m with
+      | `Motor_on ->    mode lor 0x01, reg
+      | `Brake ->       mode lor 0x02, reg
+      | `Regulate r ->
+          let reg = match r with
+            | `Idle -> '\x00' | `Motor_speed -> '\x01' | `Motor_sync -> '\x02' in
+          mode lor 0x04, reg
+    in
+    let mode, reg = List.fold_left update (0x00, '\x00') ml in
+    (Char.unsafe_chr mode, reg)
 
   let set conn ?(check_status=false) port st =
     if st.power < -100 || st.power > 100 then
@@ -690,10 +707,9 @@ struct
     cmd conn ~check_status ~byte1:'\x04' ~n:12 (fun pkg ->
       pkg.[4] <- port;
       pkg.[5] <- Char.unsafe_chr(127 + st.power);
-      pkg.[6] <- char_of_mode_list st.mode;
-      pkg.[7] <-
-        (match st.regulation with
-        | `Idle -> '\x00' | `Motor_speed -> '\x01' | `Motor_sync -> '\x02');
+      let mode, regulation = chars_of_mode_list st.mode in
+      pkg.[6] <- mode;
+      pkg.[7] <- regulation;
       pkg.[8] <- Char.unsafe_chr(127 + st.turn_ratio);
       pkg.[9] <-
         (match st.run_state with
@@ -731,7 +747,7 @@ struct
       | `Custom
       | `Lowspeed
       | `Lowspeed_9v
-      | `Highspeed ]
+      | `Highspeed ] (* aka NO_OF_SENSOR_TYPES *)
   type sensor_mode =
       [ `Raw
       | `Boolean
@@ -787,7 +803,7 @@ struct
   let play_tone ?(check_status=false) conn freq duration =
     if freq < 200 || freq > 14000 then
       invalid_arg "Mindstorm.Sound.play_tone: frequency not in [200, 14000]";
-    cmd conn ~check_status ~byte1:'\x03' ~n:7 (fun pkg ->
+    cmd conn ~check_status ~byte1:'\x03' ~n:6 (fun pkg ->
       copy_int16 freq pkg 4;
       copy_int16 duration pkg 6
     )
