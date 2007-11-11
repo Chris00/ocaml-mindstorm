@@ -333,7 +333,7 @@ sig
     run_state : run_state;
     tach_limit : int; (** Number of degrees to rotate; [0]: run forever.
                           Range: 0 .. 4294967295 (unsigned 32 bits).
-                          See {!Mindstorm.Motor.run_state}. *)
+                          See also {!Mindstorm.Motor.run_state}. *)
   }
       (** The absolute value of [speed] is used as a percentage of the
           full power capabilities of the motor.  The sign of [speed]
@@ -342,6 +342,7 @@ sig
           desired effect:
           - [mode] must include [`Motor_on]; [`Brake] is optional.
           - [run_state] must be set to a non-[`Idle] value.  *)
+
 
   val set : 'a conn -> ?check_status:bool -> port -> state -> unit
     (** [set conn p st] sets the state of the motor connected to the

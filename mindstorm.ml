@@ -255,8 +255,8 @@ let bt_recv fd n =
   usb_recv fd n
 ;;
 
-IFDEF MACOSX THEN
-(* Mac OSX *)
+IFDEF MACOS THEN
+(* Mac OS X *)
 let connect_bluetooth tty =
   let fd = Unix.openfile tty [Unix.O_RDWR] 0o660 in
   { fd = fd;  send = bt_send;  recv = bt_recv }
@@ -674,7 +674,7 @@ struct
   type run_state = [ `Idle | `Ramp_up | `Running | `Ramp_down ]
 
   type state = {
-    power : int;
+    speed : int;
     mode : mode list;
     turn_ratio : int;
     run_state : run_state;
@@ -682,7 +682,7 @@ struct
   }
 
   let state = {
-    power = 0;   mode = [];
+    speed = 0;   mode = [];
     turn_ratio = 0;   run_state = `Idle;  tach_limit = 0 (* run forever *)
   }
 
@@ -701,8 +701,8 @@ struct
     (Char.unsafe_chr mode, reg)
 
   let set conn ?(check_status=false) port st =
-    if st.power < -100 || st.power > 100 then
-      invalid_arg "Mindstorm.Motor.set: state.power not in -100 .. 100";
+    if st.speed < -100 || st.speed > 100 then
+      invalid_arg "Mindstorm.Motor.set: state.speed not in -100 .. 100";
     if st.turn_ratio < -100 || st.turn_ratio > 100 then
       invalid_arg "Mindstorm.Motor.set: state.turn_ratio not in -100 .. 100";
     if st.tach_limit < 0 then
@@ -710,7 +710,7 @@ struct
     (* SETOUTPUTSTATE *)
     cmd conn ~check_status ~byte1:'\x04' ~n:12 (fun pkg ->
       pkg.[4] <- port;
-      pkg.[5] <- Char.unsafe_chr(127 + st.power);
+      pkg.[5] <- Char.unsafe_chr(127 + st.speed);
       let mode, regulation = chars_of_mode_list st.mode in
       pkg.[6] <- mode;
       pkg.[7] <- regulation;
@@ -739,7 +739,7 @@ struct
       let l = if m land 0x02 = 0 then l else `Brake :: l in
       if m land 0x01 = 0 then l else `Motor_on :: l in
     let st =
-      { power = Char.code ans.[4] - 127;
+      { speed = Char.code ans.[4] - 127;
         mode = mode;
         turn_ratio = Char.code ans.[7] - 127;
         run_state = (match ans.[8] with
