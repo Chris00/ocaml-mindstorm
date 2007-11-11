@@ -1,0 +1,20 @@
+
+
+Compilation under Unix
+----------------------
+
+You will need the package "libbluetooth2-dev" (under Debian) or
+equivalent.
+
+
+Compilation under Windows
+-------------------------
+
+make -f Makefile.win
+
+
+Compilation under Mac OS X
+--------------------------
+
+
+make -f Makefile.macos

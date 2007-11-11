@@ -1,13 +1,16 @@
+# Makefile for Unix
 INTERFACES = mindstorm.mli
 DOC_DIR = doc
 
+PP = -pp "camlp4o pa_macro.cmo"
 CAML_H = $(shell ocamlc -where)
+CFLAGS= -Wall -fPIC
 OCAMLC_FLAGS = -g
 
 STUBS=mindstorm_unix.c
 
 mindstorm.cma: $(STUBS:.c=.o) mindstorm.cmo
-	$(OCAMLMKLIB) -o mindstorm $^ -lbluetooth
+	$(OCAMLMKLIB) -o mindstorm  $^ -lbluetooth
 # 	$(OCAMLC) -a -o $@ $(OCAMLC_FLAGS) -custom unix.cma \
 # 	  -I $(CAML_H) -cclib -lbluetooth unix.cma $^
 
