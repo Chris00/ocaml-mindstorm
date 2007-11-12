@@ -640,14 +640,18 @@ let cmd conn ~check_status ~byte1 ~n fill =
 
 module Program =
 struct
-  let start conn name =
-    failwith "TBD"
+  let start ?(check_status=false) conn name =
+    cmd conn ~check_status ~byte1:'\x00' ~n:22  begin fun pkg ->
+      blit_filename "Mindstorm.Program.start" name pkg 4
+    end
 
-  let stop conn =
-    failwith "TBD"
+  let stop ?(check_status=false) conn =
+    cmd conn ~check_status ~byte1:'\x01' ~n:2 (fun _ -> ())
 
   let name conn =
-    failwith "TBD"
+    conn.send conn.fd "\002\000\x00\x11"; (* GETCURRENTPROGRAMNAME *)
+    let ans = conn.recv conn.fd 23 in
+    get_filename ans 3
 end
 
 
