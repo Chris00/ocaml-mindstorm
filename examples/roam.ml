@@ -1,18 +1,38 @@
 open Printf
-module S = Mindstorm.Sensor
-module M = Mindstorm.Motor
+module Sensor = Mindstorm.Sensor
+module Motor = Mindstorm.Motor
 
-let bt = "00:16:53:03:A5:32"
+let bt =
+  if Array.length Sys.argv < 2 then (
+    printf "%s <bluetooth addr>\n" Sys.argv.(0);
+    exit 1;
+  )
+  else Sys.argv.(1)
+
+
+let switch = `S1
+let ultrasonic = `S4
+let left = Motor.a
+and right = Motor.b
+
+let speed s =
+  { Motor.speed = s;  mode = [`Motor_on];
+    turn_ratio = 0; run_state = `Running; tach_limit = 0  }
 
 let () =
   let conn = Mindstorm.connect_bluetooth bt in
-  let switch = S.set comm `In1 `Switch `Raw
-  and ultrasonic = S.set comm `In4 `Lowspeed_9v `Raw in
-  let left = M.make conn `A and right = M.make conn `C in
-  while S.get switch > 500 do
-    let dist = S.get ultrasonic (* raw *) in
-    let dist = min 50 (max 0 dist) in
-    M.set left { M.state with M.power = dist };
-    M.set right { M.state with M.power = 2 * dist - 50 };
-  done;
+  Sensor.set conn switch `Switch `Raw;
+  Sensor.set conn ultrasonic `Lowspeed_9v `Raw;
+  Motor.set conn left ;
+  let rec run () =
+    let sw = Sensor.get conn switch in
+    printf "Switch = %i\n%!" sw.Sensor.raw;
+    if sw.Sensor.normalized > 500 then begin
+      let dist = (Sensor.get conn ultrasonic).Sensor.raw in
+      let dist = min 50 (max 0 dist) in
+      Motor.set left (speed dist);
+      Motor.set right (speed (2 * dist - 50));
+(*       Unix.sleep 1; *)
+    end in
+  run ();
   Mindstorm.close conn
