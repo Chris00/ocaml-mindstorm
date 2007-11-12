@@ -10,25 +10,57 @@ let bt =
 
 let wait_for_ENTER () = ignore(read_line())
 
+let repeat_till_ENTER f =
+  let params = Unix.tcgetattr Unix.stdin in
+  Unix.tcsetattr Unix.stdin Unix.TCSAFLUSH
+    { params with Unix.c_icanon = false; c_echo = false;
+        c_vmin = 0; c_vtime = 0; };
+  (* FIXME: We should also catch signals *)
+  let no_key_pressed() = Unix.read Unix.stdin " " 0 1 = 0 in
+  try
+    let i = ref 0 in
+    while no_key_pressed() do f !i; incr i done;
+    (* restore params *)
+    Unix.tcsetattr Unix.stdin Unix.TCSAFLUSH params
+  with e ->
+    Unix.tcsetattr Unix.stdin Unix.TCSAFLUSH params;
+    raise e
+
 
 let () =
-  printf "Please connect sensors as follow and press a ENTER:\n";
+  printf "Please connect sensors as follow:\n";
   printf "- port 1: touch sensor\n";
-  printf "- port 2: sound sensor\n";
-  printf "- port 3: light sensor\n";
+  printf "- port 2: light sensor\n";
+  printf "- port 3: sound sensor\n";
   printf "- port 4: ultrasonic sensor\n";
+  printf "Press ENTER. ";
   wait_for_ENTER();
   let conn = Mindstorm.connect_bluetooth bt in
+
+  let test_sensor name port =
+    printf "- %s sensor; when finished press ENTER.%!\n" name;
+    repeat_till_ENTER begin fun i ->
+      let data = Sensor.get conn port in
+      printf "%4i:\t raw = %4i   normalized = %4i   scaled = %-5i\r%!"
+        i data.Sensor.raw data.Sensor.normalized data.Sensor.scaled;
+    end;
+    printf "\n" in
+
   Sensor.set conn `S1 `Switch `Bool;
+  test_sensor "Touch (bool)" `S1;
+  (*   Sensor.set conn `S1 `Switch `Transition_cnt; *)
+  Sensor.set conn `S1 `Switch `Period_counter;
+  test_sensor "Touch (period)" `S1;
 
-  printf "- Press the touch sensor, then press ENTER.%!\n";
-  wait_for_ENTER();
-  let data = Sensor.get conn `S1 in
-  printf "  Touch: raw = %-4i,\tnormalized = %i,\t scaled = %i\n"
-    data.Sensor.raw data.Sensor.normalized data.Sensor.scaled;
+  Sensor.set conn `S2 `Light_active `Pct_full_scale;
+  (*   Sensor.set conn `S2 `Switch `Light_inactive; *)
+  test_sensor "Light" `S2;
 
-  (*   and sound = Mindstorm.Sensor.sound conn `In2 *)
-  (*   and light = Mindstorm.Sensor.light conn `In3 *)
-  (*   and ultrasonic = Mindstorm.Sensor.ultrasonic conn `In4 in *)
+  Sensor.set conn `S3 `Sound_db `Pct_full_scale;
+  (*   Sensor.set conn `S3 `Sound_dba `Pct_full_scale; *)
+  test_sensor "Sound" `S3;
+
+  Sensor.set conn `S4 `Lowspeed_9v `Pct_full_scale;
+  test_sensor "Ultrasonic" `S4;
 
   Mindstorm.close conn

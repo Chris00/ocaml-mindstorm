@@ -143,7 +143,7 @@ val open_out : 'a conn -> out_flag -> string -> out_channel
       The channel must be closed with {!Mindstorm.close_in}.  Close it
       as soon as possible as channels are a scarce resource.
 
-      If the the file exists, [Error(File_exists,...,...)] is raised.
+      If the the file exists, [Error(File_exists,_,_)] is raised.
 
       @param linear Default: [false]. *)
 
