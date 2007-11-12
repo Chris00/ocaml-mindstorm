@@ -900,15 +900,6 @@ struct
 
   (** Convenience *)
 
-  let touch conn num =
-    failwith "TBD"
-
-  let sound conn num =
-    failwith "TBD"
-
-  let light conn num =
-    failwith "TBD"
-
   let ultrasonic conn num =
     failwith "TBD"
 
