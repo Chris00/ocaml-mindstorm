@@ -699,7 +699,7 @@ struct
     let mode, reg = List.fold_left update (0x00, '\x00') ml in
     (Char.unsafe_chr mode, reg)
 
-  let set conn ?(check_status=false) port st =
+  let set ?(check_status=false) conn port st =
     if st.speed < -100 || st.speed > 100 then
       invalid_arg "Mindstorm.Motor.set: state.speed not in -100 .. 100";
     if st.turn_ratio < -100 || st.turn_ratio > 100 then
@@ -754,7 +754,7 @@ struct
     (st, tach_count, block_tach_count, rotation_count)
 
 
-  let reset_pos conn ?(check_status=false) ?(relative=false) port =
+  let reset_pos ?(check_status=false) conn ?(relative=false) port =
     (* RESETMOTORPOSITION *)
     cmd conn ~check_status ~byte1:'\x0A' ~n:4 (fun pkg ->
       pkg.[4] <- port;
@@ -781,9 +781,9 @@ struct
       | `Lowspeed
       | `Lowspeed_9v
       | `Highspeed ] (* aka NO_OF_SENSOR_TYPES *)
-  type sensor_mode =
+  type mode =
       [ `Raw
-      | `Boolean
+      | `Bool
       | `Transition_cnt
       | `Period_counter
       | `Pct_full_scale
@@ -791,39 +791,43 @@ struct
       | `Fahrenheit
       | `Angle_steps
       | `Slope_mask
-      | `Mode_mask ]
+      (*| `Mode_mask*)
+      ]
 
 
-  let set ?(check_status=false) conn num sensor_type sensor_mode =
+  let char_of_port = function
+    | `S1 -> '\000' | `S2 -> '\001'
+    | `S3 -> '\002' | `S4 -> '\003'
+
+  let set ?(check_status=false) conn port sensor_type sensor_mode =
     cmd conn ~check_status ~byte1:'\x05' ~n:5  begin fun pkg ->
-      pkg.[4] <- (match num with
-                  | `S1 -> '\000' | `S2 -> '\001'
-                  | `S3 -> '\002' | `S4 -> '\003');
+      pkg.[4] <- char_of_port port;
       pkg.[5] <- (match sensor_type with
-                  | `No_sensor -> '\x00'
-                  | `Switch -> '\x01'
+                  | `No_sensor	 -> '\x00'
+                  | `Switch	 -> '\x01'
                   | `Temperature -> '\x02'
-                  | `Reflection -> '\x03'
-                  | `Angle -> '\x04'
+                  | `Reflection	 -> '\x03'
+                  | `Angle	 -> '\x04'
                   | `Light_active -> '\x05'
                   | `Light_inactive -> '\x06'
-                  | `Sound_db -> '\x07'
-                  | `Sound_dba -> '\x08'
-                  | `Custom -> '\x09'
-                  | `Lowspeed -> '\x0A'
+                  | `Sound_db	 -> '\x07'
+                  | `Sound_dba	 -> '\x08'
+                  | `Custom	 -> '\x09'
+                  | `Lowspeed	 -> '\x0A'
                   | `Lowspeed_9v -> '\x0B'
-                  | `Highspeed -> '\x0C');
+                  | `Highspeed	 -> '\x0C');
       pkg.[6] <- (match sensor_mode with
-                  | `Raw -> '\x00'
-                  | `Boolean -> '\x20'
+                  | `Raw	 -> '\x00'
+                  | `Bool	 -> '\x20'
                   | `Transition_cnt -> '\x40'
                   | `Period_counter -> '\x60'
                   | `Pct_full_scale -> '\x80'
-                  | `Celsius -> '\xA0'
-                  | `Fahrenheit -> '\xC0'
+                  | `Celsius	 -> '\xA0'
+                  | `Fahrenheit	 -> '\xC0'
                   | `Angle_steps -> '\xE0'
-                  | `Slope_mask -> '\x1F'
-                  | `Mode_mask -> '\xE0');
+                  | `Slope_mask	 -> '\x1F'
+                  | `Mode_mask	 -> '\xE0' (* = `Angle_steps !! *)
+                 );
     end
 
   type data = {
@@ -837,9 +841,49 @@ struct
     (* calibrated: int *)
   }
 
-  let get conn num =
-    failwith "TBD"
+  let get conn port =
+    let pkg = "\003\000\x00\x07 " in
+    pkg.[4] <- char_of_port port;
+    conn.send conn.fd pkg;
+    let ans = conn.recv conn.fd 16 in
+    { valid = ans.[4] <> '\x00';
+      sensor_type = (match ans.[6] with
+                     | '\x00' -> `No_sensor
+                     | '\x01' -> `Switch
+                     | '\x02' -> `Temperature
+                     | '\x03' -> `Reflection
+                     | '\x04' -> `Angle
+                     | '\x05' -> `Light_active
+                     | '\x06' -> `Light_inactive
+                     | '\x07' -> `Sound_db
+                     | '\x08' -> `Sound_dba
+                     | '\x09' -> `Custom
+                     | '\x0A' -> `Lowspeed
+                     | '\x0B' -> `Lowspeed_9v
+                     | '\x0C' -> `Highspeed
+                     | _ -> raise(Error Insane));
+        mode = (match ans.[7] with
+                | '\x00' -> `Raw
+                | '\x20' -> `Bool
+                | '\x40' -> `Transition_cnt
+                | '\x60' -> `Period_counter
+                | '\x80' -> `Pct_full_scale
+                | '\xA0' -> `Celsius
+                | '\xC0' -> `Fahrenheit
+                | '\xE0' -> `Angle_steps
+                | '\x1F' -> `Slope_mask
+                (*| '\xE0' -> `Mode_mask*)
+                | _ -> raise(Error Insane));
+      raw = int16 ans 8;
+      normalized = int16 ans 10;
+      scaled = int16 ans 12;
+    }
 
+  let reset_scaled ?(check_status=false) conn port =
+    (* RESETINPUTSCALEDVALUE *)
+    cmd conn ~check_status ~byte1:'\x08' ~n:3  begin fun pkg ->
+      pkg.[4] <- char_of_port port
+    end
 
   (** {3 Low speed} *)
 

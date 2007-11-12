@@ -344,7 +344,7 @@ sig
           - [run_state] must be set to a non-[`Idle] value.  *)
 
 
-  val set : 'a conn -> ?check_status:bool -> port -> state -> unit
+  val set : ?check_status:bool -> 'a conn -> port -> state -> unit
     (** [set conn p st] sets the state of the motor connected to the
         port [p] to [st]. *)
 
@@ -360,7 +360,7 @@ sig
         reset of the rotation sensor for motor [p].
     *)
 
-  val reset_pos : 'a conn -> ?check_status:bool -> ?relative:bool -> port -> unit
+  val reset_pos : ?check_status:bool -> 'a conn -> ?relative:bool -> port -> unit
     (** [reset_pos conn p] resets the position of the motor connected
         to port [p].
 
@@ -382,8 +382,8 @@ sig
   type t
   type port = [ `S1 | `S2 | `S3 | `S4 ]
       (** The four sensor ports, labeled 1 to 4 on the brick.  It is
-          recommended you give meaningful names to these ports through
-          let bindings. *)
+          recommended you give meaningful names to values of type
+          [port] through let bindings.  *)
 
   (** Sensor type for a port.  The sensor type primarily affects
       scaling factors used to calculate the normalized sensor value
@@ -406,12 +406,12 @@ sig
       | `Highspeed ]
   type mode =
       [ `Raw          (** Report scaled value equal to raw value. *)
-      | `Boolean (** Report scaled value as 1 (TRUE) or 0 (FALSE).
-                     The firmware uses inverse Boolean logic to match
-                     the physical characteristics of NXT sensors.
-                     Readings are FALSE if raw value exceeds 55% of
-                     total range; readings are TRUE if raw value is
-                     less than 45% of total range.  *)
+      | `Bool (** Report scaled value as 1 (TRUE) or 0 (FALSE).
+                  The firmware uses inverse Boolean logic to match
+                  the physical characteristics of NXT sensors.
+                  Readings are FALSE if raw value exceeds 55% of
+                  total range; readings are TRUE if raw value is
+                  less than 45% of total range.  *)
       | `Transition_cnt (** Report scaled value as number of
                             transitions between TRUE and FALSE.  *)
       | `Period_counter (** Report scaled value as number of
@@ -423,8 +423,7 @@ sig
       | `Fahrenheit (** Scale temperature reading to degrees Fahrenheit. *)
       | `Angle_steps (** Report scaled value as count of ticks on
                          RCX-style rotation sensor. *)
-      | `Slope_mask
-      | `Mode_mask ]
+      | `Slope_mask ]
 
   (** Data read from sensors. *)
   type data = {
@@ -456,6 +455,9 @@ sig
 
   val get : 'a conn -> port ->  data
     (** [get conn p] returns the data read on port [p]. *)
+
+  val reset_scaled : ?check_status:bool -> 'a conn -> port -> unit
+
 
   (** {4 Low speed} *)
   (** Commands dealing with the I2C bus available on every sensor.
