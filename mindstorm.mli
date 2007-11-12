@@ -253,9 +253,9 @@ val poll_command : 'a conn -> [`Poll_buffer | `High_speed_buffer] -> int
 (** Starting and stopping programs (.rxe files) on the brick. *)
 module Program :
 sig
-  val start : 'a conn -> string -> unit
+  val start : ?check_status:bool -> 'a conn -> string -> unit
     (** [start_program conn pgm] starts the program named [pgm]. *)
-  val stop : 'a conn -> unit
+  val stop : ?check_status:bool -> 'a conn -> unit
     (** [stop_program conn] stops the currently running program if any. *)
   val name : 'a conn -> string
     (** Return the name of the current program or [""] if none. *)
@@ -485,6 +485,8 @@ module Sound :
 sig
   val play : ?check_status:bool -> 'a conn -> ?loop:bool -> string -> unit
     (** [play_soundfile conn file] plays the sound file named [file].
+        The sound files extension, namely ".rso", must be part of [file].
+
         @param loop if [true] repeat the play indefinitely.
         Default: [false].  *)
   val stop : ?check_status:bool -> 'a conn -> unit
