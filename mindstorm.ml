@@ -546,7 +546,9 @@ end
 (** Brick info *)
 
 let firmware_version conn =
-  failwith "TBD"
+  conn.send conn.fd "\002\000\x01\x88";
+  let ans = conn.recv conn.fd 7 in
+  (Char.code ans.[3], Char.code ans.[4], Char.code ans.[5], Char.code ans.[6])
 
 let boot conn =
   failwith "TBD"
