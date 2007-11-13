@@ -202,10 +202,10 @@ end
 (** {3 Brick information} *)
 
 val firmware_version : 'a conn -> int * int * int * int
-  (** [firmware_version conn] returns a tuple [(p0, p1, f0, f1)] where
-      [p0] is the minor version of the protocol, [p1] is the major
-      version of the protocol, [f0] is the minor version of the
-      firmware, [f1] is the major version of the firmware. *)
+  (** [firmware_version conn] returns a tuple [(p1, p0, f1, f0)] where
+      [p1] is the major version of the protocol, [p0] is the minor
+      version of the protocol, [f1] is the major version of the
+      firmware, [f0] is the minor version of the firmware, *)
 
 val set_brick_name : ?check_status:bool -> 'a conn -> string -> unit
   (** [set_brick_name conn name] change the name to which one is

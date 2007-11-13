@@ -17,4 +17,6 @@ let () =
   printf "- bluetooth address = %S\n" i.Mindstorm.bluetooth_addr;
   printf "- signal strength = %i\n" i.Mindstorm.signal_strength;
   printf "- free user FLASH = %i bytes\n" i.Mindstorm.free_user_flash;
+  let (p1, p0, f1, f0) = Mindstorm.firmware_version conn in
+  printf "- protocol = %i.%i, firmware = %i.%02i\n" p1 p0 f1 f0;
   Mindstorm.close conn
