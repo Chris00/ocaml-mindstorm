@@ -3,7 +3,7 @@ open Printf
 module Motor = Mindstorm.Motor
 
 let bt = ref ""
-let speed = ref 30
+let speed = ref(30)
 let rot_deg = ref(5 * 360)
 
 let () =
@@ -22,12 +22,14 @@ let () =
   let conn = Mindstorm.connect_bluetooth !bt in
   printf "Rotate motor connected to port A by %i degrees... %!" !rot_deg;
   let st = { Motor.speed = !speed;
-             mode = [`Motor_on];
+             motor_on = true;
+             brake = false;
+             regulation = `Idle;
              turn_ratio = 0;
-             run_state = `Ramp_up;
+             run_state = `Running;
              tach_limit = !rot_deg } in
   Motor.set conn Motor.a st;
   printf "done\n%!";
-  Unix.sleep 3; (* we cannot exit immediately, otherwise no motor
+  Unix.sleep 5; (* we cannot exit immediately, otherwise no motor
                    rotation is performed. *)
   Mindstorm.close conn
