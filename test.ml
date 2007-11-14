@@ -16,12 +16,12 @@ let message s =
   msg
 ;;
 
-
 external connect : string -> Unix.file_descr = "ocaml_mindstorm_connect"
 
 
 let () =
-  let fd = connect "00:16:53:03:A5:32" in
+ (* let fd = connect "00:16:53:03:A5:32" in *)
+  let fd = connect "\\\\.\\COM40" in 
   printf "Connected!\n%!";
 
   (*   let msg = "\x02\x00\x01\x9B" in *)
@@ -34,8 +34,8 @@ let () =
     String.blit fname 0 s 3 (String.length fname);
     s
   ) in
-(*   let msg = message "\x00\x0B" in *)
 
+(*   let msg = message "\x00\x0B" in *)
   for i = 1 to 3 do
     let w = Unix.write fd msg 0 (String.length msg) in
     printf "Wrote %i bytes\n%!" w;
@@ -50,6 +50,7 @@ let () =
           printf "read=%i %!" r;
 (*           ignore(Unix.select [fd] [] [fd] (-1.)); *)
 (*           usleep 1.; *)
+        (*  ignore(Unix.select [fd] [] [] 0.060);*)
           loop (i + r) (n - r)
         ) in
       loop 0 n

@@ -37,8 +37,8 @@ CAMLprim value ocaml_mindstorm_connect(value vdest)
 
   h = CreateFile(String_val(vdest), GENERIC_READ | GENERIC_WRITE,
                  0, NULL, OPEN_EXISTING,
-                 FILE_FLAG_WRITE_THROUGH | FILE_FLAG_OVERLAPPED
-                 | FILE_FLAG_NO_BUFFERING, NULL);
+                 FILE_FLAG_WRITE_THROUGH |FILE_ATTRIBUTE_SYSTEM
+                 | FILE_FLAG_NO_BUFFERING, 0);
 
   /* Error functions available in windows unix.cm[x]a */
   if (h == INVALID_HANDLE_VALUE) {
@@ -54,7 +54,7 @@ CAMLprim value ocaml_mindstorm_connect(value vdest)
   serial_params.ByteSize = 8;
   serial_params.StopBits = ONESTOPBIT;
   serial_params.Parity   = NOPARITY;
-  if(!SetCommState(hSerial, &serial_params)){
+  if(!SetCommState(h, &serial_params)){
     uerror("Mindstorm.connect_bluetooth (set port params)", vdest);
   }
   /* Set timeouts (in milliseconds) */
@@ -63,7 +63,7 @@ CAMLprim value ocaml_mindstorm_connect(value vdest)
   timeouts.ReadTotalTimeoutMultiplier = 10;
   timeouts.WriteTotalTimeoutConstant  = 50;
   timeouts.WriteTotalTimeoutMultiplier= 10;
-  if(!SetCommTimeouts(hSerial, &timeouts)){
+  if(!SetCommTimeouts(h, &timeouts)){
     uerror("Mindstorm.connect_bluetooth (set timeouts)", vdest);    
   }
 
