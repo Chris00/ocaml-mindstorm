@@ -126,19 +126,37 @@ let check_status status =
 
 (* [really_input fd buf ofs len] reads [len] bytes from [fd] and store
    them into [buf] starting at position [ofs]. *)
+IFDEF WIN32 THEN
 let really_input =
   let rec loop ntries fd buf i n =
-    if ntries > 50 then
+    if ntries > 50 && i = 0 then
+      (* Naive way of detecting that we are not connected -- because,
+         when the brick is off, windows connects and "send" the data
+         but always reads 0 bytes back. *)
       raise(Unix.Unix_error(Unix.EHOSTDOWN,
-                            "Mindstrorm.connect_bluethooth",""));
+                            "Mindstrorm.connect_bluethooth", ""));
+    let r = Unix.read fd buf i n in
+    if r < n then (
+      (* Unix.select implemented on windows: [fd] is a file handle, not
+         a socket. *)
+      loop (ntries+1) fd buf (i + r) (n - r)
+    ) in
+  fun fd buf ofs n -> loop 1 fd buf ofs n
+
+ELSE
+(* Unix & Mac OS X *)
+let really_input =
+  let rec loop fd buf i n =
     let r = Unix.read fd buf i n in
     if r < n then (
       (* The doc says 60ms are needed to switch from receive to
          transmit mode. *)
-      ignore(Unix.select [fd] [] [] 0.060); (* FIXME: harmful on windows? *)
-      loop (ntries+1) fd buf (i + r) (n - r)
+      ignore(Unix.select [fd] [] [] 0.060);
+      loop fd buf (i + r) (n - r)
     ) in
-  fun fd buf ofs n -> loop 1 fd buf ofs n
+  fun fd buf ofs n -> loop fd buf ofs n
+
+ENDIF
 
 let really_read fd n =
   let buf = String.create n in
@@ -564,7 +582,7 @@ let boot conn =
   pkg.[2] <- '\x01';
   pkg.[3] <- '\x97'; (* BOOT COMMAND *)
   String.blit arg 0 pkg 4 len;
-  String.fill pkg (4 + len) (19 - len) '\000'; 
+  String.fill pkg (4 + len) (19 - len) '\000';
   conn.send conn.fd pkg;
   ignore(conn.recv conn.fd 7)
 
@@ -623,35 +641,35 @@ let delete_user_flash conn =
   ignore(conn.recv conn.fd 3)
 
 let bluetooth_reset conn =
- conn.send conn.fd "\002\000\x01\A4"; (* BLUETOOTH FACTORY RESET *)
+ conn.send conn.fd "\002\000\x01\xA4"; (* BLUETOOTH FACTORY RESET *)
   ignore(conn.recv conn.fd 3)
+
+let char_of_buffer_type = function
+  | `Poll_buffer -> '\x00'
+  | `High_speed_buffer -> '\x01'
 
 let poll_length conn buf =
  let pkg = String.create 5 in
-  pkg.[0] <- '\003';
+  pkg.[0] <- '\003'; (* 2 bluetooth bytes *)
   pkg.[1] <- '\000';
   pkg.[2] <- '\x01';
   pkg.[3] <- '\xA1'; (* POLL COMMAND LENGTH *)
-  pkg.[4] <- (match buf with
-  | `Poll_buffer -> '\x00'
-  | `High_speed_buffer -> '\x01');
+  pkg.[4] <- char_of_buffer_type buf;
   conn.send conn.fd pkg;
-  let ans = conn.recv conn.fd 5 in 
-  Char.code ans.[4] 
+  let ans = conn.recv conn.fd 5 in
+  Char.code ans.[4]
 
 let poll_command conn buf len =
  let pkg = String.create 6 in
-  pkg.[0] <- '\004';
+  pkg.[0] <- '\004'; (* 2 bluetooth bytes *)
   pkg.[1] <- '\000';
   pkg.[2] <- '\x01';
   pkg.[3] <- '\xA2'; (* POLL COMMAND *)
-  pkg.[4] <- (match buf with
-  | `Poll_buffer -> '\x00'
-  | `High_speed_buffer -> '\x01');
+  pkg.[4] <- char_of_buffer_type buf;
   pkg.[5] <- char_of_int len;
   conn.send conn.fd pkg;
-  let ans = conn.recv conn.fd 65 in 
-  (Char.code ans.[4], String.sub ans 5 60) (* Null terminator? *)
+  let ans = conn.recv conn.fd 65 in
+  (Char.code ans.[4], String.sub ans 5 60) (* FIXME: Null terminator? *)
 
 
 (* ---------------------------------------------------------------------- *)
