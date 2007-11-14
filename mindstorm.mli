@@ -531,7 +531,7 @@ sig
           - [`Reset]: resets the ultrasonic sensor (FIXME: to factory
           defaults ?).  *)
 
-    val get : 'a conn -> port ->
+    val get : ?check_status:bool -> 'a conn -> port ->
       [ `Byte0 | `Byte1 | `Byte2 | `Byte3 | `Byte4 | `Byte5 | `Byte6 | `Byte7
       | `State | `Meas_interval | `Zero | `Scale_mul | `Scale_div
       ] -> int

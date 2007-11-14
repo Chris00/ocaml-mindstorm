@@ -995,7 +995,8 @@ struct
     ignore(Unix.write conn.fd tx_data 0 n);
     if check_status then ignore(conn.recv conn.fd 3)
 
-  let read conn port =
+
+  let raw_read conn port =
     let pkg = String.create 5 in
     pkg.[0] <- '\003'; (* 2 BT bytes *)
     pkg.[1] <- '\000';
@@ -1003,7 +1004,10 @@ struct
     pkg.[3] <- '\x10'; (* LSREAD *)
     pkg.[4] <- char_of_port port;
     conn.send conn.fd pkg;
-    let ans = conn.recv conn.fd 20 in
+    conn.recv conn.fd 20
+
+  let read conn port =
+    let ans = raw_read conn port in
     let rx_length = min (Char.code ans.[3]) 16 in
     String.sub ans 4 rx_length
 
@@ -1013,22 +1017,57 @@ struct
      http://mindstorms.lego.com/Overview/NXTreme.aspx *)
   module Ultrasonic =
   struct
+    let write_cmd ~check_status conn port cmd byte v =
+      if v < 0 || v > 255 then invalid_arg(Printf.sprintf "Mindstorm.Sensor.\
+		Ultrasonic.set: %s arg not in 0 .. 255" cmd);
+          let s = String.create 3 in
+          s.[0] <- '\x02';  s.[1] <- byte;  s.[2] <- Char.unsafe_chr v;
+          write ~check_status conn port s
 
-    let set ?(check_status=false) conn port =
+    let set ?(check_status=false) conn port cmd =
       set ~check_status conn port `Lowspeed_9v `Raw;
-      write ~check_status conn port "\x02\x41\x02"
-      (* set sensor to send sonar pings continuously *)
+      match cmd with
+      | `Off -> write ~check_status conn port "\x02\x41\x00"
+      | `Meas -> write ~check_status conn port "\x02\x41\x01"
+      | `Meas_cont -> write ~check_status conn port "\x02\x41\x02"
+      | `Event -> write ~check_status conn port "\x02\x41\x03"
+      | `Reset -> write ~check_status conn port "\x02\x41\x04"
+      | `Meas_interval i ->
+          write_cmd ~check_status conn port "`Meas_interval" '\x40' i
+      | `Zero z -> write_cmd ~check_status conn port "`Zero" '\x50' z
+      | `Scale_mul m -> write_cmd ~check_status conn port "`Scale_mul" '\x51' m
+      | `Scale_div d -> write_cmd ~check_status conn port "`Scale_div" '\x52' d
 
-    let get conn port =
-      ignore(read conn port); (* remove pending reply bytes in the NXT buffers *)
-      write conn port ~rx_length:1 "\x02\x42"; (* address + read distance *)
-      let bytes_ready = get_status conn port in
-      if bytes_ready = 0 then failwith "Mindstorm.Sensor.get_ultrasonic";
-      let data = read conn port in
-      Char.code data.[6] (* or int16 data 10 ? *)
 
-    let stop ?(check_status=false) conn port =
-      write ~check_status conn port "\x02\x41\x00"
+    let get ?(check_status=false) conn port var =
+      ignore(read conn port); (* remove pending reply bytes in the NXT
+                                 buffers. FIXME: needed? *)
+      let s = String.create 3 in
+      s.[0] <- '\x02';
+      s.[1] <- (match var with
+                | `Byte0 -> '\x42'
+                | `Byte1 -> '\x43'
+                | `Byte2 -> '\x44'
+                | `Byte3 -> '\x45'
+                | `Byte4 -> '\x46'
+                | `Byte5 -> '\x47'
+                | `Byte6 -> '\x48'
+                | `Byte7 -> '\x49'
+                | `State -> '\x41'
+                | `Meas_interval -> '\x40'
+                | `Zero -> '\x50'
+                | `Scale_mul -> '\x51'
+                | `Scale_div -> '\x52'
+               );
+      s.[2] <- '\x03'; (* FIXME: R + 0x03, means? *)
+      write ~check_status conn port s ~rx_length:1; (* 1 byte in return *)
+      if check_status then (
+        let bytes_ready = get_status conn port in
+        if bytes_ready = 0 then failwith "Mindstorm.Sensor.Ultrasonic.get";
+      );
+      let data = raw_read conn port in
+      Char.code data.[4]
+
   end
 end
 
