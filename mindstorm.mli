@@ -300,11 +300,12 @@ sig
           set on all three motor ports, only the first two (A and B)
           are synchronized.  . *)
   type run_state = [ `Idle | `Ramp_up | `Running | `Ramp_down ]
-      (** Specifies an auxiliary "state" to use with {!Mindstorm.Motor.mode}.
+      (** Specifies how to perform the transition to the new [speed]
+          given in {!Mindstorm.Motor.state}.
 
+          - [`Idle]: The motor is not run.
           - [`Running] enables power to any output device connected to
           the specified port(s).
-
           - [`Ramp_up] enables automatic ramping to a new speed
           set-point that is greater than the current speed set-point.
           When you use [`Ramp_up] in conjunction with appropriate
@@ -312,7 +313,6 @@ sig
           to increase the actual power smoothly to the [speed]
           set-point over the number of degrees specified by
           [tach_limit].
-
           - [`Ramp_down] enables automatic ramping to a new speed
           set-point that is less than the current speed set-point.
           When you use [`Ramp_down] in conjunction with appropriate
@@ -335,7 +335,7 @@ sig
     regulation : regulation; (** Turns on the chosen regulation. *)
     turn_ratio : int; (** Range: -100 .. 100.
                           See {!Mindstorm.Motor.regulation}. *)
-    run_state : run_state;
+    run_state : run_state; (** See {!Mindstorm.Motor.run_state}. *)
     tach_limit : int; (** Number of degrees to rotate; [0]: run forever.
                           Range: 0 .. 4294967295 (unsigned 32 bits).
                           See also {!Mindstorm.Motor.run_state}. *)
@@ -345,7 +345,7 @@ sig
           specifies rotation direction.  You must set some other
           properties appropriately for the [speed] set-point to have the
           desired effect:
-          - [mode] must include [`Motor_on]; [`Brake] is optional.
+          - [motor_on] must be [true].
           - [run_state] must be set to a non-[`Idle] value.
 
           If [not motor_on && not brake], motors are in COAST mode:
