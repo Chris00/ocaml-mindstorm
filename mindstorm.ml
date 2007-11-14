@@ -748,7 +748,7 @@ struct
     if st.tach_limit < 0 then
       invalid_arg "Mindstorm.Motor.set: state.tach_limit must be >= 0";
     (* SETOUTPUTSTATE *)
-    cmd conn ~check_status ~byte1:'\x04' ~n:12 (fun pkg ->
+    cmd conn ~check_status ~byte1:'\x04' ~n:13 (fun pkg ->
       pkg.[4] <- port;
       pkg.[5] <- Char.unsafe_chr(127 + st.speed);
       let mode, regulation = chars_of_mode_list st.mode in
