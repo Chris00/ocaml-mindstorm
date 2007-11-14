@@ -914,7 +914,12 @@ struct
     if check_status then ignore(conn.recv conn.fd 3)
 
   let read conn port =
-    failwith "TBD"
+    let pkg = "\x00\x10 " in
+    pkg.[2] <- char_of_port port;
+    conn.send conn.fd pkg;
+    let ans = conn.recv 20 in
+    let rx_length = min (Char.code ans.[3]) 16 in
+    String.sub ans 4 rx_length
 
   (** Convenience *)
 
