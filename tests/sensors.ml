@@ -61,6 +61,11 @@ let () =
   test_sensor "Sound" `S3;
 
   Sensor.set_ultrasonic conn `S4;
-  test_sensor "Ultrasonic" `S4;
+    printf "- Ultrasonic sensor; when finished press ENTER.%!\n";
+    repeat_till_ENTER begin fun i ->
+      let dist = Sensor.get_ultrasonic conn `S4 in
+      printf "%4i:\t dist = %i\r%!" i dist
+    end;
+    printf "\n";
 
   Mindstorm.close conn
