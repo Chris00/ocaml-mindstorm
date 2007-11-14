@@ -478,7 +478,7 @@ sig
 
   (** {4 Convenience} *)
 
-  val ultrasonic : 'a conn -> port -> t
+  val set_ultrasonic : 'a conn -> port -> t
 
 (* convenience functions for touch, ultrasonic, sound, light *)
 end

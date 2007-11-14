@@ -894,16 +894,38 @@ struct
 
   (** {3 Low speed} *)
 
-  let get_status conn num =
+  let get_status conn port =
     failwith "TBD"
-  let write conn num tx_data =
-    failwith "TBD"
-  let read conn num =
+
+  let write ?(check_status=false) conn port ?(rx_length=0) tx_data =
+    let n = String.length tx_data in
+    if n > 255 then invalid_arg "Mindstorm.Sensor.write: length tx_data > 255";
+    if rx_length < 0 || rx_length > 255 then
+      invalid_arg "Mindstorm.Sensor.write: length rx_length not in 0 .. 255";
+    let pkg = String.create 7 in
+    copy_int16 (n + 5) pkg 0; (* bluetooth bytes *)
+    pkg.[2] <- if check_status then '\x00' else '\x80';
+    pkg.[3] <- '\x0F';
+    pkg.[4] <- char_of_port port;
+    pkg.[5] <- Char.unsafe_chr n;
+    pkg.[6] <- Char.unsafe_chr rx_length;
+    conn.send conn.fd pkg;
+    ignore(Unix.write conn.fd tx_data 0 n);
+    if check_status then ignore(conn.recv conn.fd 3)
+
+  let read conn port =
     failwith "TBD"
 
   (** Convenience *)
 
-  let ultrasonic conn num =
+  type ultrasonic
+
+  let set_ultrasonic ?(check_status=false) conn port =
+    set ?check_status conn port `Lowspeed_9v `Raw;
+    write ?check_status conn port "\x02\x41\x02"
+      (* set sensor to send sonar pings continuously *)
+
+  let get_ultrasonic ultra =
     failwith "TBD"
 
 end
