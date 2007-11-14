@@ -471,7 +471,8 @@ sig
     (** [get_status conn port] returns the number of bytes ready to be
         read. *)
 
-  val write : 'a conn -> port -> string -> unit (* Rx??? *)
+  val write : ?check_status:bool ->
+    'a conn -> port -> ?rx_length:int -> string -> unit
     (** Write data to lowspeed I2C port (e.g. for talking to the
         ultrasonic sensor).  *)
   val read : 'a conn -> port -> string
@@ -480,7 +481,8 @@ sig
 
   (** {4 Convenience} *)
 
-  val set_ultrasonic : 'a conn -> port -> t
+  val set_ultrasonic : ?check_status:bool -> 'a conn -> port -> unit
+  val get_ultrasonic : 'a conn -> port -> int
 
 (* convenience functions for touch, ultrasonic, sound, light *)
 end

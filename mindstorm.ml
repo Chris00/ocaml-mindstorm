@@ -903,12 +903,14 @@ struct
   (** {3 Low speed} *)
 
   let get_status conn port =
-    let pkg = String.create 3 in
-    pkg.[0] <- '\x00';
-    pkg.[1] <- '\x0E';
-    pkg.[2] <- char_of_port port;
+    let pkg = String.create 5 in
+    pkg.[0] <- '\003'; (* 2 BT bytes *)
+    pkg.[1] <- '\000';
+    pkg.[2] <- '\x00';
+    pkg.[3] <- '\x0E'; (* LSGETSTATUS *)
+    pkg.[4] <- char_of_port port;
     conn.send conn.fd pkg;
-    let ans = conn.recv 4 in
+    let ans = conn.recv conn.fd 4 in
     Char.code ans.[3]
 
   let write ?(check_status=false) conn port ?(rx_length=0) tx_data =
@@ -919,7 +921,7 @@ struct
     let pkg = String.create 7 in
     copy_int16 (n + 5) pkg 0; (* bluetooth bytes *)
     pkg.[2] <- if check_status then '\x00' else '\x80';
-    pkg.[3] <- '\x0F';
+    pkg.[3] <- '\x0F'; (* LSWRITE *)
     pkg.[4] <- char_of_port port;
     pkg.[5] <- Char.unsafe_chr n;
     pkg.[6] <- Char.unsafe_chr rx_length;
@@ -928,12 +930,14 @@ struct
     if check_status then ignore(conn.recv conn.fd 3)
 
   let read conn port =
-    let pkg = String.create 3 in
-    pkg.[0] <- '\x00';
-    pkg.[1] <- '\x10';
-    pkg.[2] <- char_of_port port;
+    let pkg = String.create 5 in
+    pkg.[0] <- '\003'; (* 2 BT bytes *)
+    pkg.[1] <- '\000';
+    pkg.[2] <- '\x00';
+    pkg.[3] <- '\x10'; (* LSREAD *)
+    pkg.[4] <- char_of_port port;
     conn.send conn.fd pkg;
-    let ans = conn.recv 20 in
+    let ans = conn.recv conn.fd 20 in
     let rx_length = min (Char.code ans.[3]) 16 in
     String.sub ans 4 rx_length
 
@@ -942,12 +946,20 @@ struct
   type ultrasonic
 
   let set_ultrasonic ?(check_status=false) conn port =
-    set ?check_status conn port `Lowspeed_9v `Raw;
-    write ?check_status conn port "\x02\x41\x02"
+    set ~check_status conn port `Lowspeed_9v `Raw;
+    write ~check_status conn port "\x02\x41\x02"
       (* set sensor to send sonar pings continuously *)
 
-  let get_ultrasonic ultra =
-    failwith "TBD"
+  let get_ultrasonic conn port =
+    ignore(read conn port); (* remove pending reply bytes in the NXT buffers *)
+    write conn port ~rx_length:1 "\x02\x42"; (* address + read distance *)
+    let bytes_ready = get_status conn port in
+    if bytes_ready = 0 then failwith "Mindstorm.Sensor.get_ultrasonic";
+    let data = read conn port in
+    Char.code data.[6] (* or int16 data 10 ? *)
+
+  let stop_ultrasonic ?(check_status=false) conn port =
+    write ~check_status conn port "\x02\x41\x00"
 
 end
 
