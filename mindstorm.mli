@@ -468,6 +468,8 @@ sig
       (The port 4 may also be high speed.) *)
 
   val get_status : 'a conn -> port -> int
+    (** [get_status conn port] returns the number of bytes ready to be
+        read. *)
 
   val write : 'a conn -> port -> string -> unit (* Rx??? *)
     (** Write data to lowspeed I2C port (e.g. for talking to the
