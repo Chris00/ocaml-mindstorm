@@ -60,7 +60,7 @@ let () =
   (*   Sensor.set conn `S3 `Sound_dba `Pct_full_scale; *)
   test_sensor "Sound" `S3;
 
-  Sensor.set conn `S4 `Lowspeed_9v `Pct_full_scale;
+  Sensor.set_ultrasonic conn `S4;
   test_sensor "Ultrasonic" `S4;
 
   Mindstorm.close conn

@@ -29,20 +29,12 @@ text after the $ sign is what you type, underneath is the answer):
         	00:16:53:03:A5:32     NXT
 v}
 
-to discover the address of your brick.  In the file
-/etc/bluetooth/hcid.conf, put in the "options" section
-
-{v
-        security auto;
-        pin_helper /usr/bin/bluez-pin
-v}
-
-Finally use [Mindstorm.connect_bluetooth "00:16:53:03:A5:32"] to
-establish the connection (of course, replace "00:16:53:03:A5:32" by
-your actual bluetooth address) -- the first time, the brick will ask
-you to enter a code and the bluetooth applet will pop up a box in
-which you need to copy the very same code (this is to forbid unwanted
-connections).
+to discover the address of your brick.  Then use
+[Mindstorm.connect_bluetooth "00:16:53:03:A5:32"] to establish the
+connection (of course, replace "00:16:53:03:A5:32" by your actual
+bluetooth address) -- the first time, the brick will ask you to enter
+a code and the bluetooth applet will pop up a box in which you need to
+copy the very same code (this is to forbid unwanted connections).
 
 
 {3 MacOS X}
