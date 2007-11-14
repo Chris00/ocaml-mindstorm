@@ -127,15 +127,18 @@ let check_status status =
 (* [really_input fd buf ofs len] reads [len] bytes from [fd] and store
    them into [buf] starting at position [ofs]. *)
 let really_input =
-  let rec loop fd buf i n =
+  let rec loop ntries fd buf i n =
+    if ntries > 50 then
+      raise(Unix.Unix_error(Unix.EHOSTDOWN,
+                            "Mindstrorm.connect_bluethooth",""));
     let r = Unix.read fd buf i n in
     if r < n then (
       (* The doc says 60ms are needed to switch from receive to
          transmit mode. *)
       ignore(Unix.select [fd] [] [] 0.060); (* FIXME: harmful on windows? *)
-      loop fd buf (i + r) (n - r)
+      loop (ntries+1) fd buf (i + r) (n - r)
     ) in
-  fun fd buf ofs n -> loop fd buf ofs n
+  fun fd buf ofs n -> loop 1 fd buf ofs n
 
 let really_read fd n =
   let buf = String.create n in

@@ -46,4 +46,4 @@ include .depend.ocaml
 
 .PHONY: clean
 clean::
-	$(RM) *~ *.cm{i,o,x,a,xa} *.annot *.o *.a
+	$(RM) *~ *.cmi *.cmo *.cmx *.cma *.cmxa *.annot *.o *.a
