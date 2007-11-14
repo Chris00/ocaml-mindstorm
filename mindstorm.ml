@@ -1007,26 +1007,29 @@ struct
     let rx_length = min (Char.code ans.[3]) 16 in
     String.sub ans 4 rx_length
 
-  (** Convenience *)
+  (** Ultrasonic sensor *)
+  (* Specification of the I2C protocol for the ultrasonic sensor given
+     in the Appendix 7 of "Hardware Developer Kit" available at
+     http://mindstorms.lego.com/Overview/NXTreme.aspx *)
+  module Ultrasonic =
+  struct
 
-  type ultrasonic
-
-  let set_ultrasonic ?(check_status=false) conn port =
-    set ~check_status conn port `Lowspeed_9v `Raw;
-    write ~check_status conn port "\x02\x41\x02"
+    let set ?(check_status=false) conn port =
+      set ~check_status conn port `Lowspeed_9v `Raw;
+      write ~check_status conn port "\x02\x41\x02"
       (* set sensor to send sonar pings continuously *)
 
-  let get_ultrasonic conn port =
-    ignore(read conn port); (* remove pending reply bytes in the NXT buffers *)
-    write conn port ~rx_length:1 "\x02\x42"; (* address + read distance *)
-    let bytes_ready = get_status conn port in
-    if bytes_ready = 0 then failwith "Mindstorm.Sensor.get_ultrasonic";
-    let data = read conn port in
-    Char.code data.[6] (* or int16 data 10 ? *)
+    let get conn port =
+      ignore(read conn port); (* remove pending reply bytes in the NXT buffers *)
+      write conn port ~rx_length:1 "\x02\x42"; (* address + read distance *)
+      let bytes_ready = get_status conn port in
+      if bytes_ready = 0 then failwith "Mindstorm.Sensor.get_ultrasonic";
+      let data = read conn port in
+      Char.code data.[6] (* or int16 data 10 ? *)
 
-  let stop_ultrasonic ?(check_status=false) conn port =
-    write ~check_status conn port "\x02\x41\x00"
-
+    let stop ?(check_status=false) conn port =
+      write ~check_status conn port "\x02\x41\x00"
+  end
 end
 
 module Sound =

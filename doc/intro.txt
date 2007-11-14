@@ -73,16 +73,22 @@ accordingly.
 {3 Windows}
 
 From windows, open the bluetooth control panel, create a new
-connection to the NXT brick, tight click on your connection and select
+connection to the NXT brick, right click on your connection and select
 "details" to see which serial port is used, for example COM40.  Then
-use [Mindstorm.connect_bluetooth "COM40"].
+use [Mindstorm.connect_bluetooth "COM40"] to connect to the brick from
+your programs.  ATM, you have to always start by establishing the
+connection by hand before you can use the brick.  Patches are welcome
+so that is is enough to pass the bluetooth address to
+{!Mindstorm.connect_bluetooth} and the library performs the
+connection.
 
 Windows Vista uses different ports for outgoing and incoming
 connections (e.g. COM4 for outgoing connections and COM5 for incoming
 ones).  With this library, you must use the outgoing port.
 
-See also {{: ruby-serialport/nxt on Windows} ruby-serialport/nxt on
-Windows}
+See also
+{{:http://juju.org/articles/2006/08/16/ruby-serialport-nxt-on-windows}ruby-serialport/nxt
+on Windows} with Cygwin.
 
 
 

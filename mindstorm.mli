@@ -46,7 +46,7 @@ val close : 'a conn -> unit
 (** {2 Exception for errors} *)
 
 type error =
-    | No_more_handles
+    | No_more_handles (** All 16 handles are in use. *)
     | No_space
     | No_more_files
     | EOF_expected
@@ -258,9 +258,15 @@ val poll_command : 'a conn -> [`Poll_buffer | `High_speed_buffer] -> int
 module Program :
 sig
   val start : ?check_status:bool -> 'a conn -> string -> unit
-    (** [start_program conn pgm] starts the program named [pgm]. *)
+    (** [start_program conn pgm] starts the program named [pgm].
+
+        @param check_status whether to check the status returned by
+        the brick.  Default: [false]. *)
   val stop : ?check_status:bool -> 'a conn -> unit
-    (** [stop_program conn] stops the currently running program if any. *)
+    (** [stop_program conn] stops the currently running program if any.
+
+        @param check_status whether to check the status returned by
+        the brick.  Default: [false]. *)
   val name : 'a conn -> string
     (** Return the name of the current program or [""] if none. *)
 end
@@ -350,7 +356,10 @@ sig
 
   val set : ?check_status:bool -> 'a conn -> port -> state -> unit
     (** [set conn p st] sets the state of the motor connected to the
-        port [p] to [st]. *)
+        port [p] to [st].
+
+        @param check_status whether to check the status returned by
+        the brick.  Default: [false]. *)
 
   val get : 'a conn -> port -> state * int * int * int
     (** [get conn p] returns [(state, tach_count, block_tach_count,
@@ -461,11 +470,15 @@ sig
     (** [get conn p] returns the data read on port [p]. *)
 
   val reset_scaled : ?check_status:bool -> 'a conn -> port -> unit
+    (** [reset_scaled conn port]
+
+       @param check_status whether to check the status returned by
+        the brick.  Default: [false]. *)
 
 
   (** {4 Low speed} *)
   (** Commands dealing with the I2C bus available on every sensor.
-      (The port 4 may also be high speed.) *)
+      (The port number 4 may also be high speed.) *)
 
   val get_status : 'a conn -> port -> int
     (** [get_status conn port] returns the number of bytes ready to be
@@ -473,18 +486,75 @@ sig
 
   val write : ?check_status:bool ->
     'a conn -> port -> ?rx_length:int -> string -> unit
-    (** Write data to lowspeed I2C port (e.g. for talking to the
-        ultrasonic sensor).  *)
+    (** Write data to lowspeed I2C port.  This is the protocol
+        (e.g. for talking to the
+        ultrasonic sensor).
+
+        @param check_status whether to check the status returned by
+        the brick.  Default: [false].  *)
   val read : 'a conn -> port -> string
     (** Read data from from lowspeed I2C port (e.g. for receiving data
         from the ultrasonic sensor).  *)
 
-  (** {4 Convenience} *)
 
-  val set_ultrasonic : ?check_status:bool -> 'a conn -> port -> unit
-  val get_ultrasonic : 'a conn -> port -> int
+  (** Ultrasonic sensor.  Convenience functions to interact with the
+      ultrasonic sensor through the I2C protocol. *)
+  module Ultrasonic :
+  sig
+    val set : ?check_status:bool -> 'a conn -> port ->
+      [ `Off | `Meas | `Meas_cont | `Event | `Reset
+      | `Meas_interval of int | `Zero of int
+      | `Scale_mul of int | `Scale_div of int ] -> unit
+      (** [Ultrasonic.set conn port cmd]
 
-(* convenience functions for touch, ultrasonic, sound, light *)
+          - [`Off]: turns the ultrasonic sensor off.
+          - [`Meas]: single shot command.  In this mode, the
+          ultrasonic sensor will only make a new measurement every
+          time the command byte is send to the sensor.  The sensor
+          will measure distances for up to 8 objects and save the
+          distances within the [`Byte0] .. [`Byte7] variables.
+          - [`Meas_cont] Continuous measurement command.  This is the
+          default mode, where the sensor continuously makes new
+          measurement with the specified interval (see
+          [`Meas_interval] below).
+          - [`Event]: Event capture command.  Within this mode the
+          sensor will measure whether any other ultrasonic sensors are
+          within the vicinity.  With this information a program can
+          evaluate when it is best to make a new measurement which
+          will not conflict with other ultrasonic sensors.
+
+          - [`Meas_interval t]: set continuous measurment interval.
+          - [`Zero z]: set the actual zero.
+          - [`Scale_mul m]: set the actual scale factor.
+          - [`Scale_div d]: set the actual scale divisor.
+
+          - [`Reset]: resets the ultrasonic sensor (FIXME: to factory
+          defaults ?).  *)
+
+    val get : 'a conn -> port ->
+      [ `Byte0 | `Byte1 | `Byte2 | `Byte3 | `Byte4 | `Byte5 | `Byte6 | `Byte7
+      | `State | `Meas_interval | `Zero | `Scale_mul | `Scale_div
+      ] -> int
+      (** [Ultrasonic.get conn port var] returns the content of the
+          variable [var] on the sensor (detailed underneath).  All values
+          are between 0 and 255.
+
+          - [`Byte0] .. [`Byte7] are the 8 variables containing the
+          distances measured with the [`Meas] command.
+
+          - [`State] returns the command state (FIXME: what is it)
+
+          - [`Meas_interval] returns the interval (in 0.01 sec)
+          between two consecutive measurments when the sensor is in
+          continuous measurment (command [`Meas_cont]).
+
+          - [`Zero] returns the value of the actual zero (settable
+          with the [`Zero] command).
+
+          - [`Scale_mul] (resp. [`Scale_div]) return the current
+          scaling factor (resp. divisor).  It is settable with the
+          [`Scale_mul] (resp. [`Scale_div]) command.  *)
+  end
 end
 
 
@@ -496,10 +566,16 @@ sig
         The sound files extension, namely ".rso", must be part of [file].
 
         @param loop if [true] repeat the play indefinitely.
+        Default: [false].
+
+        @param check_status whether to check the status returned by the brick.
         Default: [false].  *)
   val stop : ?check_status:bool -> 'a conn -> unit
     (** Stop the current playback.  Does nothing if no sound file is
-        playing. *)
+        playing.
+
+        @param check_status whether to check the status returned by the brick.
+        Default: [false]. *)
   val play_tone : ?check_status:bool -> 'a conn -> int -> int -> unit
     (** [play_tone conn freq duration] play a tone with [freq] Hz
         lasting [duration] miliseconds. *)
