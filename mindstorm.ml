@@ -439,6 +439,7 @@ let remove conn fname =
   pkg.[2] <- '\x01';
   pkg.[3] <- '\x85'; (* DELETE *)
   blit_filename "Mindstorm.remove" fname pkg 4;
+  conn.send conn.fd pkg;
   ignore(conn.recv conn.fd 22) (* check status *)
 
 
@@ -608,13 +609,35 @@ let delete_user_flash conn =
   failwith "TBD"
 
 let bluetooth_reset conn =
-  failwith "TBD"
+ conn.send conn.fd "\002\000\x01\A4"; (* BLUETOOTH FACTORY RESET *)
+  ignore(conn.recv conn.fd 3)
 
 let poll_length conn buf =
-  failwith "TBD"
+ let pkg = String.create 5 in
+  pkg.[0] <- '\003';
+  pkg.[1] <- '\000';
+  pkg.[2] <- '\x01';
+  pkg.[3] <- '\xA1'; (* POLL COMMAND LENGTH *)
+  pkg.[4] <- (match buf with
+  | `Poll_buffer -> '\x00'
+  | `High_speed_buffer -> '\x01');
+  conn.send conn.fd pkg;
+  let ans = conn.recv conn.fd 5 in 
+  Char.code ans.[4] 
 
 let poll_command conn buf len =
-  failwith "TBD"
+ let pkg = String.create 6 in
+  pkg.[0] <- '\004';
+  pkg.[1] <- '\000';
+  pkg.[2] <- '\x01';
+  pkg.[3] <- '\xA2'; (* POLL COMMAND *)
+  pkg.[4] <- (match buf with
+  | `Poll_buffer -> '\x00'
+  | `High_speed_buffer -> '\x01');
+  pkg.[5] <- char_of_int len;
+  conn.send conn.fd pkg;
+  let ans = conn.recv conn.fd 65 in 
+  (Char.code ans.[4], String.sub ans 5 60) (* Null terminator? *)
 
 
 (* ---------------------------------------------------------------------- *)
