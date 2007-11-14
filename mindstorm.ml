@@ -553,7 +553,17 @@ let firmware_version conn =
    Char.code ans.[6], Char.code ans.[5])
 
 let boot conn =
-  failwith "TBD"
+  let arg = "Let's dance: SAMBA" in
+  let len = String.length arg in
+  let pkg = String.create 23 in
+  pkg.[0] <- '\021';
+  pkg.[1] <- '\000';
+  pkg.[2] <- '\x01';
+  pkg.[3] <- '\x97'; (* BOOT COMMAND *)
+  String.blit arg 0 pkg 4 len;
+  String.fill pkg (4 + len) (19 - len) '\000'; 
+  conn.send conn.fd pkg;
+  ignore(conn.recv conn.fd 7)
 
 let set_brick_name ?(check_status=false) conn name =
   let len = String.length name in
