@@ -285,21 +285,7 @@ sig
   val c : port (** The motor port C. *)
   val all : port (** Special value representing all 3 ports. *)
 
-  type mode = [ `Motor_on | `Brake | `Regulate of regulation ]
-      (** Motor mode.  By default motors are in COAST mode: motors
-          connected to the specified port(s) will rotate freely.
-
-          - [`Motor_on]:
-          Turn the motor on: enables pulse-width modulation (PWM) power
-          according to speed.
-          - [`Brake]:
-          Use run/brake instead of run/float.  "Braking" in this sense means
-          that the output voltage is not allowed to float between
-          active PWM pulses.  Electronic braking improves the accuracy
-          of motor output, but uses slightly more battery power.
-          - [`Regulated]:
-          Turns on the chosen regulation.  *)
-  and regulation = [ `Idle | `Motor_speed | `Motor_sync ]
+  type regulation = [ `Idle | `Motor_speed | `Motor_sync ]
       (** Regulation mode.
           - [`Idle]: No regulation will be enabled.
           - [`Motor_speed]: enable power control: auto adjust PWM duty
@@ -337,7 +323,16 @@ sig
 
   type state = {
     speed : int; (** Power set-point.  Range: -100 .. 100. *)
-    mode : mode list; (** See {!Mindstorm.Motor.mode}. *)
+    motor_on : bool; (** if [true], turns the motor on: enables
+                         pulse-width modulation (PWM) power according
+                         to speed. *)
+    brake : bool; (** Use run/brake instead of run/float.  "Braking"
+                      in this sense means that the output voltage is not
+                      allowed to float between active PWM pulses.
+                      Electronic braking improves the accuracy of
+                      motor output, but uses slightly more battery
+                      power.  *)
+    regulation : regulation; (** Turns on the chosen regulation. *)
     turn_ratio : int; (** Range: -100 .. 100.
                           See {!Mindstorm.Motor.regulation}. *)
     run_state : run_state;
@@ -351,7 +346,11 @@ sig
           properties appropriately for the [speed] set-point to have the
           desired effect:
           - [mode] must include [`Motor_on]; [`Brake] is optional.
-          - [run_state] must be set to a non-[`Idle] value.  *)
+          - [run_state] must be set to a non-[`Idle] value.
+
+          If [not motor_on && not brake], motors are in COAST mode:
+          motors connected to the specified port(s) will rotate
+          freely.  *)
 
 
   val set : ?check_status:bool -> 'a conn -> port -> state -> unit

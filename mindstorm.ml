@@ -31,44 +31,44 @@ let min i j = if (i:int) < j then i else j
 
 
 type error =
-    | No_more_handles
-    | No_space
-    | No_more_files
-    | EOF_expected
-(*     | EOF *)
-    | Not_a_linear_file
-(*     | File_not_found *)
-    | Handle_already_closed
-    | No_linear_space
-    | Undefined_error
-    | File_is_busy
-    | No_write_buffers
-    | Append_not_possible
-    | File_is_full
-    | File_exists
-    | Module_not_found
-    | Out_of_boundary
-    | Illegal_file_name
-    | Illegal_handle    (* SHOULD NOT HAPPEN *)
+  | No_more_handles
+  | No_space
+  | No_more_files
+  | EOF_expected
+      (*     | EOF *)
+  | Not_a_linear_file
+      (*     | File_not_found *)
+  | Handle_already_closed
+  | No_linear_space
+  | Undefined_error
+  | File_is_busy
+  | No_write_buffers
+  | Append_not_possible
+  | File_is_full
+  | File_exists
+  | Module_not_found
+  | Out_of_boundary
+  | Illegal_file_name
+  | Illegal_handle    (* SHOULD NOT HAPPEN *)
 
-    (** command_error *)
-    | Pending (** Pending communication transaction in progress *)
-    | Empty_mailbox (** Specified mailbox queue is empty *)
-    | Failed (** Request failed (i.e. specified file not found) *)
-    | Unknown (** Unknown command opcode *)
-    | Insane (** Insane packet *)
-    | Out_of_range (** Data contains out-of-range values *)
-    | Bus_error (** Communication bus error *)
-    | Buffer_full (** No free memory in communication buffer *)
-    | Invalid_conn (** Specified channel/connection is not valid *)
-    | Busy_conn (** Specified channel/connection not configured or busy *)
-    | No_program (** No active program *)
-    | Bad_size (** Illegal size specified *)
-    | Bad_mailbox (** Illegal mailbox queue ID specified *)
-    | Bad_field (** Attempted to access invalid field of a structure *)
-    | Bad_io (** Bad input or output specified *)
-    | Out_of_memory (** Insufficient memory available *)
-    | Bad_arg (** Bad arguments *)
+  (** command_error *)
+  | Pending (** Pending communication transaction in progress *)
+  | Empty_mailbox (** Specified mailbox queue is empty *)
+  | Failed (** Request failed (i.e. specified file not found) *)
+  | Unknown (** Unknown command opcode *)
+  | Insane (** Insane packet *)
+  | Out_of_range (** Data contains out-of-range values *)
+  | Bus_error (** Communication bus error.  *)
+  | Buffer_full (** No free memory in communication buffer *)
+  | Invalid_conn (** Specified channel/connection is not valid *)
+  | Busy_conn (** Specified channel/connection not configured or busy *)
+  | No_program (** No active program *)
+  | Bad_size (** Illegal size specified *)
+  | Bad_mailbox (** Illegal mailbox queue ID specified *)
+  | Bad_field (** Attempted to access invalid field of a structure *)
+  | Bad_io (** Bad input or output specified *)
+  | Out_of_memory (** Insufficient memory available *)
+  | Bad_arg (** Bad arguments *)
 
 exception Error of error
 
@@ -732,12 +732,7 @@ struct
   let c = '\x02'
   let all = '\xFF'
 
-  type mode = [ `Motor_on | `Brake | `Regulate of regulation ]
-      (* [Regulate]: Enables active power regulation according to
-         value of REG_MODE (interactive motors only).  You must use
-         the REGULATED bit in conjunction with the REG_MODE property
-         => [regulation] was made a param of [Regulate] *)
-  and regulation = [ `Idle | `Motor_speed | `Motor_sync ]
+  type regulation = [ `Idle | `Motor_speed | `Motor_sync ]
       (* It is a bit strange one does not seem to be allowed to specify
          [`Motor_speed] and [`Motor_sync] at the same time... but the
          "NXT Executable File Specification" says clearly "Unlike the
@@ -747,7 +742,9 @@ struct
 
   type state = {
     speed : int;
-    mode : mode list;
+    motor_on : bool;
+    brake : bool;
+    regulation : regulation;
     turn_ratio : int;
     run_state : run_state;
     tach_limit : int;
@@ -755,22 +752,9 @@ struct
 
   (* FIXME: Is a default state useful ? *)
   let state = {
-    speed = 0;   mode = [];
-    turn_ratio = 0;   run_state = `Idle;  tach_limit = 0 (* run forever *)
+    speed = 0;   motor_on = true;  brake = false;  regulation = `Idle;
+    turn_ratio = 0;   run_state = `Running;  tach_limit = 0 (* run forever *)
   }
-
-
-  (* If [ml = []], then motors are in COAST mode (0x00). *)
-  let chars_of_mode_list ml =
-    let update (mode, reg) (m: mode) = match m with
-      | `Motor_on ->   mode lor 0x01, reg
-      | `Brake ->      mode lor 0x02, reg
-      | `Regulate r -> mode lor 0x04, (match r with
-                                       | `Idle -> '\x00'
-                                       | `Motor_speed -> '\x01'
-                                       | `Motor_sync -> '\x02')  in
-    let mode, reg = List.fold_left update (0x00, '\x00') ml in
-    (Char.unsafe_chr mode, reg)
 
   let set ?(check_status=false) conn port st =
     if st.speed < -100 || st.speed > 100 then
@@ -780,18 +764,28 @@ struct
     if st.tach_limit < 0 then
       invalid_arg "Mindstorm.Motor.set: state.tach_limit must be >= 0";
     (* SETOUTPUTSTATE *)
-    cmd conn ~check_status ~byte1:'\x04' ~n:13 (fun pkg ->
+    cmd conn ~check_status ~byte1:'\x04' ~n:13   begin fun pkg ->
       pkg.[4] <- port;
       pkg.[5] <- Char.unsafe_chr(127 + st.speed);
-      let mode, regulation = chars_of_mode_list st.mode in
-      pkg.[6] <- mode;
+      let mode = 0x00 (* COAST mode *) in
+      let mode = if st.motor_on then mode lor 0x01 else mode in
+      let mode = if st.brake then mode lor 0x02 else mode in
+      (* [Regulate]: Enables active power regulation according to
+         value of REG_MODE (interactive motors only).  You must use
+         the REGULATED bit in conjunction with the REG_MODE property =>
+         [regulate] influences 2 bytes send to the brick *)
+      let mode, regulation = (match st.regulation with
+                              | `Idle -> mode, '\x00'
+                              | `Motor_speed -> mode lor 0x04, '\x01'
+                              | `Motor_sync  -> mode lor 0x04, '\x02') in
+      pkg.[6] <- Char.unsafe_chr mode;
       pkg.[7] <- regulation;
       pkg.[8] <- Char.unsafe_chr(127 + st.turn_ratio);
       pkg.[9] <- (match st.run_state with
                   | `Idle -> '\x00' | `Ramp_up -> '\x10'
                   | `Running -> '\x20' | `Ramp_down -> '\x40');
-      copy_int32 st.tach_limit pkg 10;
-    )
+      copy_int32 st.tach_limit pkg 10; (* bytes 8-11 (bug in the spec) *)
+    end
 
   let get conn motor =
     let pkg = String.create 5 in
@@ -802,20 +796,17 @@ struct
     pkg.[4] <- motor;
     conn.send conn.fd pkg;
     let ans = conn.recv conn.fd 25 in
-    let mode =
-      let m = Char.code ans.[5] in
-      let l = if m land 0x04 = 0 then [] else (
-        match ans.[5] with
-        | '\x00' -> [`Regulate `Idle]
-        | '\x01' -> [`Regulate `Motor_speed]
-        | '\x02' -> [`Regulate `Motor_sync]
-        | _ -> [`Regulate `Idle]
-      ) in
-      let l = if m land 0x02 = 0 then l else `Brake :: l in
-      if m land 0x01 = 0 then l else `Motor_on :: l in
+    let mode = Char.code ans.[5] in
     let st =
-      { speed = Char.code ans.[4] - 127;
-        mode = mode;
+      { speed = Char.code ans.[4] - 127; (* signed *)
+        motor_on = (mode land 0x01 <> 0);
+        brake = (mode land 0x02 <> 0);
+        regulation = (if mode land 0x04 = 0 then `Idle
+                      else match ans.[6] with
+                      | '\x00' -> `Idle
+                      | '\x01' -> `Motor_speed
+                      | '\x02' -> `Motor_sync
+                      | _ -> `Idle);
         turn_ratio = Char.code ans.[7] - 127;
         run_state = (match ans.[8] with
                      | '\x00' -> `Idle | '\x10' -> `Ramp_up
@@ -1040,8 +1031,6 @@ struct
 
 
     let get ?(check_status=false) conn port var =
-      ignore(read conn port); (* remove pending reply bytes in the NXT
-                                 buffers. FIXME: needed? *)
       let s = String.create 3 in
       s.[0] <- '\x02';
       s.[1] <- (match var with
@@ -1059,7 +1048,7 @@ struct
                 | `Scale_mul -> '\x51'
                 | `Scale_div -> '\x52'
                );
-      s.[2] <- '\x03'; (* FIXME: R + 0x03, means? *)
+      s.[2] <- '\x04'; (* FIXME: R + 0x03, means? *)
       write ~check_status conn port s ~rx_length:1; (* 1 byte in return *)
       if check_status then (
         let bytes_ready = get_status conn port in
