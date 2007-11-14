@@ -397,45 +397,70 @@ sig
           recommended you give meaningful names to values of type
           [port] through let bindings.  *)
 
+  type sensor_type =
+      [ `No_sensor
+      | `Switch
+      | `Temperature
+      | `Reflection
+      | `Angle
+      | `Light_active
+      | `Light_inactive
+      | `Sound_db
+      | `Sound_dba
+      | `Custom
+      | `Lowspeed
+      | `Lowspeed_9v
+      | `Highspeed ]
   (** Sensor type for a port.  The sensor type primarily affects
       scaling factors used to calculate the normalized sensor value
-      [`Raw], but some values have other side effects.  *)
-  type sensor_type =
-      [ `No_sensor    (** No sensor configured *)
-      | `Switch	      (** NXT or RCX touch sensor *)
-      | `Temperature  (** RCX temperature sensor *)
-      | `Reflection   (** RCX light sensor *)
-      | `Angle        (** RCX rotation sensor *)
-      | `Light_active (** NXT light sensor with floodlight enabled *)
-      | `Light_inactive (** NXT light sensor with floodlight disabled *)
-      | `Sound_db     (** NXT sound sensor; includes sounds too high
-                          or too low for our ears *)
-      | `Sound_dba    (** NXT sound sensor; focuses on sounds within
-                          human hearing *)
-      | `Custom
-      | `Lowspeed     (** I2C digital sensor *)
-      | `Lowspeed_9v  (** I2C digital sensor, 9V power (e.g. ultrasonic) *)
-      | `Highspeed ]
+      [`Raw], but some values have other side effects.
+
+      - [`No_sensor]:      No sensor configured
+      - [`Switch]:	  NXT or RCX touch sensor
+      - [`Temperature]:    RCX temperature sensor
+      - [`Reflection]:     RCX light sensor
+      - [`Angle]:          RCX rotation sensor
+      - [`Light_active]:   NXT light sensor with floodlight enabled
+      - [`Light_inactive]: NXT light sensor with floodlight disabled
+      - [`Sound_db]:       NXT sound sensor; includes sounds too high
+                          or too low for our ears.
+      - [`Sound_dba]:      NXT sound sensor; focuses on sounds within
+                          human hearing
+      - [`Custom]:
+      - [`Lowspeed]:     I2C digital sensor
+      - [`Lowspeed_9v]:  I2C digital sensor, 9V power (e.g. ultrasonic) *)
+
   type mode =
-      [ `Raw          (** Report scaled value equal to raw value. *)
-      | `Bool (** Report scaled value as 1 (TRUE) or 0 (FALSE).
-                  The firmware uses inverse Boolean logic to match
-                  the physical characteristics of NXT sensors.
-                  Readings are FALSE if raw value exceeds 55% of
-                  total range; readings are TRUE if raw value is
-                  less than 45% of total range.  *)
-      | `Transition_cnt (** Report scaled value as number of
-                            transitions between TRUE and FALSE.  *)
-      | `Period_counter (** Report scaled value as number of
-                            transitions from FALSE to TRUE, then back
-                            to FALSE.  *)
-      | `Pct_full_scale (** Report scaled value as percentage of full
-                            scale reading for configured sensor type.  *)
-      | `Celsius    (** Scale temperature reading to degrees Celsius. *)
-      | `Fahrenheit (** Scale temperature reading to degrees Fahrenheit. *)
-      | `Angle_steps (** Report scaled value as count of ticks on
-                         RCX-style rotation sensor. *)
+      [ `Raw
+      | `Bool
+      | `Transition_cnt
+      | `Period_counter
+      | `Pct_full_scale
+      | `Celsius
+      | `Fahrenheit
+      | `Angle_steps
       | `Slope_mask ]
+        (** Sensor mode.
+
+            -  [`Raw]: Report scaled value equal to raw value.
+            - [`Bool]: Report scaled value as 1 (TRUE) or 0 (FALSE).
+              The firmware uses inverse Boolean logic to match the
+              physical characteristics of NXT sensors.  Readings
+              are FALSE if raw value exceeds 55% of total range;
+              readings are TRUE if raw value is less than 45% of
+              total range.
+            - [`Transition_cnt]: Report scaled value as number of
+            transitions between TRUE and FALSE.
+            - [`Period_counter]: Report scaled value as number of
+                            transitions from FALSE to TRUE, then back
+                            to FALSE.
+            - [`Pct_full_scale]: Report scaled value as percentage of full
+                            scale reading for configured sensor type.
+            - [`Celsius]: Scale temperature reading to degrees Celsius.
+            - [`Fahrenheit]: Scale temperature reading to degrees Fahrenheit.
+            - [`Angle_steps]: Report scaled value as count of ticks on
+            RCX-style rotation sensor.
+        *)
 
   (** Data read from sensors. *)
   type data = {
