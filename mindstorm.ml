@@ -606,7 +606,8 @@ let get_device_info conn =
   }
 
 let delete_user_flash conn =
-  failwith "TBD"
+  conn.send conn.fd "\002\000\x01\xA0"; (* DELETE USER FLASH *)
+  ignore(conn.recv conn.fd 3)
 
 let bluetooth_reset conn =
  conn.send conn.fd "\002\000\x01\A4"; (* BLUETOOTH FACTORY RESET *)
@@ -834,7 +835,7 @@ struct
     | `S3 -> '\002' | `S4 -> '\003'
 
   let set ?(check_status=false) conn port sensor_type sensor_mode =
-    cmd conn ~check_status ~byte1:'\x05' ~n:5  begin fun pkg ->
+    cmd conn ~check_status ~byte1:'\x05' ~n:5 begin fun pkg ->
       pkg.[4] <- char_of_port port;
       pkg.[5] <- (match sensor_type with
                   | `No_sensor	 -> '\x00'
