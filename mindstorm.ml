@@ -283,7 +283,17 @@ let connect_bluetooth tty =
   { fd = fd;  send = bt_send;  recv = bt_recv }
 
 ELSE
-(* Windows and Unix *)
+IFDEF WIN32 THEN
+(* Windows *)
+external socket_bluetooth : string -> Unix.file_descr
+  = "ocaml_mindstorm_connect"
+
+let connect_bluetooth addr =
+  let fd = socket_bluetooth ("\\\\.\\" ^ addr) in
+  { fd = fd;  send = bt_send;  recv = bt_recv }
+
+ELSE
+(* Unix *)
 external socket_bluetooth : string -> Unix.file_descr
   = "ocaml_mindstorm_connect"
 
@@ -291,6 +301,7 @@ let connect_bluetooth addr =
   let fd = socket_bluetooth addr in
   { fd = fd;  send = bt_send;  recv = bt_recv }
 
+ENDIF
 ENDIF
 
 
