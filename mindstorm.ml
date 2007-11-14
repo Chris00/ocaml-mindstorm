@@ -728,7 +728,11 @@ struct
     )
 
   let get conn motor =
-    let pkg = "\003\000\x00\x06 " in
+    let pkg = String.create 5 in
+    pkg.[0] <- '\003'; (* BT bytes *)
+    pkg.[1] <- '\000';
+    pkg.[2] <- '\x00'; (* get an answer *)
+    pkg.[3] <- '\x06';
     pkg.[4] <- motor;
     conn.send conn.fd pkg;
     let ans = conn.recv conn.fd 25 in
@@ -849,7 +853,11 @@ struct
   }
 
   let get conn port =
-    let pkg = "\003\000\x00\x07 " in
+    let pkg = String.create 5 in
+    pkg.[0] <- '\003'; (* BT bytes *)
+    pkg.[1] <- '\000';
+    pkg.[2] <- '\x00'; (* get a reply *)
+    pkg.[3] <- '\x07';
     pkg.[4] <- char_of_port port;
     conn.send conn.fd pkg;
     let ans = conn.recv conn.fd 16 in
@@ -895,7 +903,13 @@ struct
   (** {3 Low speed} *)
 
   let get_status conn port =
-    failwith "TBD"
+    let pkg = String.create 3 in
+    pkg.[0] <- '\x00';
+    pkg.[1] <- '\x0E';
+    pkg.[2] <- char_of_port port;
+    conn.send conn.fd pkg;
+    let ans = conn.recv 4 in
+    Char.code ans.[3]
 
   let write ?(check_status=false) conn port ?(rx_length=0) tx_data =
     let n = String.length tx_data in
@@ -914,7 +928,9 @@ struct
     if check_status then ignore(conn.recv conn.fd 3)
 
   let read conn port =
-    let pkg = "\x00\x10 " in
+    let pkg = String.create 3 in
+    pkg.[0] <- '\x00';
+    pkg.[1] <- '\x10';
     pkg.[2] <- char_of_port port;
     conn.send conn.fd pkg;
     let ans = conn.recv 20 in
