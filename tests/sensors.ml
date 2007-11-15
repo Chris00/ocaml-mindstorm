@@ -8,8 +8,6 @@ let bt =
   end
   else Sys.argv.(1)
 
-let wait_for_ENTER () = ignore(read_line())
-
 let repeat_till_ENTER f =
   let params = Unix.tcgetattr Unix.stdin in
   Unix.tcsetattr Unix.stdin Unix.TCSAFLUSH
@@ -28,13 +26,12 @@ let repeat_till_ENTER f =
 
 
 let () =
-  printf "Please connect sensors as follow:\n";
+  printf "It is assumed that sensors are connected as follows:\n";
   printf "- port 1: touch sensor\n";
   printf "- port 2: light sensor\n";
   printf "- port 3: sound sensor\n";
   printf "- port 4: ultrasonic sensor\n";
   printf "Press ENTER. ";
-  wait_for_ENTER();
   let conn = Mindstorm.connect_bluetooth bt in
 
   let test_sensor name port =
@@ -45,10 +42,11 @@ let () =
         i data.Sensor.raw data.Sensor.normalized data.Sensor.scaled;
     end;
     printf "\n" in
-
+(*
   Sensor.set conn `S1 `Switch `Bool;
   test_sensor "Touch (bool)" `S1;
-  (*   Sensor.set conn `S1 `Switch `Transition_cnt; *)
+  Sensor.set conn `S1 `Switch `Transition_cnt;
+  test_sensor "Touch (transition)" `S1;
   Sensor.set conn `S1 `Switch `Period_counter;
   test_sensor "Touch (period)" `S1;
 
@@ -59,13 +57,17 @@ let () =
   Sensor.set conn `S3 `Sound_db `Pct_full_scale;
   (*   Sensor.set conn `S3 `Sound_dba `Pct_full_scale; *)
   test_sensor "Sound" `S3;
-
-  Sensor.set_ultrasonic conn `S4;
-    printf "- Ultrasonic sensor; when finished press ENTER.%!\n";
-    repeat_till_ENTER begin fun i ->
-      let dist = Sensor.get_ultrasonic conn `S4 in
-      printf "%4i:\t dist = %i\r%!" i dist
-    end;
-    printf "\n";
+*)
+  Sensor.Ultrasonic.set conn `S4 `Meas_cont;
+  printf "- Ultrasonic sensor; when finished press ENTER.%!\n";
+  repeat_till_ENTER begin fun i ->
+    try
+      let dist = Sensor.Ultrasonic.get conn `S4 `Byte0 ~check_status:true in
+      printf "%4i:\t                    dist = %i\n%!" i dist
+    with e ->
+      printf "%4i:\t %s\r%!" i (Printexc.to_string e);
+      Unix.sleep 1
+  end;
+  printf "\n";
 
   Mindstorm.close conn

@@ -24,6 +24,10 @@ tests: mindstorm.cma
 test.exe: mindstorm_unix.c test.ml
 	$(OCAMLC) -o $@ -custom unix.cma -I $(CAML_H) -cclib -lbluetooth $^
 
+.PHONY: ex
+ex: mindstorm.cma
+	$(CD) examples; $(MAKE) -B byte
+
 # Generate HTML documentation
 .PHONY: doc
 doc:
