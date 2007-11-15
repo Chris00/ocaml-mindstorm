@@ -742,7 +742,8 @@ struct
 
   type state = {
     speed : int;
-    motor_on : bool;
+    motor_on : bool; (* FIXME: do we remove this and set
+                        motor_on = (speed <> 0) ? *)
     brake : bool;
     regulation : regulation;
     turn_ratio : int;
@@ -1008,26 +1009,40 @@ struct
      http://mindstorms.lego.com/Overview/NXTreme.aspx *)
   module Ultrasonic =
   struct
-    let write_cmd ~check_status conn port cmd byte v =
+    let write_cmd ~check_status conn port byte2 byte3 =
+      (* Special write because the strings are statically known *)
+      let pkg = String.create 10 in
+      pkg.[0] <- '\008'; pkg.[1] <- '\000'; (* 2 BT bytes *)
+      pkg.[2] <- if check_status then '\x00' else '\x80';
+      pkg.[3] <- '\x0F'; (* LSWRITE *)
+      pkg.[4] <- char_of_port port;
+      pkg.[5] <- '\003'; (* tx bytes *)
+      pkg.[6] <- '\000'; (* 0 rx bytes (no answer) *)
+      pkg.[7] <- '\x02'; (* 1st byte of command *)
+      pkg.[8] <- byte2; (* 2nd byte of command *)
+      pkg.[9] <- byte3; (* 3rd byte of command *)
+      conn.send conn.fd pkg;
+      if check_status then ignore(conn.recv conn.fd 3)
+
+    let write_val ~check_status conn port cmd byte2 v =
       if v < 0 || v > 255 then invalid_arg(Printf.sprintf "Mindstorm.Sensor.\
 		Ultrasonic.set: %s arg not in 0 .. 255" cmd);
-          let s = String.create 3 in
-          s.[0] <- '\x02';  s.[1] <- byte;  s.[2] <- Char.unsafe_chr v;
-          write ~check_status conn port s
+      write_cmd ~check_status conn port byte2 (Char.unsafe_chr v)
 
     let set ?(check_status=false) conn port cmd =
+      (* FIXME: Do we resend the `Lowspeed_9v for each set? *)
       set ~check_status conn port `Lowspeed_9v `Raw;
       match cmd with
-      | `Off -> write ~check_status conn port "\x02\x41\x00"
-      | `Meas -> write ~check_status conn port "\x02\x41\x01"
-      | `Meas_cont -> write ~check_status conn port "\x02\x41\x02"
-      | `Event -> write ~check_status conn port "\x02\x41\x03"
-      | `Reset -> write ~check_status conn port "\x02\x41\x04"
+      | `Off ->       write_cmd ~check_status conn port '\x41' '\x00'
+      | `Meas ->      write_cmd ~check_status conn port '\x41' '\x01'
+      | `Meas_cont -> write_cmd ~check_status conn port '\x41' '\x02'
+      | `Event ->     write_cmd ~check_status conn port '\x41' '\x03'
+      | `Reset ->     write_cmd ~check_status conn port '\x41' '\x04'
       | `Meas_interval i ->
-          write_cmd ~check_status conn port "`Meas_interval" '\x40' i
-      | `Zero z -> write_cmd ~check_status conn port "`Zero" '\x50' z
-      | `Scale_mul m -> write_cmd ~check_status conn port "`Scale_mul" '\x51' m
-      | `Scale_div d -> write_cmd ~check_status conn port "`Scale_div" '\x52' d
+          write_val ~check_status conn port "`Meas_interval" '\x40' i
+      | `Zero z -> write_val ~check_status conn port "`Zero" '\x50' z
+      | `Scale_mul m -> write_val ~check_status conn port "`Scale_mul" '\x51' m
+      | `Scale_div d -> write_val ~check_status conn port "`Scale_div" '\x52' d
 
 
     let get ?(check_status=false) conn port var =

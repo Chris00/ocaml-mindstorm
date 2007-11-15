@@ -16,13 +16,14 @@ let left = Motor.a
 and right = Motor.b
 
 let speed s =
-  { Motor.speed = s;  mode = [`Motor_on];
+  { Motor.speed = s;  motor_on = s <> 0;  brake = false;
+    regulation = `Idle;
     turn_ratio = 0; run_state = `Running; tach_limit = 0  }
 
 let () =
   let conn = Mindstorm.connect_bluetooth bt in
   Sensor.set conn switch `Switch `Raw;
-  Sensor.set conn ultrasonic `Lowspeed_9v `Raw;
+  Sensor.Ultrasonic.set conn ultrasonic;
   Motor.set conn left ;
   let rec run () =
     let sw = Sensor.get conn switch in
@@ -30,8 +31,8 @@ let () =
     if sw.Sensor.normalized > 500 then begin
       let dist = (Sensor.get conn ultrasonic).Sensor.raw in
       let dist = min 50 (max 0 dist) in
-      Motor.set left (speed dist);
-      Motor.set right (speed (2 * dist - 50));
+      Motor.set conn left (speed dist);
+      Motor.set conn right (speed (2 * dist - 50));
 (*       Unix.sleep 1; *)
     end in
   run ();

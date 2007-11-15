@@ -27,6 +27,6 @@ let () =
     if sw.Sensor.scaled <> 0 then
       Motor.set conn m (speed 0) (* Stop motor *)
     else run_until_pushed()  in
-  Motor.set conn m (speed 5);
+  Motor.set conn m (speed 1);
   run_until_pushed ();
   Mindstorm.close conn
