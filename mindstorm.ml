@@ -229,17 +229,19 @@ type bluetooth
 
 (* The type parameter is because we want to distinguish usb and
    bluetooth connections as some commands are only available through USB. *)
+type conn_send = Unix.file_descr -> string -> unit
+type conn_recv = Unix.file_descr -> int -> string
 type 'a conn = {
   fd : Unix.file_descr;
   (* We need specialized function depending on the fact that the
      connection is USB or bluetooth because bluetooth requires a
      prefix of 2 bytes indicating the length of the packet. *)
-  send : Unix.file_descr -> string -> unit;
+  send : conn_send;
   (* [send fd pkg] sends the package [pkg] over [fd].  [pkg] is
      supposed to come prefixed with 2 bytes indicating its length
      (since this is necessary for bluetooth) -- they will be stripped
      for USB. *)
-  recv : Unix.file_descr -> int -> string;
+  recv : conn_recv;
   (* [recv fd n] reads a package a length [n] and return it as a
      string.  For bluetooth, the prefix of 2 bytes indicating the
      length are also read but not returned (and not counted in [n]).
@@ -310,8 +312,8 @@ ENDIF
 
 type in_channel = {
   in_fd : Unix.file_descr;
-  in_send : Unix.file_descr -> string -> unit;
-  in_recv : Unix.file_descr -> int -> string;
+  in_send : conn_send;
+  in_recv : conn_recv;
   in_handle : char; (* the handle given by the brick *)
   in_length : int; (* file size *)
   mutable in_closed : bool;
@@ -373,8 +375,8 @@ let input ch buf ofs len =
 
 type out_channel = {
   out_fd : Unix.file_descr;
-  out_send : Unix.file_descr -> string -> unit;
-  out_recv : Unix.file_descr -> int -> string;
+  out_send : conn_send;
+  out_recv : conn_recv;
   out_handle : char; (* the handle given by the brick *)
   out_length : int; (* size provided by the user of the brick *)
   mutable out_closed : bool;
@@ -479,8 +481,8 @@ module Find =
 struct
   type iterator = {
     it_fd : Unix.file_descr;
-    it_send : Unix.file_descr -> string -> unit;
-    it_recv : Unix.file_descr -> int -> string;
+    it_send : conn_send;
+    it_recv : conn_recv;
     it_handle : char;
     mutable it_closed : bool;
     mutable it_fname : string; (* current filename *)
@@ -681,6 +683,18 @@ let poll_command conn buf len =
   conn.send conn.fd pkg;
   let ans = conn.recv conn.fd 65 in
   (Char.code ans.[4], String.sub ans 5 60) (* FIXME: Null terminator? *)
+
+
+let keep_alive conn =
+  conn.send conn.fd "\002\000\x00\x0D";
+  let ans = conn.recv conn.fd 7 in
+  int32 ans 3
+
+
+let battery_level conn =
+  conn.send conn.fd "\002\000\x00\x0B";
+  let ans = conn.recv conn.fd 5 in
+  int16 ans 3
 
 
 (* ---------------------------------------------------------------------- *)
@@ -988,7 +1002,7 @@ struct
     if check_status then ignore(conn.recv conn.fd 3)
 
 
-  let raw_read conn port =
+  let read conn port =
     let pkg = String.create 5 in
     pkg.[0] <- '\003'; (* 2 BT bytes *)
     pkg.[1] <- '\000';
@@ -996,10 +1010,7 @@ struct
     pkg.[3] <- '\x10'; (* LSREAD *)
     pkg.[4] <- char_of_port port;
     conn.send conn.fd pkg;
-    conn.recv conn.fd 20
-
-  let read conn port =
-    let ans = raw_read conn port in
+    let ans = conn.recv conn.fd 20 in
     let rx_length = min (Char.code ans.[3]) 16 in
     String.sub ans 4 rx_length
 
@@ -1009,67 +1020,115 @@ struct
      http://mindstorms.lego.com/Overview/NXTreme.aspx *)
   module Ultrasonic =
   struct
-    let write_cmd ~check_status conn port byte2 byte3 =
-      (* Special write because the strings are statically known *)
+    type t = {
+      u_fd : Unix.file_descr;
+      u_send : conn_send;
+      u_recv : conn_recv;
+      port : char;
+      ls_status : string; (* share the string across all status calls *)
+    }
+
+    let make ?(check_status=false) conn port =
+      set ~check_status conn port `Lowspeed_9v `Raw;
+      let port = char_of_port port in
+      let ls_status = String.create 5 in
+      ls_status.[0] <- '\003'; (* 2 BT bytes *)
+      ls_status.[1] <- '\000';
+      ls_status.[2] <- '\x00';
+      ls_status.[3] <- '\x0E'; (* LSGETSTATUS *)
+      ls_status.[4] <- port;
+      { u_fd = conn.fd;
+        u_send = conn.send;
+        u_recv = conn.recv;
+        port = port;
+        ls_status = ls_status;
+      }
+
+    let write_cmd ~check_status us byte2 byte3 =
+      (* Special write because the string length is statically known *)
       let pkg = String.create 10 in
       pkg.[0] <- '\008'; pkg.[1] <- '\000'; (* 2 BT bytes *)
       pkg.[2] <- if check_status then '\x00' else '\x80';
       pkg.[3] <- '\x0F'; (* LSWRITE *)
-      pkg.[4] <- char_of_port port;
+      pkg.[4] <- us.port;
       pkg.[5] <- '\003'; (* tx bytes *)
-      pkg.[6] <- '\000'; (* 0 rx bytes (no answer) *)
+      pkg.[6] <- '\000'; (* rx bytes (length answer) *)
       pkg.[7] <- '\x02'; (* 1st byte of command *)
-      pkg.[8] <- byte2; (* 2nd byte of command *)
-      pkg.[9] <- byte3; (* 3rd byte of command *)
-      conn.send conn.fd pkg;
-      if check_status then ignore(conn.recv conn.fd 3)
+      pkg.[8] <- byte2;  (* 2nd byte of command *)
+      pkg.[9] <- byte3;  (* 3rd byte of command *)
+      us.u_send us.u_fd pkg;
+      if check_status then ignore(us.u_recv us.u_fd 3)
 
-    let write_val ~check_status conn port cmd byte2 v =
+    let write_val ~check_status us cmd byte2 v =
       if v < 0 || v > 255 then invalid_arg(Printf.sprintf "Mindstorm.Sensor.\
 		Ultrasonic.set: %s arg not in 0 .. 255" cmd);
-      write_cmd ~check_status conn port byte2 (Char.unsafe_chr v)
+      write_cmd ~check_status us byte2 (Char.unsafe_chr v)
 
-    let set ?(check_status=false) conn port cmd =
-      (* FIXME: Do we resend the `Lowspeed_9v for each set? *)
-      set ~check_status conn port `Lowspeed_9v `Raw;
+    let set ?(check_status=false) us cmd =
       match cmd with
-      | `Off ->       write_cmd ~check_status conn port '\x41' '\x00'
-      | `Meas ->      write_cmd ~check_status conn port '\x41' '\x01'
-      | `Meas_cont -> write_cmd ~check_status conn port '\x41' '\x02'
-      | `Event ->     write_cmd ~check_status conn port '\x41' '\x03'
-      | `Reset ->     write_cmd ~check_status conn port '\x41' '\x04'
-      | `Meas_interval i ->
-          write_val ~check_status conn port "`Meas_interval" '\x40' i
-      | `Zero z -> write_val ~check_status conn port "`Zero" '\x50' z
-      | `Scale_mul m -> write_val ~check_status conn port "`Scale_mul" '\x51' m
-      | `Scale_div d -> write_val ~check_status conn port "`Scale_div" '\x52' d
+      | `Off ->       write_cmd ~check_status us '\x41' '\x00'
+      | `Meas ->      write_cmd ~check_status us '\x41' '\x01'
+      | `Meas_cont -> write_cmd ~check_status us '\x41' '\x02'
+      | `Event ->     write_cmd ~check_status us '\x41' '\x03'
+      | `Reset ->     write_cmd ~check_status us '\x41' '\x04'
+      | `Meas_interval i -> write_val ~check_status us "`Meas_interval" '\x40' i
+      | `Zero z -> write_val ~check_status us "`Zero" '\x50' z
+      | `Scale_mul m -> write_val ~check_status us "`Scale_mul" '\x51' m
+      | `Scale_div d -> write_val ~check_status us "`Scale_div" '\x52' d
 
+    (* See [read] above *)
+    let lsread us =
+      let pkg = String.create 5 in
+      pkg.[0] <- '\003'; (* 2 BT bytes *)
+      pkg.[1] <- '\000';
+      pkg.[2] <- '\x00';
+      pkg.[3] <- '\x10'; (* LSREAD *)
+      pkg.[4] <- us.port;
+      us.u_send us.u_fd pkg;
+      us.u_recv us.u_fd 20 (* I2C data starts at byte 4 *)
 
-    let get ?(check_status=false) conn port var =
-      let s = String.create 3 in
-      s.[0] <- '\x02';
-      s.[1] <- (match var with
-                | `Byte0 -> '\x42'
-                | `Byte1 -> '\x43'
-                | `Byte2 -> '\x44'
-                | `Byte3 -> '\x45'
-                | `Byte4 -> '\x46'
-                | `Byte5 -> '\x47'
-                | `Byte6 -> '\x48'
-                | `Byte7 -> '\x49'
-                | `State -> '\x41'
-                | `Meas_interval -> '\x40'
-                | `Zero -> '\x50'
-                | `Scale_mul -> '\x51'
-                | `Scale_div -> '\x52'
-               );
-      s.[2] <- '\x04'; (* FIXME: R + 0x03, means? *)
-      write ~check_status conn port s ~rx_length:1; (* 1 byte in return *)
-      if check_status then (
-        let bytes_ready = get_status conn port in
-        if bytes_ready = 0 then failwith "Mindstorm.Sensor.Ultrasonic.get";
-      );
-      let data = raw_read conn port in
+    let data_ready us =
+      us.u_send us.u_fd us.ls_status;
+      let ans = us.u_recv us.u_fd 4 in
+      ans.[3] <> '\000'
+
+    let get ?(check_status=false) us var =
+      (* Retry any pending garbage bytes in the NXT buffers.  FIXME:
+         when is this needed?  It can even stall the program if no
+         bytes are to be read?  *)
+      (* ignore(lsread us); *)
+      (* Retrieve the data of [var] *)
+      let pkg = String.create 9 in
+      pkg.[0] <- '\008'; pkg.[1] <- '\000'; (* 2 BT bytes *)
+      pkg.[2] <- if check_status then '\x00' else '\x80';
+      pkg.[3] <- '\x0F'; (* LSWRITE *)
+      pkg.[4] <- us.port;
+      pkg.[5] <- '\003'; (* tx bytes *)
+      pkg.[6] <- '\001'; (* rx bytes (# bytes to read) *)
+      pkg.[7] <- '\x02'; (* 1st byte of command: sonar address *)
+      pkg.[8] <- (match var with (* 2nd byte of command: var to read *)
+                  | `Byte0 -> '\x42'
+                  | `Byte1 -> '\x43'
+                  | `Byte2 -> '\x44'
+                  | `Byte3 -> '\x45'
+                  | `Byte4 -> '\x46'
+                  | `Byte5 -> '\x47'
+                  | `Byte6 -> '\x48'
+                  | `Byte7 -> '\x49'
+                  | `State -> '\x41'
+                  | `Meas_interval -> '\x40'
+                  | `Zero -> '\x50'
+                  | `Scale_mul -> '\x51'
+                  | `Scale_div -> '\x52'
+                 );
+      (* 'R + 0x03', is sent by the brick itself. *)
+      us.u_send us.u_fd pkg;
+      if check_status then ignore(us.u_recv us.u_fd 3);
+      (* Check the status of I2C message channel until idle, timeout or
+         an error occurs. FIXME: until? needed? *)
+(*    if not(data_ready us) then failwith "Mindstorm.Sensor.Ultrasonic.get"; *)
+      (* Read sensor data *)
+      let data = lsread us in
       Char.code data.[4]
 
   end
@@ -1104,14 +1163,3 @@ struct
     failwith "TBD"
 end
 
-
-let keep_alive conn =
-  conn.send conn.fd "\002\000\x00\x0D";
-  let ans = conn.recv conn.fd 7 in
-  int32 ans 3
-
-
-let battery_level conn =
-  conn.send conn.fd "\002\000\x00\x0B";
-  let ans = conn.recv conn.fd 5 in
-  int16 ans 3

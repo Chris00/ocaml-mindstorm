@@ -525,7 +525,14 @@ sig
       ultrasonic sensor through the I2C protocol. *)
   module Ultrasonic :
   sig
-    val set : ?check_status:bool -> 'a conn -> port ->
+    type t
+      (** Represent an initialized ultrasonic sensor. *)
+
+    val make : ?check_status:bool -> 'a conn -> port -> t
+      (** [make conn port] initialize the sensor on port [port] as
+          being an ultrasonic one. *)
+
+    val set : ?check_status:bool -> t ->
       [ `Off | `Meas | `Meas_cont | `Event | `Reset
       | `Meas_interval of int | `Zero of int
       | `Scale_mul of int | `Scale_div of int ] -> unit
@@ -555,7 +562,7 @@ sig
           - [`Reset]: resets the ultrasonic sensor (FIXME: to factory
           defaults ?).  *)
 
-    val get : ?check_status:bool -> 'a conn -> port ->
+    val get : ?check_status:bool -> t ->
       [ `Byte0 | `Byte1 | `Byte2 | `Byte3 | `Byte4 | `Byte5 | `Byte6 | `Byte7
       | `State | `Meas_interval | `Zero | `Scale_mul | `Scale_div
       ] -> int
