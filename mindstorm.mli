@@ -510,9 +510,12 @@ sig
 
   val write : ?check_status:bool ->
     'a conn -> port -> ?rx_length:int -> string -> unit
-    (** Write data to lowspeed I2C port.  This is the protocol
-        (e.g. for talking to the
-        ultrasonic sensor).
+    (** [write conn port data] writes [data] to lowspeed I2C sensor
+        connected to the [port].  This is the protocol (e.g. for
+        talking to the ultrasonic sensor).
+
+        @param rx_length gives the number of bytes to receive.
+        Default: [0] i.e. no answer expected.
 
         @param check_status whether to check the status returned by
         the brick.  Default: [false].  *)
@@ -617,11 +620,14 @@ end
     thought as advanced direct commands.  *)
 module Message :
 sig
-  val write : 'a conn -> int -> string -> unit
+  type mailbox = [`B0 | `B1 | `B2 | `B3 | `B4 | `B5 | `B6 | `B7 | `B8 | `B9]
+
+  val write : 'a conn -> mailbox -> string -> unit
     (** [write conn box msg] writes the message [msg] to the inbox
         [box] on the NXT.  This is used to send messages to a
         currently running program. *)
-  val read : 'a conn -> ?remove:bool -> int -> string
+
+  val read : 'a conn -> ?remove:bool -> mailbox -> string
     (** [read conn box] returns the message from the inbox [box] on
         the NXT.
         @param remove if true, clears the message from the remote inbox.

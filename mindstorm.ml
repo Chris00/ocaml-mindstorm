@@ -995,7 +995,7 @@ struct
     pkg.[2] <- if check_status then '\x00' else '\x80';
     pkg.[3] <- '\x0F'; (* LSWRITE *)
     pkg.[4] <- char_of_port port;
-    pkg.[5] <- Char.unsafe_chr n;
+    pkg.[5] <- Char.unsafe_chr n; (* tx bytes (# bytes sent) *)
     pkg.[6] <- Char.unsafe_chr rx_length;
     conn.send conn.fd pkg;
     ignore(Unix.write conn.fd tx_data 0 n);
@@ -1051,7 +1051,7 @@ struct
       pkg.[2] <- if check_status then '\x00' else '\x80';
       pkg.[3] <- '\x0F'; (* LSWRITE *)
       pkg.[4] <- us.port;
-      pkg.[5] <- '\003'; (* tx bytes *)
+      pkg.[5] <- '\003'; (* tx bytes (# bytes sent) *)
       pkg.[6] <- '\000'; (* rx bytes (length answer) *)
       pkg.[7] <- '\x02'; (* 1st byte of command *)
       pkg.[8] <- byte2;  (* 2nd byte of command *)
@@ -1103,7 +1103,7 @@ struct
       pkg.[2] <- if check_status then '\x00' else '\x80';
       pkg.[3] <- '\x0F'; (* LSWRITE *)
       pkg.[4] <- us.port;
-      pkg.[5] <- '\003'; (* tx bytes *)
+      pkg.[5] <- '\002'; (* tx bytes (# bytes sent) *)
       pkg.[6] <- '\001'; (* rx bytes (# bytes to read) *)
       pkg.[7] <- '\x02'; (* 1st byte of command: sonar address *)
       pkg.[8] <- (match var with (* 2nd byte of command: var to read *)
@@ -1121,7 +1121,7 @@ struct
                   | `Scale_mul -> '\x51'
                   | `Scale_div -> '\x52'
                  );
-      (* 'R + 0x03', is sent by the brick itself. *)
+      (* 'Restart Messaging + 0x03', is sent by the brick itself. *)
       us.u_send us.u_fd pkg;
       if check_status then ignore(us.u_recv us.u_fd 3);
       (* Check the status of I2C message channel until idle, timeout or
@@ -1156,19 +1156,27 @@ end
 
 module Message =
 struct
-  let write conn mailbox msg =
+  type mailbox = [`B0 | `B1 | `B2 | `B3 | `B4 | `B5 | `B6 | `B7 | `B8 | `B9]
+
+  let char_of_mailbox = function
+    | `B0 -> '\x00' | `B1 -> '\x01' | `B2 -> '\x02'
+    | `B3 -> '\x03' | `B4 -> '\x04' | `B5 -> '\x05'
+    | `B6 -> '\x06' | `B7 -> '\x07' | `B8 -> '\x08'
+    | `B9 -> '\x09'
+
+  let write ?(check_status=false) conn mailbox msg =
     let len = String.length msg in
-    assert(len < 60);
+    if len > 58 then invalid_arg "Mindstorm.Message.write: message length > 58";
     let pkg = String.create (len + 7) in
-    copy_int16 (len+7) pkg 0;
-    pkg.[2] <- '\x00';
+    copy_int16 (len + 5) pkg 0; (* cmd length = 4 + msg length + one '\000' *)
+    pkg.[2] <- if check_status then '\x00' else '\x80';
     pkg.[3] <- '\x09';
-    pkg.[4] <- Char.unsafe_chr mailbox;
+    pkg.[4] <- char_of_mailbox mailbox;
     pkg.[5] <- Char.unsafe_chr len;
     String.blit msg 0 pkg 6 len;
-    String.fill pkg (len+6) (len+7) '\000';
+    pkg.[len+6] <- '\000';
     conn.send conn.fd pkg;
-    ignore(conn.recv conn.fd 3);;
+    if check_status then ignore(conn.recv conn.fd 3)
 
   let read conn ?(remove=false) mailbox =
     failwith "TBD"
