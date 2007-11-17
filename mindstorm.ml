@@ -1157,7 +1157,18 @@ end
 module Message =
 struct
   let write conn mailbox msg =
-    failwith "TBD"
+    let len = String.length msg in
+    assert(len < 60);
+    let pkg = String.create (len + 7) in
+    copy_int16 (len+7) pkg 0;
+    pkg.[2] <- '\x00';
+    pkg.[3] <- '\x09';
+    pkg.[4] <- Char.unsafe_chr mailbox;
+    pkg.[5] <- Char.unsafe_chr len;
+    String.blit msg 0 pkg 6 len;
+    String.fill pkg (len+6) (len+7) '\000';
+    conn.send conn.fd pkg;
+    ignore(conn.recv conn.fd 3);;
 
   let read conn ?(remove=false) mailbox =
     failwith "TBD"
