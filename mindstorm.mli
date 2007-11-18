@@ -17,17 +17,18 @@
 
 
 (** OCaml-mindstorm is a library that enables you to drive Lego
-    mindsotrm NXT bricks from OCaml. Communication with the NXT brick is
-    done through bluetooth (and possibly eventually USB).
+    mindsotrm NXT bricks from OCaml (the computer is the master and
+    the brick is the slave). Communication with the NXT brick is done
+    through bluetooth (and possibly eventually USB).
 *)
 
 type usb
 type bluetooth
 
 type 'a conn
-    (** Abstract type representing a connection to a LEGO® mindstorm
-        brick.  The type parameter indicates whether this connection
-        is a USB or a bluetooth one. *)
+  (** Abstract type representing a connection to a LEGO® mindstorm
+      brick.  The type parameter indicates whether this connection
+      is a USB or a bluetooth one. *)
 
 val connect_bluetooth : string -> bluetooth conn
   (** [connect_bluetooth bdaddr] connects through bluetooth to the
@@ -196,6 +197,14 @@ sig
           motors connected to the specified port(s) will rotate
           freely.  *)
 
+  val speed : ?brake:bool -> ?sync:bool -> ?turn_ratio:int -> int -> state
+    (** [speed s] returns a state where [speed] is [s], [motor_on] is
+        true if and only if [s <> 0], [tach_limit = 0], and [run_state
+        = `Running].
+
+        @param brake turns on brake.  Default [false].
+        @param sync  turn on [`Motor_sync].  Default [false].
+        @param turn_ratio set a turn-ratio.  Default [0]. *)
 
   val set : ?check_status:bool -> 'a conn -> port -> state -> unit
     (** [set conn p st] sets the state of the motor connected to the
@@ -260,19 +269,19 @@ sig
       [`Raw], but some values have other side effects.
 
       - [`No_sensor]:      No sensor configured
-      - [`Switch]:	  NXT or RCX touch sensor
+      - [`Switch]:	   NXT or RCX touch sensor
       - [`Temperature]:    RCX temperature sensor
       - [`Reflection]:     RCX light sensor
       - [`Angle]:          RCX rotation sensor
       - [`Light_active]:   NXT light sensor with floodlight enabled
       - [`Light_inactive]: NXT light sensor with floodlight disabled
       - [`Sound_db]:       NXT sound sensor; includes sounds too high
-                          or too low for our ears.
+                           or too low for our ears.
       - [`Sound_dba]:      NXT sound sensor; focuses on sounds within
-                          human hearing
-      - [`Custom]:
-      - [`Lowspeed]:     I2C digital sensor
-      - [`Lowspeed_9v]:  I2C digital sensor, 9V power (e.g. ultrasonic) *)
+                           human hearing
+      - [`Custom]
+      - [`Lowspeed]:      I2C digital sensor
+      - [`Lowspeed_9v]:   I2C digital sensor, 9V power (e.g. ultrasonic) *)
 
   type mode =
       [ `Raw
@@ -345,8 +354,8 @@ sig
 
 
   (** {4 Low speed} *)
-  (** Commands dealing with the I2C bus available on every sensor.
-      (The port number 4 may also be high speed.) *)
+  (** Commands dealing with the I2C bus available on every digital
+      sensor.  (The port number 4 may also be high speed.) *)
 
   val get_status : 'a conn -> port -> int
     (** [get_status conn port] returns the number of bytes ready to be
@@ -373,9 +382,10 @@ sig
   module Ultrasonic :
   sig
     type t
-      (** Represent an initialized ultrasonic sensor. *)
+      (** Represent an initialized ultrasonic sensor connected to a
+          given port. *)
 
-    val make : ?check_status:bool -> 'a conn -> port -> t
+    val make : 'a conn -> port -> t
       (** [make conn port] initialize the sensor on port [port] as
           being an ultrasonic one. *)
 
@@ -383,7 +393,8 @@ sig
       [ `Off | `Meas | `Meas_cont | `Event | `Reset
       | `Meas_interval of int | `Zero of int
       | `Scale_mul of int | `Scale_div of int ] -> unit
-      (** [Ultrasonic.set conn port cmd]
+      (** [Ultrasonic.set us cmd] set the state or parameters for the
+          ultrasonic sensor [us].  [cmd] may be:
 
           - [`Off]: turns the ultrasonic sensor off.
           - [`Meas]: single shot command.  In this mode, the
@@ -406,18 +417,24 @@ sig
           - [`Scale_mul m]: set the actual scale factor.
           - [`Scale_div d]: set the actual scale divisor.
 
-          - [`Reset]: resets the ultrasonic sensor.  *)
+          - [`Reset]: resets the ultrasonic sensor.
 
-    val get : ?check_status:bool -> t ->
+          @param check_status check the return status.  Exceptionally,
+          the default is [true] because the sensor needs to time to
+          set itself up anyway and this avoids [Mindstorm.Buffer_full]
+          errors if we try to get values from the sensor. *)
+
+    val get : t ->
       [ `Byte0 | `Byte1 | `Byte2 | `Byte3 | `Byte4 | `Byte5 | `Byte6 | `Byte7
-      | `State | `Meas_interval | `Zero | `Scale_mul | `Scale_div
+      | `Meas_interval | `Zero | `Scale_mul | `Scale_div
       ] -> int
-      (** [Ultrasonic.get conn port var] returns the content of the
-          variable [var] on the sensor (detailed underneath).  All values
-          are between 0 and 255.
+      (** [Ultrasonic.get us var] returns the content of the variable
+          [var] on the sensor (detailed underneath).  All values are
+          between 0 and 255.
 
           - [`Byte0] .. [`Byte7] are the 8 variables containing the
-          distances measured with the [`Meas] command.
+          distances measured with the [`Meas] or [`Meas_cont] command
+          (in centimeters).
 
           - [`State] returns the command state (FIXME: what is it)
 
@@ -431,6 +448,10 @@ sig
           - [`Scale_mul] (resp. [`Scale_div]) return the current
           scaling factor (resp. divisor).  It is settable with the
           [`Scale_mul] (resp. [`Scale_div]) command.  *)
+
+    val get_state : t -> [`Off | `Meas | `Meas_cont | `Event | `Reset]
+      (** [get_state us] get the current state of the ultrasonic
+          sensor [us]. *)
   end
 end
 
@@ -470,6 +491,10 @@ module Message :
 sig
   type mailbox = [`B0 | `B1 | `B2 | `B3 | `B4 | `B5 | `B6 | `B7 | `B8 | `B9]
       (** The 10 available mailboxes on the NXT brick. *)
+  type remote = [`R0 | `R1 | `R2 | `R3 | `R4 | `R5 | `R6 | `R7 | `R8 | `R9]
+      (** Due to the master-slave relationship, slave devices may not
+          initiate communication with their master, so they store
+          outgoing messages in these mailboxes. *)
 
   val write : ?check_status:bool -> 'a conn -> mailbox -> string -> unit
     (** [write conn box msg] writes the message [msg] to the inbox
@@ -483,7 +508,7 @@ sig
         [false], the message may delete the oldest message in the NXT
         queue if it is full (the NXT queues are 5 messages long).  *)
 
-  val read : 'a conn -> ?remove:bool -> mailbox -> string
+  val read : 'a conn -> ?remove:bool -> [mailbox | remote] -> string
     (** [read conn box] returns the message from the inbox [box] on
         the NXT.
         @param remove if true, clears the message from the remote inbox.
@@ -543,9 +568,9 @@ val open_out : 'a conn -> out_flag -> string -> out_channel
       The channel must be closed with {!Mindstorm.close_in}.  Close it
       as soon as possible as channels are a scarce resource.
 
-      If the the file exists, [Error(File_exists,_,_)] is raised.
-
-      @param linear Default: [false]. *)
+      If the the file exists, [Error File_exists] is raised.  If the
+      brick does not like the extension you use, [Error File_is_full]
+      may be raised. *)
 
 val close_out : out_channel -> unit
   (** [close_out ch] closes the channel [ch].  Closing an already
@@ -554,7 +579,8 @@ val close_out : out_channel -> unit
 val output : out_channel -> string -> int -> int -> int
   (** [output ch buf ofs len] ouputs the substring [buf.[ofs
       .. ofs+len-1]] to the channel [fd].  Returns the number of bytes
-      actually written.  *)
+      actually written.  If you try to write more bytes than declared
+      when opening the file, [Error File_is_full] is raised.  *)
 
 val remove : 'a conn -> string -> unit
   (** [remove conn fname] remove the file [fname] from the brick. *)

@@ -94,7 +94,7 @@ let error =
   e.(0x85) <- End_of_file (* Error EOF *);
   e.(0x86) <- Error Not_a_linear_file;
   e.(0x87) <- File_not_found;
-  e.(0x88) <- assert false; (* Error Handle_already_closed; *)
+  e.(0x88) <- Failure("Error Handle_already_closed");
   e.(0x89) <- Error No_linear_space;
   e.(0x8A) <- Error Undefined_error;
   e.(0x8B) <- Error File_is_busy;
@@ -105,7 +105,7 @@ let error =
   e.(0x90) <- Error Module_not_found;
   e.(0x91) <- Error Out_of_boundary;
   e.(0x92) <- Error Illegal_file_name;
-  e.(0x93) <- assert false; (*Error Illegal_handle;*)
+  e.(0x93) <- Failure("Error Illegal_handle");
   (* Direct commands errors *)
   e.(0x20) <- Error Pending;
   e.(0x40) <- Error Empty_mailbox;
@@ -227,6 +227,9 @@ let blit_filename : string -> string -> string -> int -> unit =
     (* All filenames must be 19 bytes long + null terminator, pad if
        needed.  *)
     String.fill pkg (ofs + len) (20 - len) '\000'
+
+let usleep sec =
+  ignore(Unix.select [] [] [] sec)
 
 
 (* ---------------------------------------------------------------------- *)
@@ -425,7 +428,7 @@ let open_out_gen conn flag_byte length fname =
   pkg.[0] <- '\026'; (* size, LSB *)
   pkg.[1] <- '\000'; (* size, MSB *)
   pkg.[2] <- '\x01';
-  pkg.[3] <- flag_byte;
+  pkg.[3] <- flag_byte; (* type of open *)
   blit_filename "Mindstorm.open_out" fname pkg 4;
   copy_int32 length pkg 24;
   conn.send conn.fd pkg;
@@ -499,13 +502,13 @@ let output ch buf ofs len =
 
 let remove conn fname =
   let pkg = String.create 24 in
-  pkg.[0] <- '\026'; (* size, LSB *)
+  pkg.[0] <- '\022'; (* size, LSB *)
   pkg.[1] <- '\000'; (* size, MSB *)
   pkg.[2] <- '\x01';
   pkg.[3] <- '\x85'; (* DELETE *)
   blit_filename "Mindstorm.remove" fname pkg 4;
   conn.send conn.fd pkg;
-  ignore(recv conn 22) (* check status *)
+  ignore(recv conn 23) (* check status *)
 
 
 module Find =
@@ -799,11 +802,15 @@ struct
     tach_limit : int;
   }
 
-  (* FIXME: Is a default state useful ? *)
-  let state = {
-    speed = 0;   motor_on = true;  brake = false;  regulation = `Idle;
-    turn_ratio = 0;   run_state = `Running;  tach_limit = 0 (* run forever *)
-  }
+  let speed ?(brake=false) ?(sync=false) ?(turn_ratio=0) s =
+    {
+      speed = s;   motor_on = s <> 0;  brake = brake;
+      regulation = (if sync then `Motor_sync else `Idle);
+      turn_ratio = turn_ratio;
+      run_state = `Running;  tach_limit = 0 (* run forever *)
+    }
+
+
 
   let set ?(check_status=false) conn port st =
     if st.speed < -100 || st.speed > 100 then
@@ -1035,7 +1042,6 @@ struct
     ignore(Unix.write conn.fd tx_data 0 n);
     if check_status then ignore(recv conn 3)
 
-
   let read conn port =
     let pkg = String.create 5 in
     pkg.[0] <- '\003'; (* 2 bluetooth bytes *)
@@ -1062,8 +1068,10 @@ struct
       ls_status : string; (* share the string across all status calls *)
     }
 
-    let make ?(check_status=false) conn port =
-      set ~check_status conn port `Lowspeed_9v `Raw;
+    let make conn port =
+      (* We need to let the I2C time to init, so better to check the
+         return status. *)
+      set ~check_status:true conn port `Lowspeed_9v `Raw;
       let port = char_of_port port in
       let ls_status = String.create 5 in
       ls_status.[0] <- '\003'; (* 2 BT bytes *)
@@ -1087,7 +1095,7 @@ struct
       pkg.[4] <- us.port;
       pkg.[5] <- '\003'; (* tx bytes (# bytes sent) *)
       pkg.[6] <- '\000'; (* rx bytes (length answer) *)
-      pkg.[7] <- '\x02'; (* 1st byte of command *)
+      pkg.[7] <- '\x02'; (* 1st byte of command: I2C dev *)
       pkg.[8] <- byte2;  (* 2nd byte of command *)
       pkg.[9] <- byte3;  (* 3rd byte of command *)
       us.u_send us.u_fd pkg;
@@ -1101,7 +1109,7 @@ struct
 		Ultrasonic.set: %s arg not in 0 .. 255" cmd);
       write_cmd ~check_status us byte2 (Char.unsafe_chr v)
 
-    let set ?(check_status=false) us cmd =
+    let set ?(check_status=true) us cmd =
       match cmd with
       | `Off ->       write_cmd ~check_status us '\x41' '\x00'
       | `Meas ->      write_cmd ~check_status us '\x41' '\x01'
@@ -1126,27 +1134,44 @@ struct
       check_status_as_exn ans.[2];
       ans (* I2C data starts at byte 4 *)
 
+    let lswrite us addr =
+      let pkg = String.create 9 in
+      pkg.[0] <- '\007'; pkg.[1] <- '\000'; (* 2 BT bytes *)
+      pkg.[2] <- '\x00'; (* Request answer *)
+      pkg.[3] <- '\x0F'; (* LSWRITE *)
+      pkg.[4] <- us.port;
+      pkg.[5] <- '\002'; (* tx bytes (2 bytes sent) *)
+      pkg.[6] <- '\001'; (* rx bytes (1 bytes to read) *)
+      pkg.[7] <- '\x02'; (* 1st byte of command: I2C dev *)
+      pkg.[8] <- addr;
+      (* 'Restart Messaging + 0x03', is sent by the brick itself. *)
+      us.u_send us.u_fd pkg;
+      let ans = us.u_recv us.u_fd 3 in
+      check_status_as_exn ans.[2]
+
     let data_ready us =
       us.u_send us.u_fd us.ls_status;
       let ans = us.u_recv us.u_fd 4 in
       check_status_as_exn ans.[2];
       ans.[3] <> '\000'
 
-    let get ?(check_status=false) us var =
+    let get_state us =
+      lswrite us '\x41'; (* Read command state *)
+      match (lsread us).[4] with
+      | '\x00' -> `Off
+      | '\x01' -> `Meas
+      | '\x02' -> `Meas_cont
+      | '\x03' -> `Event
+      | '\x04' -> `Reset
+      | _ -> failwith "Mindstorm.Sensor.Ultrasonic.get_state"
+
+    let get us var =
       (* Retry any pending garbage bytes in the NXT buffers.  FIXME:
          when is this needed?  It can even stall the program if no
-         bytes are to be read?  *)
+         bytes are to be read!  *)
       (* ignore(lsread us); *)
       (* Retrieve the data of [var] *)
-      let pkg = String.create 9 in
-      pkg.[0] <- '\008'; pkg.[1] <- '\000'; (* 2 BT bytes *)
-      pkg.[2] <- if check_status then '\x00' else '\x80';
-      pkg.[3] <- '\x0F'; (* LSWRITE *)
-      pkg.[4] <- us.port;
-      pkg.[5] <- '\002'; (* tx bytes (# bytes sent) *)
-      pkg.[6] <- '\001'; (* rx bytes (# bytes to read) *)
-      pkg.[7] <- '\x02'; (* 1st byte of command: sonar address *)
-      pkg.[8] <- (match var with (* 2nd byte of command: var to read *)
+      lswrite us (match var with (* 2nd byte of command: var to read *)
                   | `Byte0 -> '\x42'
                   | `Byte1 -> '\x43'
                   | `Byte2 -> '\x44'
@@ -1155,18 +1180,11 @@ struct
                   | `Byte5 -> '\x47'
                   | `Byte6 -> '\x48'
                   | `Byte7 -> '\x49'
-                  | `State -> '\x41'
                   | `Meas_interval -> '\x40'
                   | `Zero -> '\x50'
                   | `Scale_mul -> '\x51'
                   | `Scale_div -> '\x52'
                  );
-      (* 'Restart Messaging + 0x03', is sent by the brick itself. *)
-      us.u_send us.u_fd pkg;
-      if check_status then (
-        let ans = us.u_recv us.u_fd 3 in
-        check_status_as_exn ans.[2]
-      );
       (* Check the status of I2C message channel until idle, timeout or
          an error occurs. FIXME: until? needed? *)
 (*    if not(data_ready us) then failwith "Mindstorm.Sensor.Ultrasonic.get"; *)
@@ -1200,12 +1218,17 @@ end
 module Message =
 struct
   type mailbox = [`B0 | `B1 | `B2 | `B3 | `B4 | `B5 | `B6 | `B7 | `B8 | `B9]
+  type remote = [`R0 | `R1 | `R2 | `R3 | `R4 | `R5 | `R6 | `R7 | `R8 | `R9]
 
   let char_of_mailbox = function
-    | `B0 -> '\x00' | `B1 -> '\x01' | `B2 -> '\x02'
-    | `B3 -> '\x03' | `B4 -> '\x04' | `B5 -> '\x05'
-    | `B6 -> '\x06' | `B7 -> '\x07' | `B8 -> '\x08'
-    | `B9 -> '\x09'
+    | `B0 -> '\000' | `B1 -> '\001' | `B2 -> '\002'
+    | `B3 -> '\003' | `B4 -> '\004' | `B5 -> '\005'
+    | `B6 -> '\006' | `B7 -> '\007' | `B8 -> '\008'
+    | `B9 -> '\009'
+    | `R0 -> '\010' | `R1 -> '\011' | `R2 -> '\012'
+    | `R3 -> '\013' | `R4 -> '\014' | `R5 -> '\015'
+    | `R6 -> '\016' | `R7 -> '\017' | `R8 -> '\018'
+    | `R9 -> '\019'
 
   let write ?(check_status=true) conn mailbox msg =
     let len = String.length msg in
@@ -1222,6 +1245,17 @@ struct
     if check_status then ignore(recv conn 3)
 
   let read conn ?(remove=false) mailbox =
-    failwith "TBD"
+    let pkg = String.create 7 in
+    pkg.[0] <- '\005'; (* 2 bluetooth bytes *)
+    pkg.[1] <- '\000';
+    pkg.[2] <- '\x00'; (* request answer *)
+    pkg.[3] <- '\x13'; (* MESSAGEREAD *)
+    pkg.[4] <- char_of_mailbox mailbox; (* remote inbox *)
+    pkg.[5] <- '\000'; (* local inbox; unused.  FIXME: normal? *)
+    pkg.[6] <- if remove then '\x01' else '\x00';
+    conn.send conn.fd pkg;
+    let ans = recv conn 64 in
+    let len = try String.index_from ans 5 '\000' - 5 with Not_found -> 59 in
+    String.sub ans 5 len
 end
 

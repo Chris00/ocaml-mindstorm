@@ -33,7 +33,7 @@ let () =
   printf "- port 4: ultrasonic sensor\n%!";
 
   let conn = Mindstorm.connect_bluetooth bt in
-(*
+
   let test_sensor name port =
     printf "- %s sensor; when finished press ENTER.\n%!" name;
     repeat_till_ENTER begin fun i ->
@@ -57,13 +57,14 @@ let () =
   Sensor.set conn `S3 `Sound_db `Pct_full_scale;
   (*   Sensor.set conn `S3 `Sound_dba `Pct_full_scale; *)
   test_sensor "Sound" `S3;
-*)
-  Sensor.Ultrasonic.set conn `S4 `Meas_cont ~check_status:true;
+
+  let us = Sensor.Ultrasonic.make conn `S4 in
   printf "- Ultrasonic sensor; when finished press ENTER.\n%!";
+  Sensor.Ultrasonic.set us `Meas_cont ~check_status:true;
   repeat_till_ENTER begin fun i ->
     try
-      let dist = Sensor.Ultrasonic.get conn `S4 `Byte0 in
-      printf "%4i:\t                    dist = %i\n%!" i dist
+      let dist = Sensor.Ultrasonic.get us `Byte0 in
+      printf "%4i:\t                    dist = %i\r%!" i dist
     with e ->
       printf "%4i:\t %s\r%!" i (Printexc.to_string e);
       Unix.sleep 1
