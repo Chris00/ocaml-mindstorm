@@ -79,7 +79,7 @@ type error =
     | Bad_size (** Illegal size specified *)
     | Bad_mailbox (** Illegal mailbox queue ID specified *)
     | Bad_field (** Attempted to access invalid field of a structure *)
-     | Bad_io (** Bad input or output specified *)
+    | Bad_io (** Bad input or output specified *)
     | Out_of_memory (** Insufficient memory available *)
     | Bad_arg (** Bad arguments *)
 
@@ -95,163 +95,6 @@ exception File_not_found
 
 
 (* ---------------------------------------------------------------------- *)
-(** {2 System commands} *)
-
-(** {3 Files} *)
-
-type in_channel
-    (** Handle for reading from the brick. *)
-
-val open_in : 'a conn -> string -> in_channel
-  (** [open_in conn fname] opens the file named [fname] on the brick
-      for reading.  The channel must be closed with
-      {!Mindstorm.close_in}.  Close it as soon as possible as channels
-      are a scarce resource.
-
-      @raise Invalid_argument if [fname] is not a ASCIIZ string with
-      maximum 15.3 characters.  *)
-
-val in_channel_length : in_channel -> int
-  (** [in_channel_length ch] returns the length of the channel [ch]. *)
-
-val close_in : in_channel -> unit
-  (** [close_in ch] closes the channel [ch].  Closing an already
-      closed channel does nothing.  *)
-
-val input : in_channel -> string -> int -> int -> int
-  (** [input ch buf ofs len] reads a block of data of length [len]
-      from the channel [ch] and write it to [buf] starting at position
-      [ofs].
-
-      @raise End_of_file if there is no more data to read. *)
-
-type out_channel
-    (** Handle for writing data to the brick. *)
-
-(** The standard NXT firmware requires that executable files and icons
-    are linear but all other types of files (including sound files)
-    can be non-contiguous (i.e., fragmented).  *)
-type out_flag =
-    [ `File of int (** Default file, the parameter is its length. *)
-    | `Linear of int (** Write a linear file, the parameter is its length. *)
-    | `Data of int
-    | `Append
-    ]
-
-val open_out : 'a conn -> out_flag -> string -> out_channel
-  (** [open_out conn flag fname] opens the file [fname] for writing.
-      The channel must be closed with {!Mindstorm.close_in}.  Close it
-      as soon as possible as channels are a scarce resource.
-
-      If the the file exists, [Error(File_exists,_,_)] is raised.
-
-      @param linear Default: [false]. *)
-
-val close_out : out_channel -> unit
-  (** [close_out ch] closes the channel [ch].  Closing an already
-      closed channel does nothing. *)
-
-val output : out_channel -> string -> int -> int -> int
-  (** [output ch buf ofs len] ouputs the substring [buf.[ofs
-      .. ofs+len-1]] to the channel [fd].  Returns the number of bytes
-      actually written.  *)
-
-val remove : 'a conn -> string -> unit
-  (** [remove conn fname] remove the file [fname] from the brick. *)
-
-(** List files on the brick matching a given pattern. *)
-module Find :
-sig
-  type iterator
-      (** An iterator to allow to enumerate files on the brick. *)
-
-  val patt : 'a conn -> string -> iterator
-    (** [Find.patt conn fpatt] returns an iterator listing the filenames
-        mathing the pattern [fpatt].  The following types of wildcards
-        are accepted:
-        - filename.extension
-        - *.\[file type name\]
-        - filename.*
-        - *.*
-
-        @raise File_not_found if no file was found *)
-  val current : iterator -> string
-    (** [Find.current i] returns the current filename. *)
-  val current_size : iterator -> int
-    (** [Find.current_size i] returns the current filename size
-        (number of bytes). *)
-  val next : iterator -> unit
-    (** Execute a new request to the brick to retrieve the next
-        filename matching the pattern.
-
-        @raise File_not_found if no more file was found.  When this
-        exception is raised, the iterator is closed. *)
-  val close : iterator -> unit
-    (** [close_iterator i] closes the iterator [i].  Closing an
-        already closed iterator does nothing. *)
-
-  val fold : 'a conn -> f:(string -> int -> 'a -> 'a) -> string -> 'a -> 'a
-    (** [fold f fpatt a0] folds [f] on all the filenames matching the
-        pattern [fpatt]. *)
-  val iter : 'a conn -> f:(string -> int -> unit) -> string -> unit
-    (** [iter f fpatt] iterates [f name size] on all the filenames
-        matching the pattern [fpatt]. *)
-end
-
-
-(** {3 Brick information} *)
-
-val firmware_version : 'a conn -> int * int * int * int
-  (** [firmware_version conn] returns a tuple [(p1, p0, f1, f0)] where
-      [p1] is the major version of the protocol, [p0] is the minor
-      version of the protocol, [f1] is the major version of the
-      firmware, [f0] is the minor version of the firmware, *)
-
-val set_brick_name : ?check_status:bool -> 'a conn -> string -> unit
-  (** [set_brick_name conn name] change the name to which one is
-      connected through [conn] to [name].
-
-      @param check_status whether to check the status returned by the
-      brick (and raise [Error] accordingly.  Default: [false].  *)
-
-type brick_info = {
-  brick_name : string;   (** NXT name (set with {!Mindstorm.set_brick_name}) *)
-  bluetooth_addr : string; (** Bluetooth address *)
-  signal_strength : int; (** Bluetooth signal strength (for some reason
-                             is always 0) *)
-  free_user_flash : int; (** Free user FLASH *)
-}
-
-val get_device_info : 'a conn -> brick_info
-  (** [get_device_info conn] returns some informations about the brick
-      connected through [conn]. *)
-
-val keep_alive : 'a conn -> int
-  (** [keep_alive conn] returns the current sleep time limit in
-      milliseconds. *)
-
-val battery_level : 'a conn -> int
-  (** [battery_level conn] return the voltages in millivolts of the
-      battery on the brick. *)
-
-val delete_user_flash : 'a conn -> unit
-val bluetooth_reset : usb conn -> unit
-
-val boot : usb conn -> unit
-
-
-
-(** {3 Polling} *)
-
-val poll_length : 'a conn -> [`Poll_buffer | `High_speed_buffer] -> int
-  (** Returns the number of bytes for a command in the low-speed
-      buffer or the high-speed buffer (0 = no command is ready).  *)
-val poll_command : 'a conn -> [`Poll_buffer | `High_speed_buffer] -> int
-  -> int * string
-  (** Reads bytes from the low-speed or high-speed buffer. *)
-
-
-(* ---------------------------------------------------------------------- *)
 (** {2 Direct commands} *)
 
 (** Starting and stopping programs (.rxe files) on the brick. *)
@@ -264,11 +107,14 @@ sig
         the brick.  Default: [false]. *)
   val stop : ?check_status:bool -> 'a conn -> unit
     (** [stop_program conn] stops the currently running program if any.
+        If no program is running and [check_status=true], the exception
+        {!Mindstorm.Error}[(No_program)] is raised.
 
         @param check_status whether to check the status returned by
         the brick.  Default: [false]. *)
   val name : 'a conn -> string
-    (** Return the name of the current program or [""] if none. *)
+    (** Return the name of the current program or raise
+        {!Mindstorm.Error}[(No_program)] if no program is running. *)
 end
 
 
@@ -442,7 +288,7 @@ sig
       | `Slope_mask ]
         (** Sensor mode.
 
-            -  [`Raw]: Report scaled value equal to raw value.
+            - [`Raw]: Report scaled value equal to raw value.
             - [`Bool]: Report scaled value as 1 (TRUE) or 0 (FALSE).
               The firmware uses inverse Boolean logic to match the
               physical characteristics of NXT sensors.  Readings
@@ -562,8 +408,7 @@ sig
           - [`Scale_mul m]: set the actual scale factor.
           - [`Scale_div d]: set the actual scale divisor.
 
-          - [`Reset]: resets the ultrasonic sensor (FIXME: to factory
-          defaults ?).  *)
+          - [`Reset]: resets the ultrasonic sensor.  *)
 
     val get : ?check_status:bool -> t ->
       [ `Byte0 | `Byte1 | `Byte2 | `Byte3 | `Byte4 | `Byte5 | `Byte6 | `Byte7
@@ -617,15 +462,28 @@ end
 
 
 (** Read and write messages from the 10 message queues.  This can be
-    thought as advanced direct commands.  *)
+    thought as advanced direct commands.
+
+    Interesting information concerning this can be found in Sivan
+    Toledo's paper:
+    {{:http://www.tau.ac.il/~stoledo/lego/btperformance.html}Analysis
+    of the NXT Bluetooth-Communication Protocol}.  *)
 module Message :
 sig
   type mailbox = [`B0 | `B1 | `B2 | `B3 | `B4 | `B5 | `B6 | `B7 | `B8 | `B9]
+      (** The 10 available mailboxes on the NXT brick. *)
 
-  val write : 'a conn -> mailbox -> string -> unit
+  val write : ?check_status:bool -> 'a conn -> mailbox -> string -> unit
     (** [write conn box msg] writes the message [msg] to the inbox
         [box] on the NXT.  This is used to send messages to a
-        currently running program. *)
+        currently running program.
+
+        @param check_status whether to request a status code from the
+        brick.  If [true] (the default for this fonction), the NXT
+        only send a reply when it is able to queue the message without
+        overflowing the queue (this prevent message loss).  If
+        [false], the message may delete the oldest message in the NXT
+        queue if it is full (the NXT queues are 5 messages long).  *)
 
   val read : 'a conn -> ?remove:bool -> mailbox -> string
     (** [read conn box] returns the message from the inbox [box] on
@@ -633,3 +491,170 @@ sig
         @param remove if true, clears the message from the remote inbox.
         Default: [false]. *)
 end
+
+
+(* ---------------------------------------------------------------------- *)
+(** {2 System commands} *)
+
+(** {3 Files} *)
+
+type in_channel
+    (** Handle for reading from the brick. *)
+
+val open_in : 'a conn -> string -> in_channel
+  (** [open_in conn fname] opens the file named [fname] on the brick
+      for reading.  The channel must be closed with
+      {!Mindstorm.close_in}.  Close it as soon as possible as channels
+      are a scarce resource.
+
+      @raise Invalid_argument if [fname] is not a ASCIIZ string with
+      maximum 15.3 characters.  *)
+
+val in_channel_length : in_channel -> int
+  (** [in_channel_length ch] returns the length of the channel [ch]. *)
+
+val close_in : in_channel -> unit
+  (** [close_in ch] closes the channel [ch].  Closing an already
+      closed channel does nothing.  *)
+
+val input : in_channel -> string -> int -> int -> int
+  (** [input ch buf ofs len] reads a block of data of length [len]
+      from the channel [ch] and write it to [buf] starting at position
+      [ofs].
+
+      @raise End_of_file if there is no more data to read. *)
+
+type out_channel
+    (** Handle for writing data to the brick. *)
+
+(** The standard NXT firmware requires that executable files and icons
+    are linear but all other types of files (including sound files)
+    can be non-contiguous (i.e., fragmented).
+
+    - [`File length]: Default file, the parameter is its [length].
+    - [`Linear length]: Write a linear file, the parameter is its [length].
+*)
+type out_flag =
+    [ `File of int
+    | `Linear of int
+    | `Data of int
+    | `Append ]
+
+val open_out : 'a conn -> out_flag -> string -> out_channel
+  (** [open_out conn flag fname] opens the file [fname] for writing.
+      The channel must be closed with {!Mindstorm.close_in}.  Close it
+      as soon as possible as channels are a scarce resource.
+
+      If the the file exists, [Error(File_exists,_,_)] is raised.
+
+      @param linear Default: [false]. *)
+
+val close_out : out_channel -> unit
+  (** [close_out ch] closes the channel [ch].  Closing an already
+      closed channel does nothing. *)
+
+val output : out_channel -> string -> int -> int -> int
+  (** [output ch buf ofs len] ouputs the substring [buf.[ofs
+      .. ofs+len-1]] to the channel [fd].  Returns the number of bytes
+      actually written.  *)
+
+val remove : 'a conn -> string -> unit
+  (** [remove conn fname] remove the file [fname] from the brick. *)
+
+(** List files on the brick matching a given pattern. *)
+module Find :
+sig
+  type iterator
+      (** An iterator to allow to enumerate files on the brick. *)
+
+  val patt : 'a conn -> string -> iterator
+    (** [Find.patt conn fpatt] returns an iterator listing the filenames
+        mathing the pattern [fpatt].  The following types of wildcards
+        are accepted:
+        - filename.extension
+        - *.\[file type name\]
+        - filename.*
+        - *.*
+
+        @raise File_not_found if no file was found *)
+  val current : iterator -> string
+    (** [Find.current i] returns the current filename. *)
+  val current_size : iterator -> int
+    (** [Find.current_size i] returns the current filename size
+        (number of bytes). *)
+  val next : iterator -> unit
+    (** Execute a new request to the brick to retrieve the next
+        filename matching the pattern.
+
+        @raise File_not_found if no more file was found.  When this
+        exception is raised, the iterator is closed. *)
+  val close : iterator -> unit
+    (** [close_iterator i] closes the iterator [i].  Closing an
+        already closed iterator does nothing. *)
+
+  val iter : 'a conn -> f:(string -> int -> unit) -> string -> unit
+    (** [iter f fpatt] iterates [f name size] on all the filenames
+        matching the pattern [fpatt] (see {!Mindstorm.Find.patt} for
+        the accepted patterns).  *)
+  val map : 'a conn -> f:(string -> int -> 'b) -> string -> 'b list
+    (** [map f fpatt] maps [f name size] on all the filenames matching
+        the pattern [fpatt] and return the list formed of those.  (See
+        {!Mindstorm.Find.patt} for the accepted patterns.)  *)
+  val fold : 'a conn -> f:(string -> int -> 'b -> 'b) -> string -> 'b -> 'b
+    (** [fold f fpatt a0] folds [f] on all the filenames matching the
+        pattern [fpatt] (see {!Mindstorm.Find.patt} for the accepted
+        patterns).  *)
+end
+
+
+(** {3 Brick information} *)
+
+val firmware_version : 'a conn -> int * int * int * int
+  (** [firmware_version conn] returns a tuple [(p1, p0, f1, f0)] where
+      [p1] is the major version of the protocol, [p0] is the minor
+      version of the protocol, [f1] is the major version of the
+      firmware, [f0] is the minor version of the firmware, *)
+
+val set_brick_name : ?check_status:bool -> 'a conn -> string -> unit
+  (** [set_brick_name conn name] change the name to which one is
+      connected through [conn] to [name].
+
+      @param check_status whether to check the status returned by the
+      brick (and raise [Error] accordingly.  Default: [false].  *)
+
+type brick_info = {
+  brick_name : string;   (** NXT name (set with {!Mindstorm.set_brick_name}) *)
+  bluetooth_addr : string; (** Bluetooth address *)
+  signal_strength : int; (** Bluetooth signal strength (for some reason
+                             is always 0) *)
+  free_user_flash : int; (** Free user FLASH *)
+}
+
+val get_device_info : 'a conn -> brick_info
+  (** [get_device_info conn] returns some informations about the brick
+      connected through [conn]. *)
+
+val keep_alive : 'a conn -> int
+  (** [keep_alive conn] returns the current sleep time limit in
+      milliseconds. *)
+
+val battery_level : 'a conn -> int
+  (** [battery_level conn] return the voltages in millivolts of the
+      battery on the brick. *)
+
+val delete_user_flash : 'a conn -> unit
+val bluetooth_reset : usb conn -> unit
+
+val boot : usb conn -> unit
+
+
+
+(** {3 Polling} *)
+
+val poll_length : 'a conn -> [`Poll_buffer | `High_speed_buffer] -> int
+  (** Returns the number of bytes for a command in the low-speed
+      buffer or the high-speed buffer (0 = no command is ready).  *)
+val poll_command : 'a conn -> [`Poll_buffer | `High_speed_buffer] -> int
+  -> int * string
+  (** Reads bytes from the low-speed or high-speed buffer. *)
+

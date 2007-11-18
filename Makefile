@@ -32,7 +32,7 @@ ex: mindstorm.cma
 .PHONY: doc
 doc:
 #	cd src/; $(MAKE) $(INTERFACES)
-	$(OCAMLDOC) -d $(DOC_DIR) $(PP) -colorize-code -stars -html \
+	$(OCAMLDOC) -d $(DOC_DIR) -colorize-code -stars -html \
 	  $(INTERFACES) -intro $(DOC_DIR)/intro.txt
 
 
