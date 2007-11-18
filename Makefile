@@ -1,6 +1,8 @@
 # Makefile for Unix
 INTERFACES = mindstorm.mli
 DOC_DIR = doc
+WEB_DIR = web/
+SF_WEB 	= /home/groups/o/oc/ocaml-mindstorm/htdocs
 
 PP = -pp "camlp4o pa_macro.cmo"
 CAML_H = $(shell ocamlc -where)
@@ -34,6 +36,20 @@ doc:
 #	cd src/; $(MAKE) $(INTERFACES)
 	$(OCAMLDOC) -d $(DOC_DIR) -colorize-code -stars -html \
 	  $(INTERFACES) -intro $(DOC_DIR)/intro.txt
+
+# Publish the doc to SF
+web: doc
+	@ if [ -d $(DOC_DIR) ] ; then \
+	  scp $(DOC_DIR)/*.html $(DOC_DIR)/*.css \
+		shell.sf.net:$(SF_WEB)/doc/ \
+	  && echo "*** Published documentation on SF" ; \
+	fi
+	@ if [ -d $(WEB_DIR)/ ] ; then \
+	  scp $(WEB_DIR)/*.html $(WEB_DIR)/*.jpg LICENSE \
+	    shell.sf.net:$(SF_WEB) \
+	  && echo "*** Published web site ($(SRC_WEB)/) on SF" ; \
+	fi
+
 
 
 include Makefile.ocaml
