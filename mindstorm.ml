@@ -40,10 +40,10 @@ type error =
   | No_space
   | No_more_files
   | EOF_expected
-      (*     | EOF *)
+      (*     | End_of_file *) (* use the std exception *)
   | Not_a_linear_file
 (*   | File_not_found *) (* separated *)
-  | Handle_already_closed
+(*   | Handle_already_closed *)  (* SHOULD NOT HAPPEN *)
   | No_linear_space
   | Undefined_error
   | File_is_busy
@@ -54,7 +54,7 @@ type error =
   | Module_not_found
   | Out_of_boundary
   | Illegal_file_name
-  | Illegal_handle    (* SHOULD NOT HAPPEN *)
+(*  | Illegal_handle*)    (* SHOULD NOT HAPPEN *)
 
   (** command_error *)
   | Pending (** Pending communication transaction in progress *)
@@ -81,6 +81,9 @@ exception File_not_found
 
 let undocumented_error = Failure "Mindstorm: undocumented error"
 
+let success_char = '\x00'
+let eof_char = '\x85'
+
 let error =
   let e = Array.create 256 undocumented_error in
   (* Communication protocol errors *)
@@ -91,7 +94,7 @@ let error =
   e.(0x85) <- End_of_file (* Error EOF *);
   e.(0x86) <- Error Not_a_linear_file;
   e.(0x87) <- File_not_found;
-  e.(0x88) <- Error Handle_already_closed;
+  e.(0x88) <- assert false; (* Error Handle_already_closed; *)
   e.(0x89) <- Error No_linear_space;
   e.(0x8A) <- Error Undefined_error;
   e.(0x8B) <- Error File_is_busy;
@@ -102,7 +105,7 @@ let error =
   e.(0x90) <- Error Module_not_found;
   e.(0x91) <- Error Out_of_boundary;
   e.(0x92) <- Error Illegal_file_name;
-  e.(0x93) <- Error Illegal_handle;
+  e.(0x93) <- assert false; (*Error Illegal_handle;*)
   (* Direct commands errors *)
   e.(0x20) <- Error Pending;
   e.(0x40) <- Error Empty_mailbox;
@@ -124,7 +127,7 @@ let error =
   e
 
 let check_status_as_exn status =
-  if status <> '\x00' then raise(error.(Char.code status))
+  if status <> success_char then raise(error.(Char.code status))
 
 (* ---------------------------------------------------------------------- *)
 (** Helper functions *)
@@ -326,7 +329,9 @@ type in_channel = {
   in_recv : conn_recv;
   in_handle : char; (* the handle given by the brick *)
   in_length : int; (* file size *)
-  mutable in_closed : bool;
+  mutable in_left : int; (* number of bytes left to be read,
+                            = 0 iff EOF
+                            < 0 iff the channel is closed *)
 }
 
 let open_in conn fname =
@@ -338,20 +343,22 @@ let open_in conn fname =
   blit_filename "Mindstorm.open_in" fname pkg 4;
   conn.send conn.fd pkg;
   let ans = recv conn 8 in
+  let len = int32 ans 4 in
   { in_fd = conn.fd;
     in_send = conn.send;
     in_recv = conn.recv;
     in_handle = ans.[3];
-    in_length = int32 ans 4;
-    in_closed = false;
+    in_length = len;
+    in_left = len;
   }
 
 let in_channel_length ch =
-  if ch.in_closed then raise(Sys_error "Closed NXT in_channel");
+  if ch.in_left < 0 then raise(Sys_error "Closed NXT in_channel");
   ch.in_length
 
 let close_in ch =
-  if not ch.in_closed then begin
+  if ch.in_left >= 0 then begin
+    (* Channel not yet closed. *)
     let pkg = String.create 5 in
     pkg.[0] <- '\003'; (* size, LSB *)
     pkg.[1] <- '\000'; (* size, MSB *)
@@ -360,33 +367,40 @@ let close_in ch =
     pkg.[4] <- ch.in_handle;
     ch.in_send ch.in_fd pkg;
     let ans = ch.in_recv ch.in_fd 4 in
+    ch.in_left <- -1;
     check_status_as_exn ans.[2];
-    ch.in_closed <- true;
   end
 
 let input ch buf ofs len =
   if ofs < 0 || len < 0 || ofs + len > String.length buf || len > 0xFFFF then
     invalid_arg "Mindstorm.input";
-  if ch.in_closed then raise(Sys_error "Closed NXT in_channel");
-  let pkg = String.create 7 in
-  pkg.[0] <- '\005'; (* size, LSB *)
-  pkg.[1] <- '\000'; (* size, MSB *)
-  pkg.[2] <- '\x01';
-  pkg.[3] <- '\x82'; (* READ *)
-  pkg.[4] <- ch.in_handle;
-  copy_int16 len pkg 5;
-  ch.in_send ch.in_fd pkg;
-  (* Variable length return package.  Beware that, even if ch.in_recv
-     raises an exception, one has to read the entire package.  Also,
-     if more bytes are asked that there are left, the error
-     End_of_file is returned with the bytes left. *)
-  let ans = ch.in_recv ch.in_fd 6 in
-  let r = int16 ans 4 in (* # bytes read *)
-  assert(ofs + r <= len);
-  really_input ch.in_fd buf ofs len;
-  if r > 0 then r (* do not raise an exception even with an EOF status *)
-  else (check_status_as_exn ans.[2]; 0)
-
+  if ch.in_left < 0 then raise(Sys_error "Closed NXT in_channel");
+  if ch.in_left = 0 then raise End_of_file;
+  if len = 0 then 0
+  else begin
+    let len_to_read = min len ch.in_left (* > 0 *) in
+    let pkg = String.create 7 in
+    pkg.[0] <- '\005'; (* size, LSB *)
+    pkg.[1] <- '\000'; (* size, MSB *)
+    pkg.[2] <- '\x01';
+    pkg.[3] <- '\x82'; (* READ *)
+    pkg.[4] <- ch.in_handle;
+    copy_int16 len_to_read pkg 5;
+    ch.in_send ch.in_fd pkg;
+    (* Variable length return package.  The number of bytes that was
+       requested [len_to_read] is always returned.  Beware that if we
+       read the last bytes -- even if there were indeed bytes to read --
+       the status will indicate EOF. *)
+    let ans = ch.in_recv ch.in_fd 6 in
+    let r = int16 ans 4 in (* # bytes read *)
+    assert(r = len_to_read);
+    really_input ch.in_fd buf ofs len_to_read;
+    ch.in_left <- ch.in_left - len_to_read;
+    let status = ans.[2] in
+    (* We manage EOF ourselves to respect OCaml conventions: *)
+    if status = success_char || status = eof_char then len_to_read
+    else (check_status_as_exn status; 0)
+  end
 
 type out_channel = {
   out_fd : Unix.file_descr;
@@ -561,7 +575,7 @@ struct
     i.it_flength <- int32 ans 24;
     (* In the case the status is File_not_found, the doc says the
        handle is closed by the brick. (FIXME: confirm?) *)
-    if ans.[2] = '\x85' then i.it_closed <- true;
+    if ans.[2] = eof_char then i.it_closed <- true;
     check_status_as_exn ans.[2]
 
   let iter conn ~f fpatt =

@@ -51,7 +51,6 @@ type error =
     | No_more_files
     | EOF_expected
     | Not_a_linear_file
-    | Handle_already_closed
     | No_linear_space
     | Undefined_error
     | File_is_busy
@@ -62,7 +61,6 @@ type error =
     | Module_not_found
     | Out_of_boundary
     | Illegal_file_name
-    | Illegal_handle
 
     (** Command error *)
     | Pending (** Pending communication transaction in progress *)
@@ -525,7 +523,7 @@ val input : in_channel -> string -> int -> int -> int
       @raise End_of_file if there is no more data to read. *)
 
 type out_channel
-    (** Handle for writing data to the brick. *)
+  (** Handle for writing data to the brick. *)
 
 (** The standard NXT firmware requires that executable files and icons
     are linear but all other types of files (including sound files)
