@@ -1,27 +1,35 @@
 open Printf
 module Sensor = Mindstorm.Sensor
+module U = Mindstorm.Sensor.Ultrasonic
 module Motor = Mindstorm.Motor
+
+(* `S1 : touch sensor
+   `S4 : ultrasonic sensor
+   Motors connected to A and B. *)
 
 let usleep s = ignore(Unix.select [] [] [] s)
 
-
-let switch = `S1
-let ultrasonic = `S4
-let left = Motor.a
-and right = Motor.b
-
 let run conn =
-  Sensor.set conn switch `Switch `Raw;
-  let ultra = Sensor.Ultrasonic.make conn ultrasonic in
+  let speed a b  =
+    Motor.set conn Motor.a (Motor.speed a);
+    Motor.set conn Motor.b (Motor.speed b) in
+
+  Sensor.set conn `S1 `Switch `Raw;
+  let ultra = Sensor.Ultrasonic.make conn `S4 in
   Sensor.Ultrasonic.set ultra `Meas_cont;
   while true do
-    let sw = Sensor.get conn switch in
-    printf "Switch = %i\n%!" sw.Sensor.raw;
+    let sw = Sensor.get conn `S1 in
     if sw.Sensor.normalized > 500 then begin
       let dist = min 50 (Sensor.Ultrasonic.get ultra `Byte0) in
-      Motor.set conn left (Motor.speed dist);
-      Motor.set conn right (Motor.speed (2 * dist - 50));
-      (*       Unix.sleep 1; *)
+      printf "dist = %i\r%!" dist;
+      speed dist (2 * dist - 50);
+      usleep 0.2;
+    end
+    else begin
+      printf "\nSwitch = %i => stop\n" sw.Sensor.raw;
+      speed 0 0;
+      Mindstorm.close conn;
+      exit 0
     end
   done
 
@@ -33,5 +41,5 @@ let () =
     )
     else Sys.argv.(1) in
   let conn = Mindstorm.connect_bluetooth bt in
-  run conn;
-  Mindstorm.close conn
+  printf "Press the button on the robot to stop.\n%!";
+  run conn
