@@ -6,10 +6,10 @@ TESTS=$(wildcard *.ml)
 LIBS_CMA=unix.cma mindstorm.cma
 LIBS_CMXA=$(LIBS_CMA:.cma=.cmxa)
 
-.PHONY: byte
+.PHONY: tests byte native
+tests: byte
 byte: $(TESTS:.ml=.exe)
 native: $(TESTS:.ml=.com)
-
 
 
 include ../Makefile.ocaml
