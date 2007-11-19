@@ -294,26 +294,43 @@ sig
       | `Angle_steps
       | `Slope_mask ]
         (** Sensor mode.
-
-            - [`Raw]: Report scaled value equal to raw value.
-            - [`Bool]: Report scaled value as 1 (TRUE) or 0 (FALSE).
-              The firmware uses inverse Boolean logic to match the
-              physical characteristics of NXT sensors.  Readings
-              are FALSE if raw value exceeds 55% of total range;
-              readings are TRUE if raw value is less than 45% of
-              total range.
-            - [`Transition_cnt]: Report scaled value as number of
-            transitions between TRUE and FALSE.
-            - [`Period_counter]: Report scaled value as number of
-                            transitions from FALSE to TRUE, then back
-                            to FALSE.
-            - [`Pct_full_scale]: Report scaled value as percentage of full
-                            scale reading for configured sensor type.
-            - [`Celsius]: Scale temperature reading to degrees Celsius.
-            - [`Fahrenheit]: Scale temperature reading to degrees Fahrenheit.
-            - [`Angle_steps]: Report scaled value as count of ticks on
-            RCX-style rotation sensor.
+            {ul
+            {- [`Raw]: Report scaled value equal to raw value.
+            }
+            {- [`Bool]: Report scaled value as 1 (TRUE) or 0 (FALSE).
+            Note that for the switch sensor, the value is 1 of the
+            button is pressed at the moment the data is requested.
+            Use [`Transition_cnt] if you want not to miss button
+            presses between two requests.
+            The firmware uses inverse Boolean logic to match the
+            physical characteristics of NXT sensors.  Readings
+            are FALSE if raw value exceeds 55% of total range;
+            readings are TRUE if raw value is less than 45% of
+            total range.
+            }
+            {- [`Transition_cnt]: Report scaled value as number of
+            transitions between TRUE and FALSE.  May not be fully exact
+            if transitions are fast.
+            }
+            {- [`Period_counter]: Report scaled value as number of
+            transitions from FALSE to TRUE, then back to FALSE.
+            }
+            {- [`Pct_full_scale]: Report scaled value as percentage of full
+            scale reading for configured sensor type.}
+            {- [`Celsius]: Scale temperature reading to degrees Celsius.}
+            {- [`Fahrenheit]: Scale temperature reading to degrees Fahrenheit.}
+            {- [`Angle_steps]: Report scaled value as count of ticks on
+            RCX-style rotation sensor.}
+            }
         *)
+
+  val set : ?check_status:bool -> 'a conn -> port -> sensor_type -> mode -> unit
+    (** [set conn p ty m] set the sensor connected to port [p] to type
+        [ty] and mode [m].
+
+        @param check_status whether to check the status returned by
+        the brick.  Default: [false].  *)
+
 
   (** Data read from sensors. *)
   type data = {
@@ -335,13 +352,6 @@ sig
         - [`Angle_steps]: 0 .. 65535
     *)
   }
-
-  val set : ?check_status:bool -> 'a conn -> port -> sensor_type -> mode -> unit
-    (** [set conn p ty m] set the sensor connected to port [p] to type
-        [ty] and mode [m].
-
-        @param check_status whether to check the status returned by
-        the brick.  Default: [false].  *)
 
   val get : 'a conn -> port ->  data
     (** [get conn p] returns the data read on port [p]. *)
@@ -435,8 +445,6 @@ sig
           - [`Byte0] .. [`Byte7] are the 8 variables containing the
           distances measured with the [`Meas] or [`Meas_cont] command
           (in centimeters).
-
-          - [`State] returns the command state (FIXME: what is it)
 
           - [`Meas_interval] returns the interval (in 0.01 sec)
           between two consecutive measurments when the sensor is in

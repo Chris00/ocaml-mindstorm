@@ -18,15 +18,15 @@ let run conn =
   let ultra = Sensor.Ultrasonic.make conn `S4 in
   Sensor.Ultrasonic.set ultra `Meas_cont;
   while true do
-    let sw = Sensor.get conn `S1 in
-    if sw.Sensor.normalized > 500 then begin
+    let switch = Sensor.get conn `S1 in
+    if switch.Sensor.scaled = 0 then begin
       let dist = min 50 (Sensor.Ultrasonic.get ultra `Byte0) in
       printf "dist = %i\r%!" dist;
       speed dist (2 * dist - 50);
       usleep 0.2;
     end
     else begin
-      printf "\nSwitch = %i => stop\n" sw.Sensor.raw;
+      printf "\nSwitch pressed => stop\n";
       speed 0 0;
       Mindstorm.close conn;
       exit 0

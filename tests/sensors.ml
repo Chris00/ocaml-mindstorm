@@ -47,12 +47,14 @@ let () =
   test_sensor "Touch (bool)" `S1;
   Sensor.set conn `S1 `Switch `Transition_cnt;
   test_sensor "Touch (transition)" `S1;
+  Sensor.reset_scaled conn `S1;
   Sensor.set conn `S1 `Switch `Period_counter;
   test_sensor "Touch (period)" `S1;
 
   Sensor.set conn `S2 `Light_active `Pct_full_scale;
   (*   Sensor.set conn `S2 `Switch `Light_inactive; *)
   test_sensor "Light" `S2;
+  Sensor.set conn `S2 `No_sensor `Pct_full_scale;
 
   Sensor.set conn `S3 `Sound_db `Pct_full_scale;
   (*   Sensor.set conn `S3 `Sound_dba `Pct_full_scale; *)
