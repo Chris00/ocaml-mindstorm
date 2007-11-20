@@ -11,8 +11,8 @@ let usleep s = ignore(Unix.select [] [] [] s)
 
 let run conn =
   let speed b c  =
-    Motor.set conn Motor.b (Motor.speed (-b));
-    Motor.set conn Motor.c (Motor.speed (-c)) in
+    Motor.set conn Motor.b (Motor.speed b);
+    Motor.set conn Motor.c (Motor.speed c) in
 
   Sensor.set conn `S1 `Switch `Bool;
   let ultra = Sensor.Ultrasonic.make conn `S4 in
@@ -22,7 +22,7 @@ let run conn =
       Sensor.Ultrasonic.set ultra `Meas;
       let dist = min 50 (Sensor.Ultrasonic.get ultra `Byte0) in
       printf "dist = %i\r%!" dist;
-      speed (75-dist) (75-dist);  (*(2 * dist - 50)*)
+      speed dist dist;  (*(2 * dist - 50)*)
       usleep 0.2;
     end
     else begin
