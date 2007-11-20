@@ -15,6 +15,8 @@ CD	?= cd
 # The location of OCaml's library files.
 OCAMLLIBDIR ?= $(shell $(OCAMLC) -where)
 
+PP_FLAGS = $(if $(PP), -pp "$(PP)")
+
 # Caml general dependencies
 .SUFFIXES: .ml .mli .cmi .cmo .cma .cmx .cmxa
 
@@ -22,25 +24,25 @@ OCAMLLIBDIR ?= $(shell $(OCAMLC) -where)
 	$(OCAMLC) $(OCAMLC_FLAGS) -c $<
 
 %.cmo: %.ml
-	$(OCAMLC) $(PP) $(OCAMLC_FLAGS) -c $<
+	$(OCAMLC) $(PP_FLAGS) $(OCAMLC_FLAGS) -c $<
 
 %.cma:
-	$(OCAMLC) $(PP) -a -o $@ $(OCAMLC_FLAGS) $^
+	$(OCAMLC) $(PP_FLAGS) -a -o $@ $(OCAMLC_FLAGS) $^
 
 %.cmx: %.ml
-	$(OCAMLOPT) $(PP) $(OCAMLOPT_FLAGS) -c $<
+	$(OCAMLOPT) $(PP_FLAGS) $(OCAMLOPT_FLAGS) -c $<
 
 %.cmxa:
-	$(OCAMLOPT) $(PP) -a -o $@ $(OCAMLOPT_FLAGS) $^
+	$(OCAMLOPT) $(PP_FLAGS) -a -o $@ $(OCAMLOPT_FLAGS) $^
 
 %.exe: %.cmo
-	$(OCAMLC) -o $@ $(PP) $(OCAMLC_FLAGS) $(LIBS_CMA) $<
+	$(OCAMLC) -o $@ $(OCAMLC_FLAGS) $(LIBS_CMA) $<
 
 %.com: %.cmx
-	$(OCAMLOPT) -o $@ $(PP) $(OCAMLOPT_FLAGS) $(LIBS_CMXA) $<
+	$(OCAMLOPT) -o $@ $(OCAMLOPT_FLAGS) $(LIBS_CMXA) $<
 
 .depend.ocaml: $(wildcard *.ml) $(wildcard *.mli)
-	-$(OCAMLDEP) $(PP) $(SYNTAX_OPTS) $^ > $@
+	-$(OCAMLDEP) $(PP_FLAGS) $(SYNTAX_OPTS) $^ > $@
 include .depend.ocaml
 
 
