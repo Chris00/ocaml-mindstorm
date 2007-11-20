@@ -4,8 +4,7 @@ DOC_DIR = doc
 WEB_DIR = web/
 SF_WEB 	= /home/groups/o/oc/ocaml-mindstorm/htdocs
 
-PP = -pp "camlp4o pa_macro.cmo"
-CAML_H = $(shell ocamlc -where)
+PP = camlp4o pa_macro.cmo
 CFLAGS= -Wall -fPIC
 OCAMLC_FLAGS = -g
 
@@ -14,20 +13,21 @@ STUBS=mindstorm_unix.c
 mindstorm.cma: $(STUBS:.c=.o) mindstorm.cmo
 	$(OCAMLMKLIB) -o mindstorm  $^ -lbluetooth
 # 	$(OCAMLC) -a -o $@ $(OCAMLC_FLAGS) -custom unix.cma \
-# 	  -I $(CAML_H) -cclib -lbluetooth unix.cma $^
+# 	  -I $(OCAMLLIBDIR) -cclib -lbluetooth unix.cma $^
 
 mindstorm.cmxa: $(STUBS:.c=.o) mindstorm.cmx
 	$(OCAMLMKLIB) -o mindstorm  $^ -lbluetooth
 
 .PHONY: tests
 tests: mindstorm.cma
-	$(CD) tests; $(MAKE) -B byte
+	$(CD) tests; $(MAKE) -B PP="$(PP)" byte
 
 test.exe: mindstorm_unix.c test.ml
-	$(OCAMLC) -o $@ -custom unix.cma -I $(CAML_H) -cclib -lbluetooth $^
+	$(OCAMLC) -o $@ -custom unix.cma -I $(OCAMLLIBDIR) -cclib -lbluetooth $^
 
-.PHONY: ex
-ex: mindstorm.cma
+.PHONY: examples ex
+ex: examples
+examples: mindstorm.cma
 	$(CD) examples; $(MAKE) -B byte
 
 # Generate HTML documentation

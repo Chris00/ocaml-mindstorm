@@ -8,13 +8,23 @@ let bt =
   end
   else Sys.argv.(1)
 
-let repeat_till_ENTER f =
+IFDEF WIN32 THEN
+(* Win32 command shell is poor *)
+let repeat_till_ENTER msg f =
+  printf "%s.\n%!" msg;
+  let i = ref 0 in
+  while !i < 200 do f !i; incr i done
+
+ELSE
+(* Unix & Mac OSX have proper terminals *)
+let repeat_till_ENTER msg f =
   let params = Unix.tcgetattr Unix.stdin in
   Unix.tcsetattr Unix.stdin Unix.TCSAFLUSH
     { params with Unix.c_icanon = false; c_echo = false;
         c_vmin = 0; c_vtime = 0; };
   (* FIXME: We should also catch signals *)
   let no_key_pressed() = Unix.read Unix.stdin " " 0 1 = 0 in
+  printf "%s; when finished press ENTER.\n%!" msg;
   try
     let i = ref 0 in
     while no_key_pressed() do f !i; incr i done;
@@ -23,7 +33,7 @@ let repeat_till_ENTER f =
   with e ->
     Unix.tcsetattr Unix.stdin Unix.TCSAFLUSH params;
     raise e
-
+ENDIF
 
 let () =
   printf "It is assumed that sensors are connected as follows:\n";
@@ -35,8 +45,7 @@ let () =
   let conn = Mindstorm.connect_bluetooth bt in
 
   let test_sensor name port =
-    printf "- %s sensor; when finished press ENTER.\n%!" name;
-    repeat_till_ENTER begin fun i ->
+    repeat_till_ENTER (sprintf "- %s sensor" name) begin fun i ->
       let data = Sensor.get conn port in
       printf "%4i:\t raw = %4i   normalized = %4i   scaled = %-5i\r%!"
         i data.Sensor.raw data.Sensor.normalized data.Sensor.scaled;
@@ -61,9 +70,8 @@ let () =
   test_sensor "Sound" `S3;
 
   let us = Sensor.Ultrasonic.make conn `S4 in
-  printf "- Ultrasonic sensor; when finished press ENTER.\n%!";
   Sensor.Ultrasonic.set us `Meas_cont ~check_status:true;
-  repeat_till_ENTER begin fun i ->
+  repeat_till_ENTER "- Ultrasonic sensor" begin fun i ->
     try
       let dist = Sensor.Ultrasonic.get us `Byte0 in
       printf "%4i:\t                    dist = %i\r%!" i dist
