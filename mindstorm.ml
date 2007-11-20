@@ -171,6 +171,16 @@ let really_read fd n =
   really_input fd buf 0 n;
   buf
 
+(* Char of a signed int, 2's complement. *)
+let signed_chr i =
+  assert(-128 <= i && i <= 127);
+  Char.unsafe_chr(if i <= 127 then i else 256 + i)
+
+(* int of a char, seen as a signed int *)
+let signed_code c =
+  let i = Char.code c in
+  if i <= 127 then i else i - 256
+
 (* Converts the 2 bytes s.[i] (least significative byte) and s.[i+1]
    (most significative byte) into the corresponding integer. *)
 let int16 s i =
@@ -822,7 +832,7 @@ struct
     (* SETOUTPUTSTATE *)
     cmd conn ~check_status ~byte1:'\x04' ~n:13   begin fun pkg ->
       pkg.[4] <- port;
-      pkg.[5] <- Char.unsafe_chr(127 + st.speed);
+      pkg.[5] <- signed_chr st.speed;
       let mode = 0x00 (* COAST mode *) in
       let mode = if st.motor_on then mode lor 0x01 else mode in
       let mode = if st.brake then mode lor 0x02 else mode in
@@ -836,7 +846,7 @@ struct
                               | `Motor_sync  -> mode lor 0x04, '\x02') in
       pkg.[6] <- Char.unsafe_chr mode;
       pkg.[7] <- regulation;
-      pkg.[8] <- Char.unsafe_chr(127 + st.turn_ratio);
+      pkg.[8] <- signed_chr st.turn_ratio;
       pkg.[9] <- (match st.run_state with
                   | `Idle -> '\x00' | `Ramp_up -> '\x10'
                   | `Running -> '\x20' | `Ramp_down -> '\x40');
@@ -854,7 +864,7 @@ struct
     let ans = recv conn 25 in
     let mode = Char.code ans.[5] in
     let st =
-      { speed = Char.code ans.[4] - 127; (* signed *)
+      { speed = signed_code ans.[4];
         motor_on = (mode land 0x01 <> 0);
         brake = (mode land 0x02 <> 0);
         regulation = (if mode land 0x04 = 0 then `Idle
@@ -863,7 +873,7 @@ struct
                       | '\x01' -> `Motor_speed
                       | '\x02' -> `Motor_sync
                       | _ -> `Idle);
-        turn_ratio = Char.code ans.[7] - 127;
+        turn_ratio = signed_code ans.[7];
         run_state = (match ans.[8] with
                      | '\x00' -> `Idle | '\x10' -> `Ramp_up
                      | '\x20' -> `Running | '\x40' -> `Ramp_down
