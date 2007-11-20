@@ -10,19 +10,19 @@ module Motor = Mindstorm.Motor
 let usleep s = ignore(Unix.select [] [] [] s)
 
 let run conn =
-  let speed a b  =
-    Motor.set conn Motor.a (Motor.speed a);
-    Motor.set conn Motor.b (Motor.speed b) in
+  let speed b c  =
+    Motor.set conn Motor.b (Motor.speed (-b));
+    Motor.set conn Motor.c (Motor.speed (-c)) in
 
-  Sensor.set conn `S1 `Switch `Raw;
+  Sensor.set conn `S1 `Switch `Bool;
   let ultra = Sensor.Ultrasonic.make conn `S4 in
-  Sensor.Ultrasonic.set ultra `Meas_cont;
   while true do
     let switch = Sensor.get conn `S1 in
     if switch.Sensor.scaled = 0 then begin
+      Sensor.Ultrasonic.set ultra `Meas;
       let dist = min 50 (Sensor.Ultrasonic.get ultra `Byte0) in
       printf "dist = %i\r%!" dist;
-      speed dist (2 * dist - 50);
+      speed (75-dist) (75-dist);  (*(2 * dist - 50)*)
       usleep 0.2;
     end
     else begin
