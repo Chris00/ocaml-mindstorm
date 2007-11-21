@@ -174,7 +174,7 @@ let really_read fd n =
 (* Char of a signed int, 2's complement. *)
 let signed_chr i =
   assert(-128 <= i && i <= 127);
-  Char.unsafe_chr(if i <= 127 then i else 256 + i)
+  Char.unsafe_chr(if i >= 0 then i else 256 + i)
 
 (* int of a char, seen as a signed int *)
 let signed_code c =
