@@ -167,7 +167,9 @@ sig
           [tach_limit].  *)
 
   type state = {
-    speed : int; (** Power set-point.  Range: -100 .. 100. *)
+    speed : int; (** Power set-point.  Range: -100 .. 100.  Values
+                     lager than 100 will be taken as 100 and values
+                     less than -100 will be takes as -100.  *)
     motor_on : bool; (** if [true], turns the motor on: enables
                          pulse-width modulation (PWM) power according
                          to speed. *)

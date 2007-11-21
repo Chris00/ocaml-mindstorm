@@ -171,9 +171,11 @@ let really_read fd n =
   really_input fd buf 0 n;
   buf
 
-(* Char of a signed int, 2's complement. *)
+(* Char of a signed int, 2's complement.  All uses of this function
+   are for values in the range -100 .. 100, so if outside the value is
+   mapped to the closer endpoint. *)
 let signed_chr i =
-  assert(-128 <= i && i <= 127);
+  let i = if i < -100 then -100 else if i > 100 then 100 else i in
   Char.unsafe_chr(if i >= 0 then i else 256 + i)
 
 (* int of a char, seen as a signed int *)
@@ -823,10 +825,6 @@ struct
 
 
   let set ?(check_status=false) conn port st =
-    if st.speed < -100 || st.speed > 100 then
-      invalid_arg "Mindstorm.Motor.set: state.speed not in -100 .. 100";
-    if st.turn_ratio < -100 || st.turn_ratio > 100 then
-      invalid_arg "Mindstorm.Motor.set: state.turn_ratio not in -100 .. 100";
     if st.tach_limit < 0 then
       invalid_arg "Mindstorm.Motor.set: state.tach_limit must be >= 0";
     (* SETOUTPUTSTATE *)
