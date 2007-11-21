@@ -174,7 +174,8 @@ sig
     brake : bool; (** Use run/brake instead of run/float.  "Braking"
                       in this sense means that the output voltage is not
                       allowed to float between active PWM pulses.
-                      Electronic braking improves the accuracy of
+                      Electronic braking improves the accuracy (and is
+                      necessary to see a rotation at small speeds) of
                       motor output, but uses slightly more battery
                       power.  *)
     regulation : regulation; (** Turns on the chosen regulation. *)
@@ -202,7 +203,7 @@ sig
         true if and only if [s <> 0], [tach_limit = 0], and [run_state
         = `Running].
 
-        @param brake turns on brake.  Default [false].
+        @param brake turns on brake.  Default [true].
         @param sync  turn on [`Motor_sync].  Default [false].
         @param turn_ratio set a turn-ratio.  Default [0]. *)
 

@@ -10,7 +10,7 @@ let bt =
 let () =
   let conn = Mindstorm.connect_bluetooth bt in
   printf "Connected!\n%!";
-  Mindstorm.set_brick_name conn "UMH1" ~check_status:true;
+  Mindstorm.set_brick_name conn "OCaml" ~check_status:true;
   printf "Device info: \n%!";
   let i = Mindstorm.get_device_info conn in
   printf "- brick name = %S\n" i.Mindstorm.brick_name;

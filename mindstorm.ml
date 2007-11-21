@@ -812,7 +812,7 @@ struct
     tach_limit : int;
   }
 
-  let speed ?(brake=false) ?(sync=false) ?(turn_ratio=0) s =
+  let speed ?(brake=true) ?(sync=false) ?(turn_ratio=0) s =
     {
       speed = s;   motor_on = s <> 0;  brake = brake;
       regulation = (if sync then `Motor_sync else `Idle);
