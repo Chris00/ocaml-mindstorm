@@ -2,7 +2,7 @@
 INTERFACES = mindstorm.mli
 DOC_DIR = doc
 WEB_DIR = web/
-SF_WEB 	= /home/groups/o/oc/ocaml-mindstorm/htdocs
+SF_WEB 	= shell.sf.net:/home/groups/o/oc/ocaml-mindstorm/htdocs
 
 PP = camlp4o pa_macro.cmo
 CFLAGS= -Wall -fPIC
@@ -40,14 +40,12 @@ doc:
 # Publish the doc to SF
 web: doc
 	@ if [ -d $(DOC_DIR) ] ; then \
-	  scp $(DOC_DIR)/*.html $(DOC_DIR)/*.css \
-		shell.sf.net:$(SF_WEB)/doc/ \
-	  && echo "*** Published documentation on SF" ; \
+	  scp $(DOC_DIR)/*.html $(DOC_DIR)/*.css $(SF_WEB)/doc/ \
+	  && echo "*** Published documentation on SF." ; \
 	fi
 	@ if [ -d $(WEB_DIR)/ ] ; then \
-	  scp $(WEB_DIR)/*.html $(WEB_DIR)/*.jpg LICENSE \
-	    shell.sf.net:$(SF_WEB) \
-	  && echo "*** Published web site ($(SRC_WEB)/) on SF" ; \
+	  scp $(WEB_DIR)/*.html $(WEB_DIR)/*.jpg LICENSE $(SF_WEB) \
+	  && echo "*** Published web site ($(SRC_WEB)/) on SF." ; \
 	fi
 
 
