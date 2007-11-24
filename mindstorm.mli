@@ -200,11 +200,13 @@ sig
           motors connected to the specified port(s) will rotate
           freely.  *)
 
-  val speed : ?brake:bool -> ?sync:bool -> ?turn_ratio:int -> int -> state
+  val speed : ?tach_limit:int -> ?brake:bool -> ?sync:bool
+    -> ?turn_ratio:int -> int -> state
     (** [speed s] returns a state where [speed] is [s], [motor_on] is
-        true if and only if [s <> 0], [tach_limit = 0], and [run_state
+        true if and only if [s <> 0], and [run_state
         = `Running].
 
+        @param tach_limit set a tach_limit. Default [0].
         @param brake turns on brake.  Default [true].
         @param sync  turn on [`Motor_sync].  Default [false].
         @param turn_ratio set a turn-ratio.  Default [0]. *)
