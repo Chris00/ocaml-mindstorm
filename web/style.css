@@ -1,0 +1,165 @@
+body {
+	background-color:#F4F4F4;
+	font-size:13px;
+	color:#000000;
+	text-align:justify;
+	margin-top:10px;
+}
+
+/** LOGO **/
+div.logo{
+	width: 574px;
+	height: 100px;
+	color:#F33F00;
+	font-size:45px;
+	font-weight:bold;
+	background-image:url(logo.png);
+	background-repeat:no-repeat;
+	margin-left: auto;
+	margin-right: auto;
+}
+
+/** FIN LOGO **/
+	
+/** PAGE CONTENT **/	
+	
+div.main {
+   	width: 550px;
+	color:#030502;
+	background-color:#DEDEDE;
+   	/*border: 1px solid black;*/
+	font: normal small Arial, Helvetica, sans-serif;
+	font-size:12px;
+	text-align:justify;
+   	padding: 12px;
+   	margin: auto; /* On peut donc demander à ce que le block soit centré avec "auto" */
+}
+	
+.title_blue{
+	font-family:arial;
+	font-size:17px;
+	font-weight:bold;
+	color:#36B2BA;
+}
+
+.title_green{
+	font-family:arial;
+	font-size:17px;
+	font-weight:bold;
+	color:#77C52F;
+}
+
+.title_rose{
+	font-family:arial;
+	font-size:17px;
+	font-weight:bold;
+	color:#BA55D3;
+}
+
+.title_yellow{
+	font-family:arial;
+	font-size:17px;
+	font-weight:bold;
+	color:#BCD70E;
+}
+
+a {
+	font-weight:bold;
+	color:#F33F00;
+	text-decoration: none;
+}
+a:hover {
+	font-weight:bold;
+	color:black;
+	text-decoration: none;
+}
+
+/** END PC **/
+	
+/** NAVIGATION BAR **/
+div.nav {
+	width: 574px;
+	background-color:#F33F00;
+	color:#030502;
+	font: normal small Arial, Helvetica, sans-serif;
+	margin-left: auto;
+	margin-right: auto;
+	margin-bottom: 4px;
+	margin-top: 4px;
+}
+	
+/*LINKS */
+	
+.blue {
+	background-color: #36B2BA;
+	text-decoration: none;
+	font-size:15px;
+	font-weight:bold;
+	color: black;
+	margin-left: 20px;
+}
+	
+.blue:hover {
+	background-color: #F33F00;
+	text-decoration: none;
+	font-size:15px;
+	font-weight:bold;
+	color: #36B2BA;
+	margin-left: 20px;
+}
+	
+.green {
+	background-color: #77C52F;
+	text-decoration: none;
+	font-size:15px;
+	font-weight:bold;
+	color: black;
+	margin-left: 85px;
+}
+	
+.green:hover {
+	background-color: #F33F00;
+	text-decoration: none;
+	font-size:15px;
+	font-weight:bold;
+	color: #77C52F;
+	margin-left: 85px;
+}
+	
+.rose {
+	background-color: #BA55D3;
+	text-decoration: none;
+	font-size:15px;
+	font-weight:bold;
+	color: black;
+	margin-left: 90px;
+}
+	
+.rose:hover {
+	background-color: #F33F00;
+	text-decoration: none;
+	font-size:15px;
+	font-weight:bold;
+	color: #BA55D3;
+	margin-left: 90px;
+}
+	
+.yellow {
+	background-color: #BCD70E;
+	text-decoration: none;
+	font-size:15px;
+	font-weight:bold;
+	color: black;
+	margin-left: 75px;
+}
+	
+.yellow:hover {
+	background-color: #F33F00;
+	text-decoration: none;
+	font-size:15px;
+	font-weight:bold;
+	color: #BCD70E;
+	margin-left: 75px;
+}
+
+/** END NB **/
