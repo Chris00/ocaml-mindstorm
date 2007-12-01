@@ -20,6 +20,8 @@
     mindsotrm NXT bricks from OCaml (the computer is the master and
     the brick is the slave). Communication with the NXT brick is done
     through bluetooth (and possibly eventually USB).
+
+    @version 0.5
 *)
 
 type usb
@@ -206,7 +208,9 @@ sig
         true if and only if [s <> 0], and [run_state
         = `Running].
 
-        @param tach_limit set a tach_limit. Default [0].
+        @param tach_limit set the number of degrees to rotate.
+           The movement is unfortunately not fully accurate.
+           Default [0] which means "no limit".
         @param brake turns on brake.  Default [true].
         @param sync  turn on [`Motor_sync].  Default [false].
         @param turn_ratio set a turn-ratio.  Default [0]. *)
@@ -286,7 +290,10 @@ sig
                            human hearing
       - [`Custom]
       - [`Lowspeed]:      I2C digital sensor
-      - [`Lowspeed_9v]:   I2C digital sensor, 9V power (e.g. ultrasonic) *)
+      - [`Lowspeed_9v]:   I2C digital sensor, 9V power (e.g. ultrasonic).
+      - [`Highspeed]:     Set [`S4] to highspeed mode.  This is currently
+      unused by LEGO® sensors.  This targets the P-Net communication
+      protocol (www.P-net.org).  *)
 
   type mode =
       [ `Raw

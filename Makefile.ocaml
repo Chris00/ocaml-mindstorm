@@ -1,6 +1,7 @@
 
 ## Generic OCaml dependencies
 PP	   ?=
+OCAML      ?= ocaml
 OCAMLC     ?= ocamlc
 OCAMLOPT   ?= ocamlopt
 OCAMLDEP   ?= ocamldep

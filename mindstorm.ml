@@ -26,7 +26,6 @@
 *)
 
 (* TODO:
-   - checks for 64 bits
    - optional timeouts (for reading and receiving status)?
 *)
 
@@ -180,39 +179,83 @@ let signed_chr i =
 
 (* int of a char, seen as a signed int *)
 let signed_code c =
-  let i = Char.code c in
-  if i <= 127 then i else i - 256
+  if Char.code c <= 127 then Char.code c else Char.code c - 256
 
 (* Converts the 2 bytes s.[i] (least significative byte) and s.[i+1]
-   (most significative byte) into the corresponding integer. *)
-let int16 s i =
+   (most significative byte) into the corresponding UNSIGNED integer. *)
+let uint16 s i =
   assert(i + 1 < String.length s);
   Char.code s.[i] lor (Char.code s.[i+1] lsl 8)
 
-let copy_int16 i s ofs =
+(* Converts the 2 bytes s.[i] (least significative byte) and s.[i+1]
+   (most significative byte) into the corresponding SIGNED integer. *)
+let int16 s i =
+  assert(i + 1 < String.length s);
+  let x = Char.code s.[i] lor (Char.code s.[i+1] lsl 8) in
+  if x land 0x8000 = 0 then (* positive *) x else
+    (* negative, complete with 1 the higher bits *)
+    x lor (-0x10000)
+
+let copy_uint16 i s ofs =
   assert(ofs + 1 < String.length s);
   s.[ofs] <- Char.unsafe_chr(i land 0xFF); (* LSB *)
   s.[ofs + 1] <- Char.unsafe_chr((i lsr 8) land 0xFF) (* MSB *)
 
 (* Converts the 4 bytes s.[i] (LSB) to s.[i+3] (MSB) into the
-   corresponding int.  Since OCaml int are 31 bits (on a 32 platform),
-   raise an exn if the last bit is set. *)
-let int32 s i =
-  if s.[i + 3] >= '\x80' then failwith "Mindstorm.int32: int overflow";
+   corresponding UNSIGNED int.  Used when the spec specifies a ULONG.
+*)
+let uint32 s i =
+  assert(i + 3 < String.length s);
+  IFNDEF ARCH64 THEN
+    (* OCaml int are 31 bits (on a 32 bits platform), thus raise an
+       exception if the last bit is set. *)
+    if s.[i + 3] >= '\x40' then failwith "Mindstorm.uint32: overflow (32 bits)";
+  ENDIF;
   Char.code s.[i]
   lor (Char.code s.[i + 1] lsl 8)
   lor (Char.code s.[i + 2] lsl 16)
-  lor (Char.code s.[i + 3] lsl 32)
+  lor (Char.code s.[i + 3] lsl 24)
+
+(* Converts the 4 bytes s.[i] (LSB) to s.[i+3] (MSB) into the
+   corresponding SIGNED int.  Used when the spec specifies a SLONG.
+   Since OCaml int are 31 bits (on a 32 bits platform), raise an exn
+   if the last bit is set. *)
+let int32 s i =
+  assert(i + 3 < String.length s);
+  let msb = Char.code s.[i + 3] in
+  if msb >= 0x80 then (
+    (* negative number *)
+    IFNDEF ARCH64 THEN
+      (* 32 bits architecture *)
+      if msb land 0x40 = 0 then failwith "Mindstorm.int32: overflow (32 bits)";
+    ENDIF;
+    let x = Char.code s.[i]
+      lor (Char.code s.[i + 1] lsl 8)
+      lor (Char.code s.[i + 2] lsl 16)
+      lor (msb lsl 24) in
+    IFDEF ARCH64 THEN
+      x lor (-0x1_0000_0000) (* set to 1 the bits # 63 (higher) to 33. *)
+    ELSE x (* "sign bit" set because [msb land 0x40 = 1] *)  ENDIF
+  )
+  else (
+    (* positive number *)
+    IFNDEF ARCH64 THEN
+      if msb >= 0x40 then failwith "Mindstorm.int32: overflow (32 bits)";
+    ENDIF;
+    Char.code s.[i]
+    lor (Char.code s.[i + 1] lsl 8)
+    lor (Char.code s.[i + 2] lsl 16)
+    lor (msb lsl 24)
+  )
 
 (* Copy the int [i] as 4 bytes (little endian) to [s] starting at
-   position [ofs].   We assume [i < 2^32].*)
-let copy_int32 i s ofs =
+   position [ofs].  Used when the spec specifies a ULONG. *)
+let copy_uint32 i s ofs =
+  assert(i >= 0);
   s.[ofs] <- Char.unsafe_chr(i land 0xFF); (* LSB *)
-  let i = i lsr 8 in
-  s.[ofs + 1] <- Char.unsafe_chr(i land 0xFF);
-  let i = i lsr 8 in
-  s.[ofs + 2] <- Char.unsafe_chr(i land 0xFF);
-  s.[ofs + 3] <- Char.unsafe_chr((i lsr 8) land 0xFF) (* MSB *)
+  s.[ofs + 1] <- Char.unsafe_chr((i lsr 8) land 0xFF);
+  s.[ofs + 2] <- Char.unsafe_chr((i lsr 16) land 0xFF);
+  s.[ofs + 3] <- Char.unsafe_chr((i lsr 32) land 0xFF) (* MSB *)
 
 (* Extracts the filename in [s.[ofs .. ofs+19]] *)
 let get_filename s ofs =
@@ -358,7 +401,7 @@ let open_in conn fname =
   blit_filename "Mindstorm.open_in" fname pkg 4;
   conn.send conn.fd pkg;
   let ans = recv conn 8 in
-  let len = int32 ans 4 in
+  let len = uint32 ans 4 in (* len <= 64Kb of RAM *)
   { in_fd = conn.fd;
     in_send = conn.send;
     in_recv = conn.recv;
@@ -400,14 +443,14 @@ let input ch buf ofs len =
     pkg.[2] <- '\x01';
     pkg.[3] <- '\x82'; (* READ *)
     pkg.[4] <- ch.in_handle;
-    copy_int16 len_to_read pkg 5;
+    copy_uint16 len_to_read pkg 5;
     ch.in_send ch.in_fd pkg;
     (* Variable length return package.  The number of bytes that was
        requested [len_to_read] is always returned.  Beware that if we
        read the last bytes -- even if there were indeed bytes to read --
        the status will indicate EOF. *)
     let ans = ch.in_recv ch.in_fd 6 in
-    let r = int16 ans 4 in (* # bytes read *)
+    let r = uint16 ans 4 in (* # bytes read *)
     assert(r = len_to_read);
     really_input ch.in_fd buf ofs len_to_read;
     ch.in_left <- ch.in_left - len_to_read;
@@ -442,7 +485,7 @@ let open_out_gen conn flag_byte length fname =
   pkg.[2] <- '\x01';
   pkg.[3] <- flag_byte; (* type of open *)
   blit_filename "Mindstorm.open_out" fname pkg 4;
-  copy_int32 length pkg 24;
+  copy_uint32 length pkg 24; (* length <= 64Kb of RAM *)
   conn.send conn.fd pkg;
   let ans = recv conn 4 in
   { out_fd = conn.fd;
@@ -458,7 +501,7 @@ let open_out_append conn fname =
   pkg.[0] <- '\022'; (* size, LSB *)
   pkg.[1] <- '\000'; (* size, MSB *)
   pkg.[2] <- '\x01';
-  pkg.[3] <- '\x8C'; (* APPEND DATA *)
+  pkg.[3] <- '\x8C'; (* OPEN APPEND DATA *)
   blit_filename "Mindstorm.open_out" fname pkg 4;
   conn.send conn.fd pkg;
   let ans = recv conn 8 in
@@ -466,7 +509,7 @@ let open_out_append conn fname =
     out_send = conn.send;
     out_recv = conn.recv;
     out_handle = ans.[3];
-    out_length = int32 ans 4;
+    out_length = uint32 ans 4; (* <= 64Kb of RAM *)
     out_closed = false;
   }
 
@@ -500,7 +543,7 @@ let output ch buf ofs len =
     invalid_arg "Mindstorm.output";
   if ch.out_closed then raise(Sys_error "Closed NXT out_channel");
   let pkg = String.create 5 in
-  copy_int16 (len + 3) pkg 0; (* 2 BT length bytes; len+3 <= 0xFFFF *)
+  copy_uint16 (len + 3) pkg 0; (* 2 BT length bytes; len+3 <= 0xFFFF *)
   pkg.[2] <- '\x01';
   pkg.[3] <- '\x83'; (* WRITE *)
   pkg.[4] <- ch.out_handle;
@@ -509,7 +552,7 @@ let output ch buf ofs len =
   ignore(Unix.write ch.out_fd buf ofs len);
   let ans = ch.out_recv ch.out_fd 6 in
   check_status_as_exn ans.[2];
-  int16 ans 4
+  uint16 ans 4
 
 
 let remove conn fname =
@@ -565,7 +608,7 @@ struct
       it_handle = ans.[3];
       it_closed = false;
       it_fname = get_filename ans 4;
-      it_flength = int32 ans 24;
+      it_flength = uint32 ans 24; (* length <= 64Kb of RAM *)
     }
 
   let current i =
@@ -587,7 +630,7 @@ struct
     i.it_send i.it_fd pkg;
     let ans = i.it_recv i.it_fd 28 in
     i.it_fname <- get_filename ans 4;
-    i.it_flength <- int32 ans 24;
+    i.it_flength <- uint32 ans 24; (* length <= 64Kb of RAM *)
     (* In the case the status is File_not_found, the doc says the
        handle is closed by the brick. (FIXME: confirm?) *)
     if ans.[2] = eof_char then i.it_closed <- true;
@@ -694,8 +737,8 @@ let get_device_info conn =
   { brick_name = get_brick_name ans 3 17; (* 14 chars + null *)
     bluetooth_addr = (* ans.[18 .. 24], drop null terminator *)
       string_of_bluetooth_addr(String.sub ans 18 6);
-    signal_strength = int32 ans 25;
-    free_user_flash = int32 ans 29;
+    signal_strength = uint32 ans 25; (* always return 0! *)
+    free_user_flash = uint32 ans 29; (* <= 64Kb of RAM *)
   }
 
 let delete_user_flash conn =
@@ -735,15 +778,15 @@ let poll_command conn buf len =
 
 
 let keep_alive conn =
-  conn.send conn.fd "\002\000\x00\x0D";
+  conn.send conn.fd "\002\000\x00\x0D"; (* KEEPALIVE *)
   let ans = recv conn 7 in
-  int32 ans 3
+  uint32 ans 3 (* FIXME: # of miliseconds can overflow 30 bits? *)
 
 
 let battery_level conn =
-  conn.send conn.fd "\002\000\x00\x0B";
+  conn.send conn.fd "\002\000\x00\x0B"; (* GETBATTERYLEVEL *)
   let ans = recv conn 5 in
-  int16 ans 3
+  uint16 ans 3
 
 
 (* ---------------------------------------------------------------------- *)
@@ -849,7 +892,7 @@ struct
       pkg.[9] <- (match st.run_state with
                   | `Idle -> '\x00' | `Ramp_up -> '\x10'
                   | `Running -> '\x20' | `Ramp_down -> '\x40');
-      copy_int32 st.tach_limit pkg 10; (* bytes 8-11 (bug in the spec) *)
+      copy_uint32 st.tach_limit pkg 10; (* bytes 8-11 (bug in the spec) *)
     end
 
   let get conn motor =
@@ -857,7 +900,7 @@ struct
     pkg.[0] <- '\003'; (* BT bytes *)
     pkg.[1] <- '\000';
     pkg.[2] <- '\x00'; (* get an answer *)
-    pkg.[3] <- '\x06';
+    pkg.[3] <- '\x06'; (* GETOUTPUTSTATE *)
     pkg.[4] <- motor;
     conn.send conn.fd pkg;
     let ans = recv conn 25 in
@@ -877,7 +920,7 @@ struct
                      | '\x00' -> `Idle | '\x10' -> `Ramp_up
                      | '\x20' -> `Running | '\x40' -> `Ramp_down
                      | _ -> `Idle);
-        tach_limit = int32 ans 9;
+        tach_limit = uint32 ans 9;
       }
     and tach_count = int32 ans 13
     and block_tach_count = int32 ans 17
@@ -979,7 +1022,7 @@ struct
     pkg.[0] <- '\003'; (* BT bytes *)
     pkg.[1] <- '\000';
     pkg.[2] <- '\x00'; (* get a reply *)
-    pkg.[3] <- '\x07';
+    pkg.[3] <- '\x07'; (* GETINPUTVALUES *)
     pkg.[4] <- char_of_port port;
     conn.send conn.fd pkg;
     let ans = recv conn 16 in
@@ -1011,9 +1054,10 @@ struct
                 | '\x1F' -> `Slope_mask
                 (*| '\xE0' -> `Mode_mask*)
                 | _ -> raise(Error Insane));
-      raw = int16 ans 8;
-      normalized = int16 ans 10;
+      raw = uint16 ans 8;
+      normalized = uint16 ans 10;
       scaled = int16 ans 12;
+      (* calibrated = int16 and 14; *)
     }
 
   let reset_scaled ?(check_status=false) conn port =
@@ -1041,7 +1085,7 @@ struct
     if rx_length < 0 || rx_length > 255 then
       invalid_arg "Mindstorm.Sensor.write: length rx_length not in 0 .. 255";
     let pkg = String.create 7 in
-    copy_int16 (n + 5) pkg 0; (* 2 bluetooth bytes *)
+    copy_uint16 (n + 5) pkg 0; (* 2 bluetooth bytes *)
     pkg.[2] <- if check_status then '\x00' else '\x80';
     pkg.[3] <- '\x0F'; (* LSWRITE *)
     pkg.[4] <- char_of_port port;
@@ -1219,8 +1263,8 @@ struct
     if freq < 200 || freq > 14000 then
       invalid_arg "Mindstorm.Sound.play_tone: frequency not in 200 .. 14000";
     cmd conn ~check_status ~byte1:'\x03' ~n:6 (fun pkg ->
-      copy_int16 freq pkg 4;
-      copy_int16 duration pkg 6
+      copy_uint16 freq pkg 4;
+      copy_uint16 duration pkg 6
     )
 end
 
@@ -1243,7 +1287,7 @@ struct
     let len = String.length msg in
     if len > 58 then invalid_arg "Mindstorm.Message.write: message length > 58";
     let pkg = String.create (len + 7) in
-    copy_int16 (len + 5) pkg 0; (* cmd length = 4 + msg length + one '\000' *)
+    copy_uint16 (len + 5) pkg 0; (* cmd length = 4 + msg length + one '\000' *)
     pkg.[2] <- if check_status then '\x00' else '\x80';
     pkg.[3] <- '\x09';
     pkg.[4] <- char_of_mailbox mailbox;
