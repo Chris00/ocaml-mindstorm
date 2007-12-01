@@ -1,45 +1,150 @@
 body {
-	background-color:#F4F4F4;
-	font-size:13px;
-	color:#000000;
-	text-align:justify;
-	margin-top:10px;
+  background-color: #F4F4F4; 
+  font-size: 13px;
+  color: #000000;
+  text-align: justify;
+  margin-top: 10px;
 }
 
 /** LOGO **/
-div.logo{
-	width: 574px;
-	height: 100px;
-	color:#F33F00;
-	font-size:45px;
-	font-weight:bold;
-	background-image:url(logo.png);
-	background-repeat:no-repeat;
-	margin-left: auto;
-	margin-right: auto;
+div.logo {
+  width: 650px;
+  padding-left: 12px;
+  padding-right: 12px;
+  height: 100px;
+  color: #F33F00;
+  font-size: 45px;
+  font-weight: bold;
+  background-color: #DEDEDE;
+  background-image: url(logo.png);
+  background-repeat: no-repeat;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 /** FIN LOGO **/
+
+/** NAVIGATION BAR **/
+#nav {
+  width: 650px;
+  height: 2.9ex;
+/*   width: 150; */
+/*   float: left; */
+  background-color: #F33F00;
+  color: #030502;
+  font: normal small Arial, Helvetica, sans-serif;
+  margin-left: auto;
+  margin-right: auto;
+  margin-top: 0px;
+  margin-bottom: 0px;
+  padding-left:  12px;
+  padding-right: 12px;
+  padding-top: 5px;
+  padding-bottom: 3px;
+}
+
+#nav ul {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+#nav ul li {
+  display: inline;
+}
+
+#nav ul li a {
+/*   display: block; */
+  text-decoration: none;
+  font-size: 15px;
+  font-weight: bold;
+  color: black;
+  margin-right: 10px;
+  border: 1px solid #DEDEDE;
+  padding: 0.5ex 1em;
+}
+
+a.index {
+  background-color: #36B2BA;
+  color: black;
+  padding: 3px;
+}
+	
+a.index:hover {
+  background-color: #F33F00;
+  color: #36B2BA;
+}
+	
+a.doc {
+  background-color: #77C52F;
+  color: black;
+  padding: 3px;	
+}
+	
+a.doc:hover {
+  background-color: #F33F00;
+  color: #77C52F;
+}
+	
+a.download {
+  background-color: #BA55D3;
+  color: black;
+/*   margin-left: 80px; */
+  padding: 3px;	
+}
+	
+a.download:hover {
+  background-color: #F33F00;
+  color: #BA55D3;
+}
+	
+a.license {
+  background-color: #edcf08;
+  color: black;
+/*   margin-left: 80px; */
+  padding: 3px;	
+}
+	
+a.license:hover {
+  background-color: #F33F00;
+  color: #edcf08;
+}
+
+/** END NAVIGATION BAR **/
 	
 /** PAGE CONTENT **/	
+
+hr {
+  background-color: #F33F00;
+  width: 650;
+}
 	
 div.main {
-   	width: 550px;
-	color:#030502;
-	background-color:#DEDEDE;
-   	/*border: 1px solid black;*/
-	font: normal small Arial, Helvetica, sans-serif;
-	font-size:12px;
-	text-align:justify;
-   	padding: 12px;
-   	margin: auto; /* On peut donc demander Ã  ce que le block soit centrÃ© avec "auto" */
+  width: 650px;
+  color: #030502;
+  background-color: #DEDEDE;
+  /*border: 1px solid black;*/
+  font: normal small Arial, Helvetica, sans-serif;
+  font-size:13px;
+  text-align:justify;
+  padding: 12px;
+  padding-top: 20px;
+  margin: auto; /* On peut donc demander à ce que le block
+                         soit centré avec "auto" */
+}
+
+hr.title_blue {
+  margin-top: 0px;
+  background-color: #36B2BA;
 }
 	
 .title_blue{
-	font-family:arial;
-	font-size:17px;
-	font-weight:bold;
-	color:#36B2BA;
+  font-family: arial;
+  font-size: 30px;
+  font-weight: bold;
+  color: #36B2BA;
+  background-color: #686551;
+  padding: 3px;
 }
 
 .title_green{
@@ -56,11 +161,18 @@ div.main {
 	color:#BA55D3;
 }
 
-.title_yellow{
-	font-family:arial;
-	font-size:17px;
-	font-weight:bold;
-	color:#BCD70E;
+hr.title_yellow {
+  margin-top: 0px;
+  background-color: #edcf08;
+}
+
+.title_yellow {
+  font-family:arial;
+  font-size: 30px;
+  font-weight:bold;
+  color: #edcf08;
+  background-color: #686551;
+  padding: 3px;
 }
 
 a {
@@ -75,91 +187,7 @@ a:hover {
 }
 
 /** END PC **/
-	
-/** NAVIGATION BAR **/
-div.nav {
-	width: 574px;
-	background-color:#F33F00;
-	color:#030502;
-	font: normal small Arial, Helvetica, sans-serif;
-	margin-left: auto;
-	margin-right: auto;
-	margin-bottom: 4px;
-	margin-top: 4px;
-}
-	
-/*LINKS */
-	
-.blue {
-	background-color: #36B2BA;
-	text-decoration: none;
-	font-size:15px;
-	font-weight:bold;
-	color: black;
-	margin-left: 20px;
-}
-	
-.blue:hover {
-	background-color: #F33F00;
-	text-decoration: none;
-	font-size:15px;
-	font-weight:bold;
-	color: #36B2BA;
-	margin-left: 20px;
-}
-	
-.green {
-	background-color: #77C52F;
-	text-decoration: none;
-	font-size:15px;
-	font-weight:bold;
-	color: black;
-	margin-left: 85px;
-}
-	
-.green:hover {
-	background-color: #F33F00;
-	text-decoration: none;
-	font-size:15px;
-	font-weight:bold;
-	color: #77C52F;
-	margin-left: 85px;
-}
-	
-.rose {
-	background-color: #BA55D3;
-	text-decoration: none;
-	font-size:15px;
-	font-weight:bold;
-	color: black;
-	margin-left: 90px;
-}
-	
-.rose:hover {
-	background-color: #F33F00;
-	text-decoration: none;
-	font-size:15px;
-	font-weight:bold;
-	color: #BA55D3;
-	margin-left: 90px;
-}
-	
-.yellow {
-	background-color: #BCD70E;
-	text-decoration: none;
-	font-size:15px;
-	font-weight:bold;
-	color: black;
-	margin-left: 75px;
-}
-	
-.yellow:hover {
-	background-color: #F33F00;
-	text-decoration: none;
-	font-size:15px;
-	font-weight:bold;
-	color: #BCD70E;
-	margin-left: 75px;
-}
 
-/** END NB **/
+img.sf_logo {
+  float: right;
+}
