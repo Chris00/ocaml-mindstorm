@@ -1,0 +1,6 @@
+# findlib conf for the Mindstorm module             		-*-conf-*-
+name = "mindstorm"
+description = "Drive mindstorm NXT bricks via bluetooth."
+requires = "unix"
+archive(byte) = "mindstorm.cma"
+archive(native) = "mindstorm.cmxa"
