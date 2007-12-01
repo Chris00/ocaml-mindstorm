@@ -4,11 +4,16 @@ DOC_DIR = doc
 WEB_DIR = web/
 SF_WEB 	= shell.sf.net:/home/groups/o/oc/ocaml-mindstorm/htdocs
 
-PP = camlp4o pa_macro.cmo
 CFLAGS= -Wall -fPIC
-OCAMLC_FLAGS = -g
+OCAMLC_FLAGS = -g -dtypes
 
 STUBS=mindstorm_unix.c
+
+PP = camlp4o pa_macro.cmo
+ifeq ($(shell ocaml arch.ml),64)
+	PP += -DARCH64
+endif
+
 
 mindstorm.cma: $(STUBS:.c=.o) mindstorm.cmo
 	$(OCAMLMKLIB) -o mindstorm  $^ -lbluetooth
@@ -54,5 +59,6 @@ include Makefile.ocaml
 
 clean::
 	$(RM) *.so
-	cd doc/; $(RM) *~ *.html *.css
-	cd tests/; $(MAKE) clean
+	-cd doc/; $(RM) *~ *.html *.css
+	-cd tests/; $(MAKE) clean
+	-cd examples/; $(MAKE) clean
