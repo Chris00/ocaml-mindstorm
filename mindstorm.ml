@@ -264,7 +264,7 @@ let copy_uint32 i s ofs =
   s.[ofs] <- Char.unsafe_chr(i land 0xFF); (* LSB *)
   s.[ofs + 1] <- Char.unsafe_chr((i lsr 8) land 0xFF);
   s.[ofs + 2] <- Char.unsafe_chr((i lsr 16) land 0xFF);
-  s.[ofs + 3] <- Char.unsafe_chr((i lsr 32) land 0xFF) (* MSB *)
+  s.[ofs + 3] <- Char.unsafe_chr((i lsr 24) land 0xFF) (* MSB *)
 
 (* Extracts the filename in [s.[ofs .. ofs+19]] *)
 let get_filename s ofs =
