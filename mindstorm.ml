@@ -216,6 +216,13 @@ let uint32 s i =
   lor (Char.code s.[i + 2] lsl 16)
   lor (Char.code s.[i + 3] lsl 24)
 
+
+(* [fill32 = -0x1_0000_0000] but in a way that is accepted by camlp4
+   even on 32 bits platforms (no range overflow).  The goal is to add
+   enough 1 in front of a 32 bits integer so it is properly
+   interpreted as a 63 bits one. *)
+let fill32 = -(1 lsl 32)
+
 (* Converts the 4 bytes s.[i] (LSB) to s.[i+3] (MSB) into the
    corresponding SIGNED int.  Used when the spec specifies a SLONG.
    Since OCaml int are 31 bits (on a 32 bits platform), raise an exn
@@ -234,7 +241,9 @@ let int32 s i =
       lor (Char.code s.[i + 2] lsl 16)
       lor (msb lsl 24) in
     IFDEF ARCH64 THEN
-      x lor (-0x1_0000_0000) (* set to 1 the bits # 63 (higher) to 33. *)
+      (* bits 0 .. 31 are set by x ; complete by setting to 1 the bits
+         32 to 62 (Caml ints are 63 bits). *)
+      x lor fill32
     ELSE x (* "sign bit" set because [msb land 0x40 = 1] *)  ENDIF
   )
   else (
