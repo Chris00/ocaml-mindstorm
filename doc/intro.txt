@@ -1,7 +1,7 @@
 {1 OCaml-mindstorm}
 
-{{:http://sourceforge.net/projects/ocaml-mindstorm}OCaml Mindstorm}
-is a library that enables to drive LEGO® mindstorm robots from OCaml
+{{:http://ocaml-mindstorm.sourceforge.net/}OCaml Mindstorm} is a
+library that enables to drive LEGO® mindstorm robots from OCaml
 through a Bluetooth or USB connection.
 
 {!modules:
@@ -72,6 +72,8 @@ accordingly.
 
 {3 Windows}
 
+{4 Without the fantom drivers installed}
+
 From windows, open the bluetooth control panel, create a new
 connection to the NXT brick, right click on your connection and select
 "details" to see which serial port is used, for example COM40.  Then
@@ -90,6 +92,14 @@ See also
 {{:http://juju.org/articles/2006/08/16/ruby-serialport-nxt-on-windows}ruby-serialport/nxt
 on Windows} with Cygwin.
 
+{4 With the fantom drivers installed}
+
+Once the fantom drivers are on your machine (which is the case if you
+installed the LEGO® NXTG software), the above method does not work
+anymore.  It is then probably necessary to use these drivers through
+the {{:http://mindstorms.lego.com/Overview/NXTreme.aspx}Driver SDK}.
+This will be investigated in a subsequent revision of this library.
+
 
 
 {2 How to connect the brick through USB}
@@ -107,8 +117,11 @@ Create a [lego] group, add your user to it and create a file
 	SYSFS{idVendor}=="0694", SYSFS{serial}=="xxxxxxxxxxxx", SYMLINK+="lego"
 v}
 
+To be completed.
 
 {3 MacOS X}
+
+TBD.
 
 {3 Windows}
 
