@@ -210,6 +210,7 @@ let uint32 s i =
     (* OCaml int are 31 bits (on a 32 bits platform), thus raise an
        exception if the last bit is set. *)
     if s.[i + 3] >= '\x40' then failwith "Mindstorm.uint32: overflow (32 bits)";
+  ELSE () (* For camlp4 3.09 *)
   ENDIF;
   Char.code s.[i]
   lor (Char.code s.[i + 1] lsl 8)
@@ -235,6 +236,7 @@ let int32 s i =
     IFNDEF ARCH64 THEN
       (* 32 bits architecture *)
       if msb land 0x40 = 0 then failwith "Mindstorm.int32: overflow (32 bits)";
+    ELSE () (* For camlp4 3.09 *)
     ENDIF;
     let x = Char.code s.[i]
       lor (Char.code s.[i + 1] lsl 8)
@@ -250,6 +252,7 @@ let int32 s i =
     (* positive number *)
     IFNDEF ARCH64 THEN
       if msb >= 0x40 then failwith "Mindstorm.int32: overflow (32 bits)";
+    ELSE () (* For camlp4 3.09 *)
     ENDIF;
     Char.code s.[i]
     lor (Char.code s.[i + 1] lsl 8)
