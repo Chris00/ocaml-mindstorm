@@ -36,6 +36,10 @@ ex: examples
 examples: mindstorm.cma
 	$(CD) examples; $(MAKE) -B byte
 
+.PHONY: testsEv
+testsEv: mindstorm.cma
+	$(CD) testsEv; $(MAKE) -B byte
+
 # Generate HTML documentation
 .PHONY: doc
 doc:
