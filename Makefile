@@ -16,6 +16,11 @@ endif
 
 VERSION=$(shell grep "@version" mindstorm.mli | sed "s/[^0-9]*//")
 
+.PHONY: all byte native
+all: byte native
+byte: mindstorm.cma
+native: mindstorm.cmxa
+
 mindstorm.cma: $(STUBS:.c=.o) mindstorm.cmo
 	$(OCAMLMKLIB) -o mindstorm  $^ -lbluetooth
 # 	$(OCAMLC) -a -o $@ $(OCAMLC_FLAGS) -custom unix.cma \
@@ -36,10 +41,6 @@ ex: examples
 examples: mindstorm.cma
 	$(CD) examples; $(MAKE) -B byte
 
-.PHONY: testsEv
-testsEv: mindstorm.cma
-	$(CD) testsEv; $(MAKE) -B byte
-
 # Generate HTML documentation
 .PHONY: doc
 doc:
@@ -54,14 +55,14 @@ web-doc: doc
 	@ if [ -d $(DOC_DIR) ] ; then \
 	  $(DOC_DIR)/add_sf_logo && \
 	  scp $(DOC_DIR)/*.html $(DOC_DIR)/*.css $(SF_WEB)/doc/ \
-	  && echo "*** Published documentation on SF." ; \
+	  && echo "--- Published documentation on SF." ; \
 	fi
 
 website:
 	@ if [ -d $(WEB_DIR)/ ] ; then \
-	  scp $(WEB_DIR)/*.html $(WEB_DIR)/*.css $(WEB_DIR)/*.jpg \
-	  $(WEB_DIR)/*.png  LICENSE $(SF_WEB) \
-	  && echo "*** Published web site ($(SRC_WEB)/) on SF." ; \
+	  scp $(WEB_DIR)/*.html $(WEB_DIR)/*.css LICENSE \
+	    $(WEB_DIR)/*.png  $(SF_WEB) \
+	  && echo "--- Published web site ($(WEB_DIR)/) on SF." ; \
 	fi
 
 META: META.in
