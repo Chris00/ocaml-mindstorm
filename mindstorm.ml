@@ -325,6 +325,8 @@ type 'a conn = {
      length are also read but not returned (and not counted in [n]).
      [recv] checks the status byte and raise an exception accordingly
      (if needed). *)
+  check_status : bool;
+  (* Default value of the [check_status] optional arg. *)
 }
 
 let close conn =
@@ -334,6 +336,10 @@ let recv conn n =
   let pkg = conn.recv conn.fd n in
   check_status_as_exn pkg.[2];
   pkg
+
+let default_check_status conn = function
+  | None -> conn.check_status
+  | Some s -> s
 
 
 (** USB ---------- *)
@@ -348,9 +354,10 @@ let usb_recv fd n =
      exception here but we cannot because of the behavior of [input]. *)
   pkg
 
-let connect_usb socket =
+let connect_usb ?(check_status=false) socket =
   let fd = Unix.openfile socket [] 0 (* FIXME *) in
-  { fd = fd;  send = usb_send;  recv = usb_recv }
+  { fd = fd;  send = usb_send;  recv = usb_recv;
+    check_status = check_status }
 
 (** Bluetooth ---------- *)
 
@@ -363,9 +370,10 @@ let bt_recv fd n =
 
 IFDEF MACOS THEN
 (* Mac OS X *)
-let connect_bluetooth tty =
+let connect_bluetooth ?(check_status=false) tty =
   let fd = Unix.openfile tty [Unix.O_RDWR] 0o660 in
-  { fd = fd;  send = bt_send;  recv = bt_recv }
+  { fd = fd;  send = bt_send;  recv = bt_recv;
+    check_status = check_status }
 
 ELSE
 IFDEF WIN32 THEN
@@ -373,18 +381,20 @@ IFDEF WIN32 THEN
 external socket_bluetooth : string -> Unix.file_descr
   = "ocaml_mindstorm_connect"
 
-let connect_bluetooth addr =
+let connect_bluetooth ?(check_status=false) addr =
   let fd = socket_bluetooth ("\\\\.\\" ^ addr) in
-  { fd = fd;  send = bt_send;  recv = bt_recv }
+  { fd = fd;  send = bt_send;  recv = bt_recv;
+    check_status = check_status }
 
 ELSE
 (* Unix *)
 external socket_bluetooth : string -> Unix.file_descr
   = "ocaml_mindstorm_connect"
 
-let connect_bluetooth addr =
+let connect_bluetooth ?(check_status=false) addr =
   let fd = socket_bluetooth addr in
-  { fd = fd;  send = bt_send;  recv = bt_recv }
+  { fd = fd;  send = bt_send;  recv = bt_recv;
+    check_status = check_status }
 
 ENDIF
 ENDIF
@@ -703,7 +713,8 @@ let boot conn =
   conn.send conn.fd pkg;
   ignore(recv conn 7)
 
-let set_brick_name ?(check_status=false) conn name =
+let set_brick_name ?check_status conn name =
+  let check_status = default_check_status conn check_status in
   let len = String.length name in
   if len > 15 then
     invalid_arg "Mindstorm.set_brick_name: name too long (max 15 chars)";
@@ -827,12 +838,14 @@ let cmd conn ~check_status ~byte1 ~n fill =
 
 module Program =
 struct
-  let start ?(check_status=false) conn name =
+  let start ?check_status conn name =
+    let check_status = default_check_status conn check_status in
     cmd conn ~check_status ~byte1:'\x00' ~n:22  begin fun pkg ->
       blit_filename "Mindstorm.Program.start" name pkg 4
     end
 
-  let stop ?(check_status=false) conn =
+  let stop ?check_status conn =
+    let check_status = default_check_status conn check_status in
     cmd conn ~check_status ~byte1:'\x01' ~n:2 (fun _ -> ())
 
   let name conn =
@@ -872,7 +885,7 @@ struct
   let speed ?(tach_limit=0) ?(brake=true) ?(sync=false) ?(turn_ratio=0) s =
     {
       speed = s;   motor_on = s <> 0;  brake = brake;
-      regulation = (if sync then `Motor_sync else `Idle);
+      regulation = (if sync then `Motor_sync else `Motor_speed);
       turn_ratio = turn_ratio;
       run_state = `Running;
       tach_limit = tach_limit; (* 0 -> run forever *)
@@ -880,7 +893,8 @@ struct
 
 
 
-  let set ?(check_status=false) conn port st =
+  let set ?check_status conn port st =
+    let check_status = default_check_status conn check_status in
     if st.tach_limit < 0 then
       invalid_arg "Mindstorm.Motor.set: state.tach_limit must be >= 0";
     (* SETOUTPUTSTATE *)
@@ -942,7 +956,8 @@ struct
     (st, tach_count, block_tach_count, rotation_count)
 
 
-  let reset_pos ?(check_status=false) conn ?(relative=false) port =
+  let reset_pos ?check_status conn ?(relative=false) port =
+    let check_status = default_check_status conn check_status in
     (* RESETMOTORPOSITION *)
     cmd conn ~check_status ~byte1:'\x0A' ~n:4 (fun pkg ->
       pkg.[4] <- port;
@@ -987,7 +1002,8 @@ struct
     | `S1 -> '\000' | `S2 -> '\001'
     | `S3 -> '\002' | `S4 -> '\003'
 
-  let set ?(check_status=false) conn port sensor_type sensor_mode =
+  let set ?check_status conn port sensor_type sensor_mode =
+    let check_status = default_check_status conn check_status in
     cmd conn ~check_status ~byte1:'\x05' ~n:5 begin fun pkg ->
       pkg.[4] <- char_of_port port;
       pkg.[5] <- (match sensor_type with
@@ -1072,7 +1088,8 @@ struct
       (* calibrated = int16 and 14; *)
     }
 
-  let reset_scaled ?(check_status=false) conn port =
+  let reset_scaled ?check_status conn port =
+    let check_status = default_check_status conn check_status in
     (* RESETINPUTSCALEDVALUE *)
     cmd conn ~check_status ~byte1:'\x08' ~n:3  begin fun pkg ->
       pkg.[4] <- char_of_port port
@@ -1091,7 +1108,8 @@ struct
     let ans = recv conn 4 in
     Char.code ans.[3]
 
-  let write ?(check_status=false) conn port ?(rx_length=0) tx_data =
+  let write ?check_status conn port ?(rx_length=0) tx_data =
+    let check_status = default_check_status conn check_status in
     let n = String.length tx_data in
     if n > 255 then invalid_arg "Mindstorm.Sensor.write: length tx_data > 255";
     if rx_length < 0 || rx_length > 255 then
@@ -1174,7 +1192,8 @@ struct
 		Ultrasonic.set: %s arg not in 0 .. 255" cmd);
       write_cmd ~check_status us byte2 (Char.unsafe_chr v)
 
-    let set ?(check_status=true) us cmd =
+    let set ?check_status us cmd =
+      let check_status = default_check_status conn check_status in
       match cmd with
       | `Off ->       write_cmd ~check_status us '\x41' '\x00'
       | `Meas ->      write_cmd ~check_status us '\x41' '\x01'
@@ -1262,16 +1281,19 @@ end
 
 module Sound =
 struct
-  let play ?(check_status=false) conn ?(loop=false) fname =
+  let play ?check_status conn ?(loop=false) fname =
+    let check_status = default_check_status conn check_status in
     cmd conn ~check_status ~byte1:'\x02' ~n:23 (fun pkg ->
       pkg.[4] <- if loop then '\x01' else '\x00';
       blit_filename "Mindstorm.Sound.play" fname pkg 5
     )
 
-  let stop ?(check_status=false) conn =
+  let stop ?check_status conn =
+    let check_status = default_check_status conn check_status in
     cmd conn ~check_status ~byte1:'\x0C' ~n:2 (fun _ -> ())
 
-  let play_tone ?(check_status=false) conn freq duration =
+  let play_tone ?check_status conn freq duration =
+    let check_status = default_check_status conn check_status in
     if freq < 200 || freq > 14000 then
       invalid_arg "Mindstorm.Sound.play_tone: frequency not in 200 .. 14000";
     cmd conn ~check_status ~byte1:'\x03' ~n:6 (fun pkg ->
@@ -1295,7 +1317,8 @@ struct
     | `R6 -> '\016' | `R7 -> '\017' | `R8 -> '\018'
     | `R9 -> '\019'
 
-  let write ?(check_status=true) conn mailbox msg =
+  let write ?check_status conn mailbox msg =
+    let check_status = default_check_status conn check_status in
     let len = String.length msg in
     if len > 58 then invalid_arg "Mindstorm.Message.write: message length > 58";
     let pkg = String.create (len + 7) in
