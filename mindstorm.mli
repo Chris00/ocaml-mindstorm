@@ -32,15 +32,23 @@ type 'a conn
       brick.  The type parameter indicates whether this connection
       is a USB or a bluetooth one. *)
 
-val connect_bluetooth : string -> bluetooth conn
+val connect_bluetooth : ?check_status:bool -> string -> bluetooth conn
   (** [connect_bluetooth bdaddr] connects through bluetooth to the
       brick with bluetooth address [bdaddr].
+
+      @param check_status set the default value for the [check_status]
+      optional argument.  This global default allows to easily
+      globally activate status checking for a given connection.
+      Checking the status ensures the command was transmitted properly
+      but incur a cost of 60ms between two transmissions.  Default:
+      [false].
 
       @raise Unix.Unix_error in case of a connection problem.  In
       particular, [Unix.Unix_error(Unix.EHOSTDOWN, _,_)] is raised if
       the brick is not turned on.  *)
 
-val connect_usb : string -> usb conn
+val connect_usb : ?check_status:bool -> string -> usb conn
+  (** Not yet implemented. *)
 
 val close : 'a conn -> unit
   (** [close conn] closes the connection [conn] to the brick. *)
@@ -105,14 +113,14 @@ sig
     (** [start_program conn pgm] starts the program named [pgm].
 
         @param check_status whether to check the status returned by
-        the brick.  Default: [false]. *)
+        the brick.  Default: see {!Mindstorm.connect_bluetooth}. *)
   val stop : ?check_status:bool -> 'a conn -> unit
     (** [stop_program conn] stops the currently running program if any.
         If no program is running and [check_status=true], the exception
         {!Mindstorm.Error}[(No_program)] is raised.
 
         @param check_status whether to check the status returned by
-        the brick.  Default: [false]. *)
+        the brick.  Default: see {!Mindstorm.connect_bluetooth}. *)
   val name : 'a conn -> string
     (** Return the name of the current program or raise
         {!Mindstorm.Error}[(No_program)] if no program is running. *)
@@ -170,7 +178,7 @@ sig
 
   type state = {
     speed : int; (** Power set-point.  Range: -100 .. 100.  Values
-                     lager than 100 will be taken as 100 and values
+                     larger than 100 will be taken as 100 and values
                      less than -100 will be takes as -100.  *)
     motor_on : bool; (** if [true], turns the motor on: enables
                          pulse-width modulation (PWM) power according
@@ -220,29 +228,30 @@ sig
         port [p] to [st].
 
         @param check_status whether to check the status returned by
-        the brick.  Default: [false]. *)
+        the brick.  Default: see {!Mindstorm.connect_bluetooth}. *)
 
   val get : 'a conn -> port -> state * int * int * int
     (** [get conn p] returns [(state, tach_count, block_tach_count,
         rotation_count)] where
         - [state] is the current state of the motors;
         - [tach_count] is the number of counts since the last reset of the
-        motor counter (the reset occurs when a new [tach_limit] is set);
+        motor counter (the reset occurs when {!Mindstorm.Motor.set} is
+        issued);
         - [block_tach_count] is the current position relative to the
         last programmed movement.
-        - [rotation_count] is the current position relative to the last
-        reset of the rotation sensor for motor [p].
-    *)
+        - [rotation_count] is the program-relative position counter
+        relative to the last reset of the rotation sensor for motor [p].  *)
 
   val reset_pos : ?check_status:bool -> 'a conn -> ?relative:bool -> port -> unit
-    (** [reset_pos conn p] resets the position of the motor connected
-        to port [p].
+    (** [reset_pos conn p] resets the rotation count (given by the
+        [rotation_count] field of {!Mindstorm.Motor.get}) of the motor
+        connected to port [p].
 
         @param relative if [true], relative to the last movement,
         otherwise absolute position.  Default: [false].
 
         @param check_status whether to check the status returned by
-        the brick.  Default: [false].  *)
+        the brick.  Default: see {!Mindstorm.connect_bluetooth}.  *)
 end
 
 
@@ -341,7 +350,7 @@ sig
         [ty] and mode [m].
 
         @param check_status whether to check the status returned by
-        the brick.  Default: [false].  *)
+        the brick.  Default: see {!Mindstorm.connect_bluetooth}.  *)
 
 
   (** Data read from sensors. *)
@@ -372,7 +381,7 @@ sig
     (** [reset_scaled conn port]
 
        @param check_status whether to check the status returned by
-        the brick.  Default: [false]. *)
+        the brick.  Default: see {!Mindstorm.connect_bluetooth}. *)
 
 
   (** {4 Low speed} *)
@@ -393,7 +402,7 @@ sig
         Default: [0] i.e. no answer expected.
 
         @param check_status whether to check the status returned by
-        the brick.  Default: [false].  *)
+        the brick.  Default: see {!Mindstorm.connect_bluetooth}.  *)
   val read : 'a conn -> port -> string
     (** Read data from from lowspeed I2C port (e.g. for receiving data
         from the ultrasonic sensor).  *)
@@ -487,16 +496,19 @@ sig
         Default: [false].
 
         @param check_status whether to check the status returned by the brick.
-        Default: [false].  *)
+        Default: see {!Mindstorm.connect_bluetooth}.  *)
   val stop : ?check_status:bool -> 'a conn -> unit
     (** Stop the current playback.  Does nothing if no sound file is
         playing.
 
         @param check_status whether to check the status returned by the brick.
-        Default: [false]. *)
+        Default: see {!Mindstorm.connect_bluetooth}. *)
   val play_tone : ?check_status:bool -> 'a conn -> int -> int -> unit
     (** [play_tone conn freq duration] play a tone with [freq] Hz
-        lasting [duration] miliseconds. *)
+        lasting [duration] miliseconds.
+
+        @param check_status whether to check the status returned by the brick.
+        Default: see {!Mindstorm.connect_bluetooth}. *)
 end
 
 
@@ -664,7 +676,8 @@ val set_brick_name : ?check_status:bool -> 'a conn -> string -> unit
       connected through [conn] to [name].
 
       @param check_status whether to check the status returned by the
-      brick (and raise [Error] accordingly.  Default: [false].  *)
+      brick (and raise [Error] accordingly.
+      Default: see {!Mindstorm.connect_bluetooth}.  *)
 
 type brick_info = {
   brick_name : string;   (** NXT name (set with {!Mindstorm.set_brick_name}) *)

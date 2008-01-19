@@ -27,8 +27,8 @@
 
 #include "unixsupport_win.h" /* linked from OCaml CVS */
 
-
-CAMLprim value ocaml_mindstorm_connect(value vdest)
+CAMLexport
+value ocaml_mindstorm_connect(value vdest)
 {
   /* noalloc */
   HANDLE h;
