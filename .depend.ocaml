@@ -1,4 +1,2 @@
 mindstorm.cmo: mindstorm.cmi 
 mindstorm.cmx: mindstorm.cmi 
-test_treads.cmo: mindstorm.cmi 
-test_treads.cmx: mindstorm.cmx 

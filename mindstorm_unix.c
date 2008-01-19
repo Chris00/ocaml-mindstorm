@@ -36,7 +36,8 @@
 
 #include "unixsupport_unix.h" /* linked from OCaml CVS */
 
-CAMLprim value ocaml_mindstorm_connect(value vdest)
+CAMLexport
+value ocaml_mindstorm_connect(value vdest)
 {
   /* noalloc */
   int sock;
