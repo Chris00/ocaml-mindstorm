@@ -1192,8 +1192,7 @@ struct
 		Ultrasonic.set: %s arg not in 0 .. 255" cmd);
       write_cmd ~check_status us byte2 (Char.unsafe_chr v)
 
-    let set ?check_status us cmd =
-      let check_status = default_check_status conn check_status in
+    let set ?(check_status=true) us cmd =
       match cmd with
       | `Off ->       write_cmd ~check_status us '\x41' '\x00'
       | `Meas ->      write_cmd ~check_status us '\x41' '\x01'
@@ -1317,8 +1316,7 @@ struct
     | `R6 -> '\016' | `R7 -> '\017' | `R8 -> '\018'
     | `R9 -> '\019'
 
-  let write ?check_status conn mailbox msg =
-    let check_status = default_check_status conn check_status in
+  let write ?(check_status=true) conn mailbox msg =
     let len = String.length msg in
     if len > 58 then invalid_arg "Mindstorm.Message.write: message length > 58";
     let pkg = String.create (len + 7) in

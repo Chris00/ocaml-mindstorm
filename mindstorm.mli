@@ -95,7 +95,7 @@ type error =
 
 exception Error of error
   (** This exception can be raised by any of the functions below
-      except when the optional argument [~check_error] is set to
+      except when the optional argument [~check_status] is set to
       false.  Note that checking for errors leads to up to
       approximately a 60ms latency between two commands.  *)
 
