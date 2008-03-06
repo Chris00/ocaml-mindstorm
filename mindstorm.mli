@@ -296,7 +296,7 @@ sig
       - [`Sound_db]:       NXT sound sensor; includes sounds too high
                            or too low for our ears.
       - [`Sound_dba]:      NXT sound sensor; focuses on sounds within
-                           human hearing
+                           human hearing.
       - [`Custom]
       - [`Lowspeed]:      I2C digital sensor
       - [`Lowspeed_9v]:   I2C digital sensor, 9V power (e.g. ultrasonic).
@@ -375,12 +375,14 @@ sig
   }
 
   val get : 'a conn -> port ->  data
-    (** [get conn p] returns the data read on port [p]. *)
+    (** [get conn p] returns the data read on port [p].  Before using
+        this function, you must set the sensor type with
+        {!Mindstorm.Sensor.set}. *)
 
   val reset_scaled : ?check_status:bool -> 'a conn -> port -> unit
     (** [reset_scaled conn port]
 
-       @param check_status whether to check the status returned by
+        @param check_status whether to check the status returned by
         the brick.  Default: see {!Mindstorm.connect_bluetooth}. *)
 
 

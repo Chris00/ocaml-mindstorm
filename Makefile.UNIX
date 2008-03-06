@@ -1,0 +1,17 @@
+# Makefile for Unix
+STUBS=mindstorm_unix.c
+
+CC_LIB=-lbluetooth
+EXT_O=.o
+
+mindstorm.cma: $(STUBS:.c=.o) mindstorm.cmo
+	$(OCAMLMKLIB) -o mindstorm  $^ $(CC_LIB)
+# 	$(OCAMLC) -a -o $@ $(OCAMLC_FLAGS) -custom unix.cma \
+# 	  -I $(OCAMLLIBDIR) -cclib -lbluetooth unix.cma $^
+
+mindstorm.cmxa: $(STUBS:.c=.o) mindstorm.cmx
+	$(OCAMLMKLIB) -o mindstorm  $^ $(CC_LIB)
+
+
+clean::
+	-$(RM) *.so

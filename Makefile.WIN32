@@ -1,0 +1,42 @@
+# Makefile for Windows
+
+# Where to install mindstorm.cm[x]a, the C lib in $(INSTALL_DIR)/stublibs
+#INSTALL_DIR = $(OCAMLLIBDIR)
+INSTALL_DIR = C:\Documents and Settings\Maslowski Dany\Bureau\Maslowski Dany\Cours\mindstorm
+
+WIN_LIB = C:\Program Files\Microsoft Platform SDK\Include
+CC	= cl /nologo /I"$(OCAMLLIBDIR)" /I"$(WIN_LIB)"
+LINK	= link /nologo /I"$(OCAMLLIBDIR)/stublibs"
+EXT_O = .obj
+
+STUBS=mindstorm_win.c
+
+
+mindstorm.cma: mindstorm.cmo $(STUBS:.c=.lib)
+	$(OCAMLC) -a -o $@ $(OCAMLC_FLAGS) -custom unix.cma -I "$(OCAMLLIBDIR)" "$(INSTALL_DIR)/mindstorm_win.lib"  $<
+
+mindstorm.cmxa: $(STUBS:.c=.o) mindstorm.cmx
+	$(OCAMLOPT) -a -o $@ $(OCAMLOPT_FLAGS) unix.cmxa -I "$(OCAMLLIBDIR)" "$(INSTALL_DIR)/mindstorm_win.lib"  $<
+
+
+# Compilation of C stubs
+%.obj: %.c
+	$(CC) /c /Fo$@ $^
+
+%.s.obj: %.c
+	$(CC) /c /Fo$@ /Ox /MT $^
+%.lib: %.s.obj
+	lib /nologo /out:$@ $<
+
+%.d.obj: %.c
+	$(CC) /c /Fo$@ /Ox /MD /DCAML_DLL $^
+%.dll: %.d.obj
+	$(LINK) /dll /out:$@ /DEF:$*.def dllunix.dll $<
+
+
+clean::
+	-$(RM) *.obj *.dll.manifest *.exe *.lib *.dll
+
+# Local Variables:
+# mode: makefile-gmake
+# End: 
