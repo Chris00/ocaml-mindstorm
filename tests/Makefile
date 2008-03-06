@@ -14,5 +14,6 @@ native: $(TESTS:.ml=.com)
 
 include ../Makefile.ocaml
 
+.PHONY: clean
 clean::
 	$(RM) *.exe *.com

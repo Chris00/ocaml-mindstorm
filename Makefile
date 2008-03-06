@@ -1,4 +1,4 @@
-# Makefile for Unix
+# Generic Makefile
 INTERFACES = mindstorm.mli
 DOC_DIR = doc
 WEB_DIR = web
@@ -7,12 +7,7 @@ SF_WEB 	= shell.sf.net:/home/groups/o/oc/ocaml-mindstorm/htdocs
 CFLAGS= -Wall -fPIC
 OCAMLC_FLAGS = -g -dtypes
 
-STUBS=mindstorm_unix.c
-
-PP = camlp4o pa_macro.cmo
-ifeq ($(shell ocaml arch.ml),64)
-	PP += -DARCH64
-endif
+PP = camlp4o pa_macro.cmo $(D_OS) $(D_ARCH64)
 
 VERSION=$(shell grep "@version" mindstorm.mli | sed "s/[^0-9]*//")
 
@@ -21,20 +16,17 @@ all: byte native
 byte: mindstorm.cma
 native: mindstorm.cmxa
 
-mindstorm.cma: $(STUBS:.c=.o) mindstorm.cmo
-	$(OCAMLMKLIB) -o mindstorm  $^ -lbluetooth
-# 	$(OCAMLC) -a -o $@ $(OCAMLC_FLAGS) -custom unix.cma \
-# 	  -I $(OCAMLLIBDIR) -cclib -lbluetooth unix.cma $^
+# See system specific Makefiles for the rules to create the .cm[x]a
 
-mindstorm.cmxa: $(STUBS:.c=.o) mindstorm.cmx
-	$(OCAMLMKLIB) -o mindstorm  $^ -lbluetooth
+make_os_type.exe: LIBS_CMA+=unix.cma
 
 .PHONY: tests
 tests: mindstorm.cma
 	$(CD) tests; $(MAKE) -B PP="$(PP)" byte
 
-test.exe: mindstorm_unix.c test.ml
-	$(OCAMLC) -o $@ -custom unix.cma -I $(OCAMLLIBDIR) -cclib -lbluetooth $^
+# FIXME: Early testing (obsolete?)
+test.exe: $(STUBS:.c=$(EXT_O)) test.ml
+	$(OCAMLC) -o $@ -custom unix.cma -I "$(OCAMLLIBDIR)" $(addprefix -cclib ,$(CC_LIB)) $^
 
 .PHONY: examples ex
 ex: examples
@@ -71,9 +63,14 @@ META: META.in
 
 
 include Makefile.ocaml
+# Define the OS type for the Camlp4 preprocessor
+.os_type: make_os_type.exe
+	"./$<" > $@
+include .os_type
 
+.PHONY: clean
 clean::
-	$(RM) *.so META
-	-cd doc/; $(RM) *~ *.html *.css
-	-cd tests/; $(MAKE) clean
-	-cd examples/; $(MAKE) clean
+	-$(RM) META .os_type
+	-cd $(DOC_DIR); $(RM) $(wildcard*~ *.html *.css)
+	-cd tests/; $(MAKE) RM="$(RM)" clean
+	-cd examples/; $(MAKE) RM="$(RM)" clean
