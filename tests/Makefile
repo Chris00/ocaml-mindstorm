@@ -1,6 +1,7 @@
 # Compile in -cunstom mode so there is no problem with finding the
 # shared library dllmindstorm.so
 OCAMLC_FLAGS = -g -I .. -dllpath .. -custom
+PP = camlp4o pa_macro.cmo $(D_OS) $(D_ARCH64)
 
 TESTS=$(wildcard *.ml)
 LIBS_CMA=unix.cma mindstorm.cma
@@ -13,6 +14,10 @@ native: $(TESTS:.ml=.com)
 
 
 include ../Makefile.ocaml
+# Define the OS type for the Camlp4 preprocessor
+../.os_type: ../make_os_type.exe
+	cd .. && "./$<" > $@
+include ../.os_type
 
 .PHONY: clean
 clean::
