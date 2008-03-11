@@ -8,6 +8,7 @@ WIN_LIB = C:\Program Files\Microsoft Platform SDK\Include
 CC	= cl /nologo /I"$(OCAMLLIBDIR)" /I"$(WIN_LIB)"
 LINK	= link /nologo /I"$(OCAMLLIBDIR)/stublibs"
 EXT_O = .obj
+RM = del
 
 STUBS=mindstorm_win.c
 
