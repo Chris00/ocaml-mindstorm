@@ -22,7 +22,7 @@ make_os_type.exe: LIBS_CMA+=unix.cma
 
 .PHONY: tests
 tests: mindstorm.cma
-	$(CD) tests; $(MAKE) -B PP="$(PP)" byte
+	$(CD) tests && $(MAKE) -B PP="$(PP)" byte
 
 # FIXME: Early testing (obsolete?)
 test.exe: $(STUBS:.c=$(EXT_O)) test.ml
@@ -31,7 +31,7 @@ test.exe: $(STUBS:.c=$(EXT_O)) test.ml
 .PHONY: examples ex
 ex: examples
 examples: mindstorm.cma
-	$(CD) examples; $(MAKE) -B byte
+	$(CD) examples && $(MAKE) -B byte
 
 # Generate HTML documentation
 .PHONY: doc
@@ -71,6 +71,6 @@ include .os_type
 .PHONY: clean
 clean::
 	-$(RM) META .os_type
-	-cd $(DOC_DIR); $(RM) $(wildcard*~ *.html *.css)
-	-cd tests/; $(MAKE) RM="$(RM)" clean
-	-cd examples/; $(MAKE) RM="$(RM)" clean
+	-cd $(DOC_DIR) && $(RM) $(wildcard*~ *.html *.css)
+	-cd tests/ && $(MAKE) RM="$(RM)" clean
+	-cd examples/ && $(MAKE) RM="$(RM)" clean
