@@ -16,7 +16,7 @@ native: $(TESTS:.ml=.com)
 include ../Makefile.ocaml
 # Define the OS type for the Camlp4 preprocessor
 ../.os_type: ../make_os_type.exe
-	cd .. && "./$<" > $@
+	"$<" > $@
 include ../.os_type
 
 .PHONY: clean
