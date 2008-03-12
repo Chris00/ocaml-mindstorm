@@ -14,10 +14,10 @@ STUBS=mindstorm_win.c
 
 
 mindstorm.cma: mindstorm.cmo $(STUBS:.c=.lib)
-	$(OCAMLC) -a -o $@ $(OCAMLC_FLAGS) -custom unix.cma -I "$(OCAMLLIBDIR)" "$(INSTALL_DIR)/mindstorm_win.lib"  $<
+	$(OCAMLC) -a -o $@ $(OCAMLC_FLAGS) -custom -I "$(OCAMLLIBDIR)" "$(INSTALL_DIR)/mindstorm_win.lib"  $<
 
-mindstorm.cmxa: $(STUBS:.c=.o) mindstorm.cmx
-	$(OCAMLOPT) -a -o $@ $(OCAMLOPT_FLAGS) unix.cmxa -I "$(OCAMLLIBDIR)" "$(INSTALL_DIR)/mindstorm_win.lib"  $<
+mindstorm.cmxa: $(STUBS:.c=$(EXT_O)) mindstorm.cmx
+	$(OCAMLOPT) -a -o $@ $(OCAMLOPT_FLAGS) -I "$(OCAMLLIBDIR)" "$(INSTALL_DIR)/mindstorm_win.lib"  $^
 
 
 # Compilation of C stubs
@@ -36,7 +36,7 @@ mindstorm.cmxa: $(STUBS:.c=.o) mindstorm.cmx
 
 
 clean::
-	-$(RM) *.obj *.dll.manifest *.exe *.lib *.dll
+	-$(RM) *.$(EXT_O) *.dll.manifest *.exe *.lib *.dll
 
 # Local Variables:
 # mode: makefile-gmake
