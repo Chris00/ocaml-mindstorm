@@ -17,7 +17,7 @@ mindstorm.cma: mindstorm.cmo $(STUBS:.c=.lib)
 	$(OCAMLC) -a -o $@ $(OCAMLC_FLAGS) -custom -I "$(OCAMLLIBDIR)" "$(INSTALL_DIR)/mindstorm_win.lib"  $<
 
 mindstorm.cmxa: $(STUBS:.c=$(EXT_O)) mindstorm.cmx
-	$(OCAMLOPT) -a -o $@ $(OCAMLOPT_FLAGS) -I "$(OCAMLLIBDIR)" "$(INSTALL_DIR)/mindstorm_win.lib"  $^
+	$(OCAMLOPT) -a -o $@ $(OCAMLOPT_FLAGS) -I "$(OCAMLLIBDIR)" -I "$(INSTALL_DIR)" "$(INSTALL_DIR)/mindstorm_win.lib"  $<
 
 
 # Compilation of C stubs
