@@ -344,15 +344,18 @@ let default_check_status conn = function
 
 (** USB ---------- *)
 
+(* Ignore the first 2 bytes of [pkg] that are for bluetooth only *)
 let usb_send fd pkg = ignore(Unix.write fd pkg 2 (String.length pkg - 2))
 
-let usb_recv fd n =
+let generic_recv fd n =
   let pkg = really_read fd n in
   assert(pkg.[0] = '\x02');
   (* pkg.[1] is the cmd id, do we check it ?? *)
   (* We wanted to check the status and raise the corresponding
      exception here but we cannot because of the behavior of [input]. *)
   pkg
+
+let usb_recv = generic_recv
 
 let connect_usb ?(check_status=false) socket =
   let fd = Unix.openfile socket [] 0 (* FIXME *) in
@@ -365,7 +368,7 @@ let bt_send fd pkg = ignore(Unix.write fd pkg 0 (String.length pkg))
 
 let bt_recv fd n =
   let _size = really_read fd 2 in
-  usb_recv fd n
+  generic_recv fd n
 ;;
 
 IFDEF MACOS THEN
