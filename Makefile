@@ -4,7 +4,7 @@ INTERFACES = mindstorm.mli
 DOC_DIR = doc
 WEB_DIR = web
 SF_WEB 	= shell.sf.net:/home/groups/o/oc/ocaml-mindstorm/htdocs
-DISTFILES = $(INTERFACES) $(wildcard *.ml *.h *.c Makefile*) examples/
+DISTFILES = $(INTERFACES) $(wildcard *.ml *.h *.c Makefile*) tests/ examples/
 
 CFLAGS= -Wall -fPIC
 OCAMLC_FLAGS = -g -dtypes
