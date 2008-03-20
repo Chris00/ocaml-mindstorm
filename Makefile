@@ -41,8 +41,8 @@ doc:
 	  $(INTERFACES) -intro $(DOC_DIR)/intro.txt
 
 # Publish the doc to SF
-.PHONY: web web-doc website
-web: web-doc website
+.PHONY: web web-doc website website-img
+web: web-doc website website-img
 web-doc: doc
 	@ if [ -d $(DOC_DIR) ] ; then \
 	  $(DOC_DIR)/add_sf_logo && \
@@ -52,9 +52,14 @@ web-doc: doc
 
 website:
 	@ if [ -d $(WEB_DIR)/ ] ; then \
-	  scp $(WEB_DIR)/*.html $(WEB_DIR)/*.css LICENSE \
-	    $(WEB_DIR)/*.png $(WEB_DIR)/*.jpg  $(SF_WEB) \
-	  && echo "--- Published web site ($(WEB_DIR)/) on SF." ; \
+	  scp $(WEB_DIR)/*.html $(WEB_DIR)/*.css LICENSE $(SF_WEB) \
+	  && echo "--- Published web site (in $(WEB_DIR)/) on SF." ; \
+	fi
+
+website-img:
+	@ if [ -d $(WEB_DIR)/ ] ; then \
+	  scp $(WEB_DIR)/*.png $(WEB_DIR)/*.jpg  $(SF_WEB) \
+	  && echo "--- Published web site images (in $(WEB_DIR)/) on SF." ; \
 	fi
 
 META: META.in
