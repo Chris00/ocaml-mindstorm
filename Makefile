@@ -53,7 +53,7 @@ web-doc: doc
 website:
 	@ if [ -d $(WEB_DIR)/ ] ; then \
 	  scp $(WEB_DIR)/*.html $(WEB_DIR)/*.css LICENSE \
-	    $(WEB_DIR)/*.png  $(SF_WEB) \
+	    $(WEB_DIR)/*.png $(WEB_DIR)/*.jpg  $(SF_WEB) \
 	  && echo "--- Published web site ($(WEB_DIR)/) on SF." ; \
 	fi
 
