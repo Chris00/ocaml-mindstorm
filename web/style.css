@@ -92,7 +92,7 @@ a.doc:hover {
 }
 
 a.download {
-  background-color: #BA55D3;
+  background-color: #f26de3;
   color: black;
 /*   margin-left: 80px; */
   padding: 3px;
@@ -100,7 +100,7 @@ a.download {
 
 a.download:hover {
   background-color: #F33F00;
-  color: #BA55D3;
+  color: #f26de3;
 }
 
 a.license {
@@ -162,6 +162,7 @@ h1 {
   padding-top: 3px;
   padding-bottom: 0px;
   margin: 0px;  
+  margin-bottom: 1ex;
   border: 0px;
 }
 
@@ -177,11 +178,12 @@ h1.title_blue{ color: #36B2BA; }
 h1.title_blue hr { background-color: #36B2BA; }
 h1.title_yellow { color: #edcf08; }
 h1.title_yellow hr { background-color: #edcf08; }
+h1.download { color: #f26de3; }
+h1.download hr { background-color: #f26de3; }
 h1.users { color: #b2acf2; }
 h1.users hr { background-color: #b2acf2; }
 
 .title_green{ color:#77C52F; }
-.title_rose{ color:#BA55D3; }
 
 
 a {
