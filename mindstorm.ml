@@ -78,13 +78,11 @@ exception Error of error
 
 exception File_not_found
 
-let undocumented_error = Failure "Mindstorm: undocumented error"
-
 let success_char = '\x00'
 let eof_char = '\x85'
 
 let error =
-  let e = Array.create 256 undocumented_error in
+  let e = Array.create 256 (Failure "Mindstorm: undocumented error") in
   (* Communication protocol errors *)
   e.(0x81) <- Error No_more_handles;
   e.(0x82) <- Error No_space;
