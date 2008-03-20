@@ -56,41 +56,42 @@ val close : 'a conn -> unit
 
 (** {2 Exception for errors} *)
 
+(** Error codes *)
 type error =
-    | No_more_handles (** All 16 handles are in use. *)
-    | No_space
-    | No_more_files
-    | EOF_expected
-    | Not_a_linear_file
-    | No_linear_space
-    | Undefined_error
-    | File_is_busy
-    | No_write_buffers
-    | Append_not_possible
-    | File_is_full
-    | File_exists
-    | Module_not_found
-    | Out_of_boundary
-    | Illegal_file_name
+  | No_more_handles                   (** All 16 handles are in use. *)
+  | No_space
+  | No_more_files
+  | EOF_expected
+  | Not_a_linear_file
+  | No_linear_space
+  | Undefined_error
+  | File_is_busy
+  | No_write_buffers
+  | Append_not_possible
+  | File_is_full
+  | File_exists
+  | Module_not_found
+  | Out_of_boundary
+  | Illegal_file_name
 
-    (** Command error *)
-    | Pending (** Pending communication transaction in progress *)
-    | Empty_mailbox (** Specified mailbox queue is empty *)
-    | Failed (** Request failed (i.e. specified file not found) *)
-    | Unknown (** Unknown command opcode *)
-    | Insane (** Insane packet *)
-    | Out_of_range (** Data contains out-of-range values *)
-    | Bus_error (** Communication bus error *)
-    | Buffer_full (** No free memory in communication buffer *)
-    | Invalid_conn (** Specified channel/connection is not valid *)
-    | Busy_conn (** Specified channel/connection not configured or busy *)
-    | No_program (** No active program *)
-    | Bad_size (** Illegal size specified *)
-    | Bad_mailbox (** Illegal mailbox queue ID specified *)
-    | Bad_field (** Attempted to access invalid field of a structure *)
-    | Bad_io (** Bad input or output specified *)
-    | Out_of_memory (** Insufficient memory available *)
-    | Bad_arg (** Bad arguments *)
+  (** Command error *)
+  | Pending (** Pending communication transaction in progress *)
+  | Empty_mailbox (** Specified mailbox queue is empty *)
+  | Failed (** Request failed (i.e. specified file not found) *)
+  | Unknown (** Unknown command opcode *)
+  | Insane (** Insane packet *)
+  | Out_of_range (** Data contains out-of-range values *)
+  | Bus_error (** Communication bus error, can indicate a device failure. *)
+  | Buffer_full (** No free memory in communication buffer *)
+  | Invalid_conn (** Specified channel/connection is not valid *)
+  | Busy_conn (** Specified channel/connection not configured or busy *)
+  | No_program (** No active program *)
+  | Bad_size (** Illegal size specified *)
+  | Bad_mailbox (** Illegal mailbox queue ID specified *)
+  | Bad_field (** Attempted to access invalid field of a structure *)
+  | Bad_io (** Bad input or output specified *)
+  | Out_of_memory (** Insufficient memory available *)
+  | Bad_arg (** Bad arguments *)
 
 
 exception Error of error
@@ -398,7 +399,9 @@ sig
     'a conn -> port -> ?rx_length:int -> string -> unit
     (** [write conn port data] writes [data] to lowspeed I2C sensor
         connected to the [port].  This is the protocol (e.g. for
-        talking to the ultrasonic sensor).
+        talking to the ultrasonic sensor).  Communication errors will
+        be reported by raising [Error Bus_error]; your application
+        should be ready to handle such exceptions.
 
         @param rx_length gives the number of bytes to receive.
         Default: [0] i.e. no answer expected.
@@ -407,9 +410,12 @@ sig
         the brick.  Default: see {!Mindstorm.connect_bluetooth}.  *)
   val read : 'a conn -> port -> string
     (** Read data from from lowspeed I2C port (e.g. for receiving data
-        from the ultrasonic sensor).  *)
+        from the ultrasonic sensor).  Communication errors will be
+        reported by raising [Error Bus_error]; your application should
+        be ready to handle such exceptions.  *)
 
 
+  (** {4 Convenience} *)
   (** Ultrasonic sensor.  Convenience functions to interact with the
       ultrasonic sensor through the I2C protocol. *)
   module Ultrasonic :
@@ -463,7 +469,9 @@ sig
       ] -> int
       (** [Ultrasonic.get us var] returns the content of the variable
           [var] on the sensor (detailed underneath).  All values are
-          between 0 and 255.
+          between 0 and 255.  Communication errors will be reported by
+          raising [Error Bus_error]; your application should be ready
+          to handle such exceptions.
 
           - [`Byte0] .. [`Byte7] are the 8 variables containing the
           distances measured with the [`Meas] or [`Meas_cont] command
