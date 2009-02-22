@@ -6,8 +6,7 @@ WEB_DIR = web
 SF_WEB 	= shell.sf.net:/home/groups/o/oc/ocaml-mindstorm/htdocs
 PKG = mindstorm
 INSTALL_FILES = mindstorm.mli mindstorm.cmi mindstorm.cma \
-  mindstorm.cmx mindstorm.cmxa mindstorm.a \
-  libmindstorm.a dllmindstorm.so
+  mindstorm.cmx mindstorm.cmxa mindstorm.a
 DISTFILES = $(INTERFACES) $(wildcard *.ml *.h *.c Makefile*) tests/ examples/
 
 CFLAGS= -Wall -fPIC

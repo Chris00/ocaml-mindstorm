@@ -1,8 +1,8 @@
 # Makefile for Windows
 
 # Where to install mindstorm.cm[x]a, the C lib in $(INSTALL_DIR)/stublibs
-#INSTALL_DIR = $(OCAMLLIBDIR)
-INSTALL_DIR = C:\Documents and Settings\Maslowski Dany\Bureau\Maslowski Dany\Cours\mindstorm
+INSTALL_DIR = $(OCAMLLIBDIR)
+#INSTALL_DIR = C:\Documents and Settings\Maslowski Dany\Bureau\Maslowski Dany\Cours\mindstorm
 
 WIN_LIB = C:\Program Files\Microsoft Platform SDK\Include
 CC	= cl /nologo /I"$(OCAMLLIBDIR)" /I"$(WIN_LIB)"
@@ -12,6 +12,7 @@ RM = del
 
 STUBS=mindstorm_win.c
 
+INSTALL_FILES += mindstorm_win.lib
 
 mindstorm.cma: mindstorm.cmo $(STUBS:.c=.lib)
 	$(OCAMLC) -a -o $@ $(OCAMLC_FLAGS) -custom -I "$(OCAMLLIBDIR)" "$(INSTALL_DIR)/mindstorm_win.lib"  $<

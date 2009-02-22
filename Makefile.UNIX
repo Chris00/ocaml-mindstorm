@@ -4,6 +4,8 @@ STUBS=mindstorm_unix.c
 CC_LIB=-lbluetooth
 EXT_O=.o
 
+INSTALL_FILES += libmindstorm.a dllmindstorm.so
+
 mindstorm.cma: $(STUBS:.c=.o) mindstorm.cmo
 	$(OCAMLMKLIB) -o mindstorm  $^ $(CC_LIB)
 # 	$(OCAMLC) -a -o $@ $(OCAMLC_FLAGS) -custom unix.cma \
