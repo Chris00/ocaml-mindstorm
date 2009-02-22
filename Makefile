@@ -4,6 +4,10 @@ INTERFACES = mindstorm.mli
 DOC_DIR = doc
 WEB_DIR = web
 SF_WEB 	= shell.sf.net:/home/groups/o/oc/ocaml-mindstorm/htdocs
+PKG = mindstorm
+INSTALL_FILES = mindstorm.mli mindstorm.cmi mindstorm.cma \
+  mindstorm.cmx mindstorm.cmxa mindstorm.a \
+  libmindstorm.a dllmindstorm.so
 DISTFILES = $(INTERFACES) $(wildcard *.ml *.h *.c Makefile*) tests/ examples/
 
 CFLAGS= -Wall -fPIC
@@ -33,6 +37,18 @@ ex: examples
 examples: mindstorm.cma
 	$(CD) examples && $(MAKE) -B byte
 
+# Install
+
+install: META all
+	$(OCAMLFIND) install $(PKG) META $(INSTALL_FILES)
+
+uninstall:
+	$(OCAMLFIND) remove $(PKG)
+
+META: META.in
+	cat $^ > $@
+	echo "version = \"$(VERSION)\"" >> $@
+
 # Generate HTML documentation
 .PHONY: doc
 doc:
@@ -61,10 +77,6 @@ website-img:
 	  scp $(WEB_DIR)/*.png $(WEB_DIR)/*.jpg  $(SF_WEB) \
 	  && echo "--- Published web site images (in $(WEB_DIR)/) on SF." ; \
 	fi
-
-META: META.in
-	cat $^ > $@
-	echo "version = \"$(VERSION)\"" >> $@
 
 # Upload tarball
 .PHONY: dist upload
