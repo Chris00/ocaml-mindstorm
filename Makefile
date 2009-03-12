@@ -3,7 +3,7 @@ PKGNAME = ocaml-mindstorm
 INTERFACES = mindstorm.mli
 DOC_DIR = doc
 WEB_DIR = web
-SF_WEB 	= shell.sf.net:/home/groups/o/oc/ocaml-mindstorm/htdocs
+SF_WEB 	= chris_77,ocaml-mindstorm@frs.sourceforge.net:htdocs
 PKG = mindstorm
 INSTALL_FILES = mindstorm.mli mindstorm.cmi mindstorm.cma \
   mindstorm.cmx mindstorm.cmxa mindstorm.a
