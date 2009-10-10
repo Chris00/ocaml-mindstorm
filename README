@@ -1,20 +1,31 @@
-In order to compile you need GNU make and "ocaml" must be in our PATH.
 
-Compilation under Unix
-----------------------
+Prerequisite under Unix
+-----------------------
 
 You need the package "libbluetooth2-dev" (under Debian) or equivalent.
 
-
-Compilation under Windows
--------------------------
-
-If the LEGO® fantom drivers are not installed:
-
-make -f Makefile.win
-
-
-Compilation under Mac OS X
+Prerequisite under Windows
 --------------------------
 
-make -f Makefile.macos
+Do not install the LEGO® fantom drivers.  (If you know how to make
+this library work with the LEGO® drivers installed, email us.)
+
+Prerequisite under Mac OS X
+---------------------------
+
+None.
+
+Compilation
+-----------
+
+In order to compile you need GNU make and "ocaml" in our PATH.  Just
+type:
+
+  make
+
+Installation
+------------
+
+The installation requires findlib.  Just type:
+
+  make install
