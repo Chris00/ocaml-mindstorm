@@ -1,5 +1,8 @@
 #!/bin/sh
 
-SVN=https://ocaml-mindstorm.svn.sourceforge.net/svnroot/ocaml-mindstorm/trunk/mindstorm
+OCCAMLCORE=svn+ssh://svn.forge.ocamlcore.org/svnroot/ocaml-mindstorm/mindstorm
 
-bzr push $SVN
+SF=https://ocaml-mindstorm.svn.sourceforge.net/svnroot/ocaml-mindstorm/trunk/mindstorm
+
+bzr push $SF
+bzr push $OCCAMLCORE

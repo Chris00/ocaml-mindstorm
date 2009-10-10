@@ -3,7 +3,7 @@ PKGNAME = ocaml-mindstorm
 INTERFACES = mindstorm.mli
 DOC_DIR = doc
 WEB_DIR = web
-SF_WEB 	= chris_77,ocaml-mindstorm@frs.sourceforge.net:htdocs
+WEB 	= forge.ocamlcore.org:/home/groups/ocaml-mindstorm/htdocs
 PKG = mindstorm
 INSTALL_FILES = mindstorm.mli mindstorm.cmi mindstorm.cma \
   mindstorm.cmx mindstorm.cmxa mindstorm.a
@@ -55,43 +55,33 @@ doc:
 	$(OCAMLDOC) -d $(DOC_DIR) -colorize-code -stars -html \
 	  $(INTERFACES) -intro $(DOC_DIR)/intro.txt
 
-# Publish the doc to SF
+# Publish the doc to OCamlCore
 .PHONY: web web-doc website website-img
 web: web-doc website website-img
 web-doc: doc
 	@ if [ -d $(DOC_DIR) ] ; then \
-	  $(DOC_DIR)/add_sf_logo && \
-	  scp $(DOC_DIR)/*.html $(DOC_DIR)/*.css $(SF_WEB)/doc/ \
-	  && echo "--- Published documentation on SF." ; \
+	  scp $(wildcard $(DOC_DIR)/*.html $(DOC_DIR)/*.css) $(WEB)/doc/ \
+	  && echo "--- Published documentation on OCamlForge." ; \
 	fi
 
 website:
 	@ if [ -d $(WEB_DIR)/ ] ; then \
-	  scp $(WEB_DIR)/*.html $(WEB_DIR)/*.css LICENSE $(SF_WEB) \
-	  && echo "--- Published web site (in $(WEB_DIR)/) on SF." ; \
+	  scp $(wildcard $(WEB_DIR)/*.html $(WEB_DIR)/*.css) LICENSE $(WEB) \
+	  && echo "--- Published web site (in $(WEB_DIR)/) on OCamlForge." ; \
 	fi
 
 website-img:
 	@ if [ -d $(WEB_DIR)/ ] ; then \
-	  scp $(WEB_DIR)/*.png $(WEB_DIR)/*.jpg  $(SF_WEB) \
-	  && echo "--- Published web site images (in $(WEB_DIR)/) on SF." ; \
+	  scp $(wildcard $(WEB_DIR)/*.png $(WEB_DIR)/*.jpg) $(WEB) \
+	  && echo "--- Published images (in $(WEB_DIR)/) on OCamlForge." ; \
 	fi
 
-# Upload tarball
-.PHONY: dist upload
-dist:
-	[ -d $(PKGNAME)-$(VERSION) ] || mkdir $(PKGNAME)-$(VERSION)
-	cp --preserve -r --dereference $(DISTFILES) $(PKGNAME)-$(VERSION)/
-	tar --exclude "CVS" --exclude ".cvsignore" --exclude-from=.cvsignore \
-	  -zcvf $(PKG_TARBALL) $(PKGNAME)-$(VERSION)/
-	$(RM) -rf $(PKGNAME)-$(VERSION)
-
-upload: dist
-	@ if [ -z "$(PKG_TARBALL)" ]; then \
-		echo "PKG_TARBALL not defined"; exit 1; fi
-	echo -e "bin\ncd incoming\nput $(PKG_TARBALL)" \
-	  | ncftp -p chris_77@users.sf.net upload.sourceforge.net \
-	  && echo "*** Uploaded $(PKG_TARBALL) to SF"
+.PHONY: dist tar
+dist: tar
+# "Force" a tag to be defined for each released tarball
+tar:
+	bzr export /tmp/$(PKG_TARBALL) -r "tag:$(VERSION)"
+	@echo "Created tarball '/tmp/$(PKG_TARBALL)'."
 
 
 include Makefile.ocaml
