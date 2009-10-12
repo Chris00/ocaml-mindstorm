@@ -31,7 +31,7 @@ div.logo h1 {
 /** NAVIGATION BAR **/
 #nav {
   width: 90%;
-  height: 2.7ex;
+  height: 2.6ex;
 /*   width: 150; */
 /*   float: left; */
   background-color: #F33F00;
@@ -42,7 +42,7 @@ div.logo h1 {
   margin-bottom: 0px;
   padding-left:  12px;
   padding-right: 12px;
-  padding-top: 5px;
+  padding-top: 6px;
   padding-bottom: 3px;
 }
 
