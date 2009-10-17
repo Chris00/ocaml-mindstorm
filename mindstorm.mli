@@ -710,7 +710,12 @@ val battery_level : 'a conn -> int
       battery on the brick. *)
 
 val delete_user_flash : 'a conn -> unit
+
 val bluetooth_reset : usb conn -> unit
+  (** [bluetooth_reset conn] performs a factory reset of the brick.
+      (The type system does will a allow this command to be
+      transmitted via bluetooth because all bluetooth functionality is
+      reset by this command.) *)
 
 val boot : usb conn -> unit
 

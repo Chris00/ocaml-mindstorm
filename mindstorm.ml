@@ -770,7 +770,7 @@ let delete_user_flash conn =
   ignore(recv conn 3)
 
 let bluetooth_reset conn =
- conn.send conn.fd "\002\000\x01\xA4"; (* BLUETOOTH FACTORY RESET *)
+  conn.send conn.fd "\002\000\x01\xA4"; (* BLUETOOTH FACTORY RESET *)
   ignore(recv conn 3)
 
 let char_of_buffer_type = function
