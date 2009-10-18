@@ -686,8 +686,8 @@ val set_brick_name : ?check_status:bool -> 'a conn -> string -> unit
       connected through [conn] to [name].
 
       @param check_status whether to check the status returned by the
-      brick (and raise [Error] accordingly.
-      Default: see {!Mindstorm.connect_bluetooth}.  *)
+      brick (and raise [Error] accordingly).  Default: see
+      {!Mindstorm.connect_bluetooth}.  *)
 
 type brick_info = {
   brick_name : string;   (** NXT name (set with {!Mindstorm.set_brick_name}) *)
