@@ -15,6 +15,7 @@ OCAMLC_FLAGS = -g -dtypes
 PP = camlp4o pa_macro.cmo $(D_OS) $(D_ARCH64)
 
 VERSION=$(shell grep "@version" mindstorm.mli | sed "s/[^0-9]*//")
+ROOT_TARBALL=$(PKGNAME)-$(VERSION)
 PKG_TARBALL=$(PKGNAME)-$(VERSION).tar.gz
 
 .PHONY: all byte native
@@ -80,7 +81,13 @@ website-img:
 dist: tar
 # "Force" a tag to be defined for each released tarball
 tar:
-	bzr export /tmp/$(PKG_TARBALL) -r "tag:$(VERSION)"
+	@ TMP=`mktemp -d` && \
+	bzr export "$$TMP/$(ROOT_TARBALL)" -r "tag:$(VERSION)" && \
+	cd $$TMP && \
+	$(RM) -rf $(ROOT_TARBALL)/doc/Lego/ $(ROOT_TARBALL)/bin \
+	  $(ROOT_TARBALL)/web && \
+	tar -zcf /tmp/$(PKG_TARBALL) $(ROOT_TARBALL) && \
+	$(RM) -rf $$TMP
 	@echo "Created tarball '/tmp/$(PKG_TARBALL)'."
 
 
