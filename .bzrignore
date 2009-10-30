@@ -1,0 +1,27 @@
+# .bzrignore						-*-conf-unix-*-
+*.annot
+*.cmi
+*.cmo
+*.cma
+*.cmx
+*.cmxa
+*.exe
+*.com
+.os_type
+.depend.ocaml
+doc/
+auto
+.aux
+# LaTeX
+*.log
+*.aux
+*.nav
+*.old.nav
+*.out
+*.pdf
+*.snm
+*.toc
+# Generated
+rubik/expose-*.tex
+# Tarballs
+*.tar.gz
