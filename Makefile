@@ -1,6 +1,6 @@
 # Compile in -custom mode so there is no problem with finding the
 # shared library dllmindstorm.so
-PACKAGES = -package mindstorm,threads
+PACKAGES = -package mindstorm,graphics
 DOC_DIR=doc
 
 OCAMLC_FLAGS = -thread -g -dtypes -custom $(PACKAGES)
@@ -10,24 +10,16 @@ TESTS=$(wildcard *-*.ml)
 LIBS_CMA = -linkpkg
 LIBS_CMXA=$(LIBS_CMA:.cma=.cmxa) robot.cmx
 
+
+
 .PHONY: all byte native tests tests-byte test-native
-#all: byte native
-	#$(CD) labyrinth/ &&  $(MAKE)
-	#$(CD) rubik/ &&  $(MAKE)
-#byte: robot.cma
-#native: robot.cmxa
-#tests: tests-byte test-native
-#tests-byte: $(TESTS:.ml=.exe)
-#test-native: $(TESTS:.ml=.com)
-#TestUltra.exe : robot.cmo
-#TestSignaux.exe : robot.cmo
-DeuxUnitesPush.exe : robot.cmo
-#run-light.exe: robot.cmo
-#run-push.exe: robot.cmo
-#run-turn.exe: robot.cmo
-#run-look.exe: robot.cmo
-#run-follow-line.exe: robot.cmo
-#testVSF.exe: testNono.cmo
+all: byte native
+SOURCES = plateauJeu.ml DeuxUnitesPush.ml
+byte: $(SOURCES:.ml=.exe)
+native: $(SOURCES: .ml=.com)
+
+DeuxUnitesPush.exe : robot.cma
+	
 
 # General "event" library
 robot.cma: robot.cmo
@@ -38,7 +30,7 @@ robot.cmxa: robot.cmx
 MAKE_DOC = $(OCAMLDOC) -colorize-code -stars -html $(PACKAGES)
 .PHONY: doc
 #doc: $(INTERFACES:.mli=.cmi)
-#	-$(MKDIR) $(DOC_DIR)
+#	-$(MKDIR) $(DOC_DIR
 #	$(MAKE_DOC) -d $(DOC_DIR) $(wildcard *.mli)
 #	-$(MKDIR) $(DOC_DIR)/labyrinth
 #	$(MAKE_DOC) -d $(DOC_DIR)/labyrinth -I labyrinth \
