@@ -34,16 +34,24 @@ let plateau w h  =
     draw_circle x_center y_center r_circle in
   
   (*récupération position souris*)
-  let rec jeu jou =
+  let rec jeu jou tab =
     let s = wait_next_event [Button_down] in
     if s.button then
       let pos_x = s.mouse_x and pos_y = s.mouse_y in
       (*colorier la case/pion cliclée*)
       if ((pos_x>(w1/9))&&(pos_x<(8*w1/9))&&(pos_y>(2*h1/9))&&(pos_y<(8*h1/9)))
-      then let col = pos_x/(w1/9) and ligne = (pos_y/(h1/9)) in
-      if jou then color_circle yellow ((col*w1/9) + w1/18) (ligne*h1/9 + h1/18)
-      else color_circle red ((col*w1/9) + w1/18) (ligne*h1/9 + h1/18);
-      jeu (not jou) in jeu true;;
+      then let col = pos_x/(w1/9) in
+      if tab.(col-1) < 6 then
+        (
+          tab.(col-1) <- tab.(col-1) + 1;
+          let ligne = tab.(col-1) + 2 in
+          if jou
+          then color_circle yellow ((col*w1/9) + w1/18) (ligne*h1/9 - h1/18)
+          else color_circle red ((col*w1/9) + w1/18) (ligne*h1/9 - h1/18);
+          jeu (not jou) tab
+        )
+      else jeu jou tab
+      else jeu jou tab in jeu true [|0;0;0;0;0;0;0|];;
 
 (*let st = wait_next_event [Button_down] in ();;*)
 plateau 1000 800;;
