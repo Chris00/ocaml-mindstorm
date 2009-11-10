@@ -1,8 +1,24 @@
 open Graphics
 open Printf
+open String
 
 let plateau w h  =
   open_graph(sprintf " %ix%i" w h );
+  set_window_title("Puissance 4");
+
+  (*creation du bouton nouvelle partie*)
+  let button title =
+    let n_x = fst (text_size title) and n_y = snd (text_size title) in
+    let x = (w/2 - n_x/2) and y = (h/9) in
+    moveto x y;
+    set_font "12x24kana";
+    draw_string title;
+    draw_rect (x-4) (y-3) (n_x+8) (n_y+6);
+    draw_rect (x-8) (y-7) (n_x+16) (n_y+14) in
+
+  button ("Nouvelle Partie");
+
+  (*creation du quadrillage*)
   set_color blue;
 
   let w1 = w - w mod 9 and h1 = h - h mod 9 in
@@ -54,4 +70,4 @@ let plateau w h  =
       else jeu jou tab in jeu true [|0;0;0;0;0;0;0|];;
 
 (*let st = wait_next_event [Button_down] in ();;*)
-plateau 1000 800;;
+plateau 1000 720;;
