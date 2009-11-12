@@ -12,12 +12,12 @@ module Run(C: sig val conn : Mindstorm.bluetooth Mindstorm.conn
                   val conn2 : Mindstorm.bluetooth Mindstorm.conn end) =
 struct
 
- let robot = Robot.make()
- let ultra =
+  let robot = Robot.make()
+  let ultra =
     let u = Mindstorm.Sensor.Ultrasonic.make C.conn port_ultra in
     Mindstorm.Sensor.Ultrasonic.set u `Meas_cont;
     Robot.meas robot (fun _ -> Mindstorm.Sensor.Ultrasonic.get u `Byte0)
-let ultra2 =
+  let ultra2 =
     let u = Mindstorm.Sensor.Ultrasonic.make C.conn2 port_ultra in
     Mindstorm.Sensor.Ultrasonic.set u `Meas_cont;
     Robot.meas robot (fun _ -> Mindstorm.Sensor.Ultrasonic.get u `Byte0)
@@ -28,27 +28,27 @@ let ultra2 =
     Robot.meas robot (fun _ -> donne_lumiere)*)
 
 
-let stop2 _ =
-  Motor.set C.conn2 Motor.all (Motor.speed 0);
-  raise Exit
+  let stop2 _ =
+    Motor.set C.conn2 Motor.all (Motor.speed 0);
+    raise Exit
 
-let rec run1() =
-  Motor.set C.conn2 motor_left (Motor.speed (30*dir));
-  Motor.set C.conn2 motor_right (Motor.speed (30*dir));
-  wait2()
+  let rec run1() =
+    Motor.set C.conn2 motor_left (Motor.speed (30*dir));
+    Motor.set C.conn2 motor_right (Motor.speed (30*dir));
+    wait2()
 
-and wait2() =
-  Robot.event ultra2 (fun d -> d < Some(20)) stop2
+  and wait2() =
+    Robot.event ultra2 (fun d -> d < Some(20)) stop2
 
-let stop _ =
-  run1()
+  let stop _ =
+    run1()
 
-let wait() =
-  Robot.event ultra (fun d -> d < Some(20)) stop
+  let wait() =
+    Robot.event ultra (fun d -> d < Some(20)) stop
 
-let run() =
-  wait();
-  Robot.run robot
+  let run() =
+    wait();
+    Robot.run robot
 
 
 end;;
