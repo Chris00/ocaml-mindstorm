@@ -11,12 +11,10 @@ let isLeaf node =
     if (pos < Array.length tab) && (bool) then
       match tab.(pos) with
       |Some i -> helper (pos+1) false
-      |none -> helper (pos+1) true
+      |None -> helper (pos+1) true
     else bool in
   helper 0 true;;
 
 (*dans le cas ou le joueur 1 commence*)
 let node_min node =
-  if (node.height mod 2 = 0) then true
-  else false;;
-
+  node.height mod 2 = 0;;
