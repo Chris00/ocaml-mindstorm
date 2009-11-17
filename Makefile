@@ -13,25 +13,25 @@ LIBS_CMXA=$(LIBS_CMA:.cma=.cmxa) robot.cmx
 
 
 .PHONY: all byte native tests tests-byte test-native
+
 all: byte native
-SOURCES = plateauJeu.ml DeuxUnitesPush.ml
+SOURCES = plateauJeu.ml DeuxUnitesPush.ml game.ml
 byte: $(SOURCES:.ml=.exe)
 native: $(SOURCES: .ml=.com)
 
 DeuxUnitesPush.exe : robot.cma
-	
+game.exe : plateauJeu.cmo
+
 
 # General "event" library
 robot.cma: robot.cmo
 robot.cmxa: robot.cmx
 
-
 # Generate HTML documentation
 MAKE_DOC = $(OCAMLDOC) -colorize-code -stars -html $(PACKAGES)
 .PHONY: doc
 #doc: $(INTERFACES:.mli=.cmi)
-#	-$(MKDIR) $(DOC_DIR
-#	$(MAKE_DOC) -d $(DOC_DIR) $(wildcard *.mli)
+#	-$(MKDIR) $(DOC_DIR)#	$(MAKE_DOC) -d $(DOC_DIR) $(wildcard *.mli)
 #	-$(MKDIR) $(DOC_DIR)/labyrinth
 #	$(MAKE_DOC) -d $(DOC_DIR)/labyrinth -I labyrinth \
 #	  $(wildcard labyrinth/*.mli)
