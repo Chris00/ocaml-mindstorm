@@ -15,7 +15,7 @@ LIBS_CMXA=$(LIBS_CMA:.cma=.cmxa) robot.cmx
 .PHONY: all byte native tests tests-byte test-native
 
 all: byte native
-SOURCES = plateauJeu.ml DeuxUnitesPush.ml
+SOURCES = Tree.ml minMax.ml plateauJeu.ml DeuxUnitesPush.ml 
 byte: $(SOURCES:.ml=.exe)
 native: $(SOURCES: .ml=.com)
 

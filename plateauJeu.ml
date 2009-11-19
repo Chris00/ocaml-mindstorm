@@ -16,8 +16,6 @@ let plateau w h  =
   set_line_width 3;
   draw_rect (x-8) (y-7) (n_x+16) (n_y+14);
 
-  
-
   (*creation du quadrillage*)
   set_color blue;
   let w1 = w - w mod 9 and h1 = h - h mod 9 in
