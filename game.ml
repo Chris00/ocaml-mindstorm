@@ -34,49 +34,89 @@ let get_piece current_game j i = current_game.tab.(j).(i);;
 (*on place le pion p dans la colonne j*)
 let move current_game j p =
   let n = Array.length current_game.tab and i= ref 0 in
-  while (!i < n && current_game.tab.(j-1).(!i) <> Empty) do
+  while (!i < n && current_game.tab.(j).(!i) <> Empty) do
     i := !i+1
   done;
   if (!i<>n-1) then
     (
-      current_game.tab.(j-1).(!i) <- p;
-      current_game.tab_line.(j-1).(!i).current_piece <- p;
-      (*on remplit le tab ac les lignes dont p fait parti et on modifie les tab des pions de ces lignes*)
+      current_game.tab.(j).(!i) <- p;
+      current_game.tab_line.(j).(!i).current_piece <- p;
+      (*on remplit le tab_line_piece du pion courant et on modifie les tab des pions de meme couleurs qui lui sont alignés*)
       (* pour la ligne verticale *)
-      if (!i != 0 && current_game.tab_line.(j-1).(!i-1).current_piece = p)
+      if (!i != 0 && current_game.tab_line.(j).(!i-1).current_piece = p)
       then
         (
-          let piece_in_line = current_game.tab_line.(j-1).(!i-1).tab_line_piece.(0) + 1 in
-          current_game.tab_line.(j-1).(!i).tab_line_piece.(0) <- piece_in_line;
-          for k = 1 to (piece_in_line - 1) do
-            current_game.tab_line.(j-1).(!i-k).tab_line_piece.(0) <- piece_in_line;
+          let down = ref 0 in
+          down := current_game.tab_line.(j).(!i-1).tab_line_piece.(0);
+          for k = 0 to !down do
+            current_game.tab_line.(j).(!i-k).tab_line_piece.(0) <- !down + 1;
           done;
         )
-      else current_game.tab_line.(j-1).(!i).tab_line_piece.(0) <- 1;
+      else current_game.tab_line.(j).(!i).tab_line_piece.(0) <- 1;
 
-      (*pour la ligne horizontale*)
-      let g = ref 0 and d = ref 0 in
+      (*on récupère les données pour toutes les cases adjacentes sauf la verticale pour qui c'est déjà fait juste au dessus*)
+      let l = ref 0 and r = ref 0 and up_r = ref 0 and down_l = ref 0 and down_r = ref 0 and up_l = ref 0 in
 
-      if (j-1 > 0 && current_game.tab_line.(j-2).(!i).current_piece = p) then (g := current_game.tab_line.(j-2).(!i).tab_line_piece.(1));
-
-      if (j-1 < 6 && current_game.tab_line.(j).(!i).current_piece = p) then  d := current_game.tab_line.(j).(!i).tab_line_piece.(1);
-
-      current_game.tab_line.(j-1).(!i).tab_line_piece.(1) <- !g + 1 + !d;
-
-      if (!g != 0) then
+      if j>0 then
         (
-          for k = 1 to !g do current_game.tab_line.(j-k-1).(!i).tab_line_piece.(1) <- !g + 1 + !d done;
+          if current_game.tab_line.(j-1).(!i).current_piece = p then
+            l := current_game.tab_line.(j-1).(!i).tab_line_piece.(1);
+          if(!i>0 && current_game.tab_line.(j-1).(!i-1).current_piece = p) then
+            (down_l := current_game.tab_line.(j-1).(!i-1).tab_line_piece.(2));
+          if (!i<5 && current_game.tab_line.(j-1).(!i+1).current_piece = p) then
+            (up_l := current_game.tab_line.(j-1).(!i+1).tab_line_piece.(3));
+        );
+      if j<6 then
+        (
+          if current_game.tab_line.(j+1).(!i).current_piece = p then
+            r := current_game.tab_line.(j+1).(!i).tab_line_piece.(1);
+          if (!i<5 && current_game.tab_line.(j+1).(!i+1).current_piece = p) then
+            up_r := current_game.tab_line.(j+1).(!i+1).tab_line_piece.(2);
+          if (!i>0 && current_game.tab_line.(j+1).(!i-1).current_piece = p) then
+            down_r := current_game.tab_line.(j+1).(!i-1).tab_line_piece.(3);
+        );
+      (*on modifie les données de tav_line pour la case courante*)
+      current_game.tab_line.(j).(!i).tab_line_piece.(1) <- !l + 1 + !r;
+      current_game.tab_line.(j).(!i).tab_line_piece.(2) <- !down_l + 1 + !up_r;
+      current_game.tab_line.(j).(!i).tab_line_piece.(3) <- !up_l + 1 + !down_r;
+
+      (*on modifie les données des cases adjacentes se trouvant dans une meme ligne que le pion courant*)
+      (*mise à jour de la ligne horizontale*)
+      if (!l != 0) then
+        (
+          for k = 1 to !l do current_game.tab_line.(j-k).(!i).tab_line_piece.(1) <- !l + 1 + !r done;
         );
 
-      if (!d != 0) then
+      if (!r != 0) then
         (
-          for k = 1 to !d do current_game.tab_line.(j-1+k).(!i).tab_line_piece.(1) <- !g + 1 + !d done;
+          for k = 1 to !r do current_game.tab_line.(j+k).(!i).tab_line_piece.(1) <- !l  + 1 + !r done;
         );
-      
-      (* current_game.tab_line.(j-1).(!i) <- ;
-         current_game.tab_line.(j-1).(!i) <- ;*)(*plus modifier les voisins*)
+
+      (*pour la première diagonale*)
+      if (!down_l != 0) then
+        (
+          for k = 1 to !down_l do current_game.tab_line.(j-k).(!i-k).tab_line_piece.(2) <- !down_l + 1 + !up_r done;
+        );
+
+      if (!up_r != 0) then
+        (
+          for k = 1 to !up_r do current_game.tab_line.(j+k).(!i+k).tab_line_piece.(2) <- !down_l  + 1 + !up_r done;
+        );
+
+      (*pour la deuxième diagonale*)
+      if (!up_l != 0) then
+        (
+          for k = 1 to !up_l do current_game.tab_line.(j-k).(!i+k).tab_line_piece.(3) <- !up_l + 1 + !down_r done;
+        );
+
+      if (!down_r != 0) then
+        (
+          for k = 1 to !down_r do current_game.tab_line.(j+k).(!i-k).tab_line_piece.(3) <- !up_l  + 1 + !down_r done;
+        );
+
+      (*mise à jour de la liste des évènements du jeu*)
       current_game.list_event <-
-        [{raw = j; line = !i+1; piece = p}]@current_game.list_event
+        [{raw = j; line = !i; piece = p}]@current_game.list_event
     );
   current_game;
 ;;
@@ -99,19 +139,30 @@ let rec remove current_game num =
 (*création d'une nouvelle partie*)
 let new_part current_game =
   current_game.tab <- Array.init 7 (fun i -> (Array.make 6 Empty));
-  current_game.tab_line <- Array.init 7 (fun i -> Array.make 6 ({current_piece = Empty; tab_line_piece = [|0;0;0;0|]}));
+  current_game.tab_line <- Array.init 7 (fun i -> Array.init 6 (fun i -> ({current_piece = Empty; tab_line_piece = [|0;0;0;0|]})));
   current_game.list_event <- [];
   current_game;;
 
-
-
+(*retourne vrai qd le pion en (i,j) est ds une ligne de 4pions de meme couleur*)
+let isWin current_game j i =
+  let win = ref false  and k= ref 0 in
+  while (!win = false && !k<4) do
+    if current_game.tab_line.(j).(i).tab_line_piece.(!k)=4
+    then win := true
+    else k := !k+1
+  done;
+  !win;;
 
 
 (*TEST*)
 let game_test = make();;
 move game_test 4 Red;;
+move game_test 4 Yellow;;
 move game_test 4 Red;;
+move game_test 4 Yellow;;
 move game_test 4 Red;;
+isWin game_test 3 3;;
+isWin game_test 4 4;;
 move game_test 6 Red;;
 move game_test 5 Red;;
 move game_test 4 Yellow;;
