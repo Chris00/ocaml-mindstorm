@@ -139,7 +139,7 @@ let gameboard current_game =
               done;
             done;
             new_part current_game;
-            part player1 player2;
+            part Red Yellow;
           );
         part player1 player2;
       );

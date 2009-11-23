@@ -117,8 +117,7 @@ let move current_game j p =
       (*mise à jour de la liste des évènements du jeu*)
       current_game.list_event <-
         [{raw = j; line = !i; piece = p}]@current_game.list_event
-    );
-  current_game;
+    )
 ;;
 
 (*retourne de num coup en arrière dans le jeu*)
@@ -140,8 +139,7 @@ let rec remove current_game num =
 let new_part current_game =
   current_game.tab <- Array.init 7 (fun i -> (Array.make 6 Empty));
   current_game.tab_line <- Array.init 7 (fun i -> Array.init 6 (fun i -> ({current_piece = Empty; tab_line_piece = [|0;0;0;0|]})));
-  current_game.list_event <- [];
-  current_game;;
+  current_game.list_event <- [];;
 
 (*retourne vrai qd le pion en (i,j) est ds une ligne de 4pions de meme couleur*)
 let isWin current_game j i =
@@ -153,18 +151,3 @@ let isWin current_game j i =
   done;
   !win;;
 
-
-(*TEST*)
-let game_test = make();;
-move game_test 4 Red;;
-move game_test 4 Yellow;;
-move game_test 4 Red;;
-move game_test 4 Yellow;;
-move game_test 4 Red;;
-isWin game_test 3 3;;
-isWin game_test 4 4;;
-move game_test 6 Red;;
-move game_test 5 Red;;
-move game_test 4 Yellow;;
-remove game_test 1;;
-new_part game_test;;
