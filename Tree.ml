@@ -2,9 +2,33 @@
 type tree =
     {
       mutable data : float option;
-      height : int;
+      mutable height : int;
       subtree : (tree option) array
     }
+
+(*Création d'un noeud vide*)
+let make_empty () =
+  {
+    data = None;
+    height = 0;
+    subtree = Array.make 7 None
+  }
+;;
+
+(*Création d'une feuille*)
+let make_leaf data =
+  {
+    data = data;
+    height = 0;
+    subtree = Array.make 7 None
+  }
+;;
+
+let get_data tree =
+  match tree with
+  |Some t -> t.data
+  |None -> None
+;;
 
 (*dit si un noeud est une feuille*)
 
@@ -23,7 +47,7 @@ let isLeaf node =
 ;;
 
 (*calcul le max des fils d'un noeud*)
-let max tab_node =
+let max_sons tab_node =
   let rec max pos max_current =
     if (pos >= Array.length tab_node) then Some max_current
     else match tab_node.(pos) with
@@ -40,7 +64,7 @@ let max tab_node =
 ;;
 
 (*calcul le min des fils d'un noeud*)
-let min tab_node =
+let min_sons tab_node =
   let rec min pos min_current =
     if (pos >= Array.length tab_node) then Some min_current
     else match tab_node.(pos) with
@@ -65,6 +89,12 @@ let node_min node =
 *)
 
 (*TEST*)
+let a = make_leaf (Some 5.);;
+make_empty ();;
+let t = {data = Some 5.;
+         height = a.height+1;
+         subtree = a.subtree}
+;;
 (*
 let a = {data = Some 1.; height=1; subtree=[|None; None|]};;
 let b = {data = Some 2.; height = 1; subtree = [|None; None|]};;
