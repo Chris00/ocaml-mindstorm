@@ -103,12 +103,44 @@ let gameboard current_game =
                     set_color black;
                     moveto 10 10;
 
-                    let win = isWin current_game (action.raw) (action.line) 
-                    and winner =
-                      (if action.piece = Red then "Le joueur ROUGE gagne!!!" else "Le joueur JAUNE gagne!!!")in
-                    if win = true then  draw_string winner;
+                    let win = isWin current_game (action.raw) (action.line) in
+                    if win = true then
+                      (
+                        let winner =
+                          (if action.piece = Red then "Le joueur ROUGE gagne!!!" else "Le joueur JAUNE gagne!!!")in
+                        draw_string winner;
+                        let wait = ref true in 
+                        while !wait do
+                          let st = wait_next_event [Button_down] in 
+                          (
+                            let pos_x = st.mouse_x and pos_y = st.mouse_y in
+                            if ( (pos_x>(x-8)) && (pos_x<(x+n_x+6))
+                                 && (pos_y>(y-7)) && (pos_y<(y+n_y+7)) )
+                            then
+                              (
+                                wait := false;
+                                set_color white;
+                                fill_rect 0 0 400 50;
+                                set_color black;
+                                set_line_width 1;
+                                draw_rect (x-4) (y-3) (n_x+8) (n_y+6);
+                                set_line_width 2;
+                                for i=0 to 6 do
+                                  for j=0 to 5 do
+                                    set_color white;
+                                    let x_circle = w/6+i*w/9 and y_circle = 5*h/18+j*h/9 in
+                                    fill_circle x_circle y_circle r_circle;
+                                    set_color black;
+                                    draw_circle x_circle y_circle r_circle;
+                                  done;
+                                done;
+                                new_part current_game;
+                                part Red Yellow;
+                              )
+                          );
+                        done;
+                      );
                     part player2 player1
-
                   )
                     (*si la colonne est pleine, le meme joueur rejoue*)
                 else part player1 player2; 
@@ -144,7 +176,8 @@ let gameboard current_game =
         part player1 player2;
       );
     part player1 player2 in
-  part Red Yellow
+  part Red Yellow;
+  
 ;;
 
 
