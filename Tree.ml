@@ -95,16 +95,23 @@ let t = {data = Some 5.;
          height = a.height+1;
          subtree = a.subtree}
 ;;
-(*
-let a = {data = Some 1.; height=1; subtree=[|None; None|]};;
-let b = {data = Some 2.; height = 1; subtree = [|None; None|]};;
-let c = {data = Some 3.; height = 1; subtree = [|None; None|]};;
-let e = {data = Some 4.; height = 0; subtree = [| Some a; Some b; Some c|]};;
-isLeaf e;;
-isLeaf a;;
-max a.subtree;;
+
+let a = {data = Some 4.; height = 0; subtree = [|None; None|]};;
+let b = {data = Some 7.; height = 0; subtree = [|None; None|]};;
+let c = {data = Some 10.; height = 0; subtree = [|None; None|]};;
+let d = {data = Some 3.; height = 0; subtree = [|None; None|]};;
+let f = {data = None; height = 1; subtree = [|Some a; Some b|]};;
+let g = {data = None; height = 1; subtree = [|Some c; Some d|]};;
+let e = {data = None; height = 2; subtree = [|Some f; Some g|]};;
+isLeaf (Some e);;
+isLeaf (Some a);;
+(*max a.subtree;;
 max e.subtree;;
 min a.subtree;;
 min e.subtree;;
 e.subtree.(0);;
 *)
+
+alpha_beta (Some e) (Some neg_infinity) (Some infinity);;
+min_max (Some e);;
+e;;
