@@ -39,5 +39,5 @@ let rec alpha_beta tree alpha beta =
              if alpha > temp then temp
              else cut_alpha alpha (min beta temp) temp (i+1)
            else value in
-         cut_alpha alpha beta (Some infinity) 0 (*neud min*) 
+         cut_alpha alpha beta (Some infinity) 0 (*neud min*)
 ;;
