@@ -143,7 +143,7 @@ let gameboard current_game =
                     part player2 player1
                   )
                     (*si la colonne est pleine, le meme joueur rejoue*)
-                else part player1 player2; 
+                else part player1 player2;
               )
           )
       )
