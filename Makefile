@@ -16,7 +16,7 @@ LIBS_CMXA=$(LIBS_CMA:.cma=.cmxa) robot.cmx
 
 all: byte native
 
-SOURCES = Tree.ml minMax.ml game.ml plateauJeu.ml DeuxUnitesPush.ml 
+SOURCES = game.ml plateauJeu.ml DeuxUnitesPush.ml 
 byte: $(SOURCES:.ml=.exe)
 native: $(SOURCES: .ml=.com)
 
