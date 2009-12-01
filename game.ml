@@ -8,7 +8,8 @@ type player = Computer | Human
 type actor =
     {
       player : player;
-      pion : piece
+      pion : piece;
+      fst_player : bool
     }
 
 (*un couple de la piece courrante, représente une piece et le tableau
@@ -229,6 +230,7 @@ let new_part current_game =
 ;;
 
 (*retourne vrai qd le pion en (i,j) est ds une ligne de 4pions de meme couleur*)
+(*faire avec une methode recursif qui garde win*)
 let isWin current_game j i =
   let win = ref false  and k = ref 0 in
   while (!win = false && !k<4) do
@@ -238,4 +240,3 @@ let isWin current_game j i =
   done;
   !win
 ;;
-

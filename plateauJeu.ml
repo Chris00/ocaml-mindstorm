@@ -122,7 +122,7 @@ let gameboard current_game =
             set_color black;
             set_line_width 1;
             draw_rect (x3-4) (y3-3) (n_x3+8) (n_y3+6);
-            (Computer, Computer);
+            (Human, Human);
             (*renvoie au choix de la couleur*)
           )
         else choose_player ();
@@ -206,8 +206,8 @@ let gameboard current_game =
   let color = choose_color() in
   close_graph();
 
-  let play1 = {player=fst players; pion = fst color}
-  and play2 = {player = snd players; pion = snd color} in
+  let play1 = {player = fst players; pion = fst color; fst_player = true}
+  and play2 = {player = snd players; pion = snd color; fst_player = false} in
 
   open_graph(sprintf " %ix%i" w h );
   set_window_title("Connect Four");
