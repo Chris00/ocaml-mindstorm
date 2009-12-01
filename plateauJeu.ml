@@ -1,6 +1,8 @@
 open Graphics
 open Printf
 open Game
+
+
 (*rem:les colonnes du jeu sont numérotés de 0 à 6 et les lignes de 0 à 5*)
 let w = 1000 and h = 720
 
@@ -12,11 +14,201 @@ let color_circle color x_center y_center =
   set_color black;
   draw_circle x_center y_center r_circle;;
 
-(*methode qui trace un disque dans la couleur color, en position (raw, line) raw va de 0 à 6 et line de 0 à 5*)
+(*methode qui trace un disque de la couleur color, en position (raw, line)
+  raw va de 0 à 6 et line de 0 à 5*)
 let color_circle2 color raw line =
   color_circle color (w/6 + raw*w/9) (2*h/9 + h/18 + line*h/9);;
 
+
+
 let gameboard current_game =
+  open_graph(sprintf " %ix%i" 400 200);
+  set_window_title("choose players");
+
+  (*bouton nombre de joueur*)
+  set_font "12x24kana";
+  let (n_x1, n_y1) = (text_size "Demo")
+  and (n_x2, n_y2) = (text_size "1 player")
+  and (n_x3, n_y3) = (text_size "2 players") in
+
+  let x1 = (400-n_x1-n_x2-n_x3)/4 and y1 = (200-n_y1)/2 in
+  moveto x1 y1;
+  draw_string "Demo";
+  draw_rect (x1-4) (y1-3) (n_x1+8) (n_y1+6);
+  set_line_width 3;
+  draw_rect (x1-8) (y1-7) (n_x1+16) (n_y1+14);
+
+  set_line_width 1;
+  let x2 = 2*x1+n_x1 and y2 = (200-n_y2)/2 in
+  moveto x2 y2;
+  draw_string "1 player";
+  draw_rect (x2-4) (y2-3) (n_x2+8) (n_y2+6);
+  set_line_width 3;
+  draw_rect (x2-8) (y2-7) (n_x2+16) (n_y2+14);
+
+  set_line_width 1;
+  let x3 = x2+x1+n_x2 and y3 = (200-n_y3)/2 in
+  moveto x3 y3;
+  draw_string "2 players";
+  draw_rect (x3-4) (y3-3) (n_x3+8) (n_y3+6);
+  set_line_width 3;
+  draw_rect (x3-8) (y3-7) (n_x3+16) (n_y3+14);
+
+  (*Méthode qui crée les deux joueurs*)
+  let rec choose_player () =
+    (*attente du clic sur un des boutons*)
+    let clic = wait_next_event [Button_down; Button_up] in
+    if button_down() then
+      (
+        let pos_x = clic.mouse_x and pos_y = clic.mouse_y in
+        if ( (pos_x>(x1-8)) && (pos_x<(x1+n_x1+8))
+             && (pos_y>(y1)) && (pos_y<(y1+n_y1+7)) )
+        then
+          (
+            set_color white;
+            draw_rect (x1-4) (y1-3) (n_x1+8) (n_y1+6);
+            choose_player();
+          )
+
+        else if ( (pos_x>(x2-8)) && (pos_x<(x2+n_x2+8))
+                  && (pos_y>(y2)) && (pos_y<(y2+n_y2+7)) )
+        then
+          (
+            set_color white;
+            draw_rect (x2-4) (y2-3) (n_x2+8) (n_y2+6);
+            choose_player();
+          )
+
+        else if ( (pos_x>(x3-8)) && (pos_x<(x3+n_x3+8))
+                  && (pos_y>(y3)) && (pos_y<(y3+n_y3+7)) )
+        then
+          (
+            set_color white;
+            draw_rect (x3-4) (y3-3) (n_x3+8) (n_y3+6);
+            choose_player();
+          )
+
+        else choose_player ();
+      )
+    else
+      (
+        (*on a appuye sur Demo*)
+        let pos_x = clic.mouse_x and pos_y = clic.mouse_y in
+        if ( (pos_x>(x1-8)) && (pos_x<(x1+n_x1+8))
+             && (pos_y>(y1)) && (pos_y<(y1+n_y1+7)) )
+        then
+          (
+            set_color black;
+            set_line_width 1;
+            draw_rect (x1-4) (y1-3) (n_x1+8) (n_y1+6);
+            (Computer, Computer)
+          )
+
+        (*On a appuyé sur 1 joueur*)
+        else if ( (pos_x>(x2-8)) && (pos_x<(x2+n_x2+8))
+                  && (pos_y>(y2)) && (pos_y<(y2+n_y2+7)) )
+        then
+          (
+            set_color black;
+            set_line_width 1;
+            draw_rect (x2-4) (y2-3) (n_x2+8) (n_y2+6);
+            (Human, Computer);
+          )
+
+        else if ( (pos_x>(x3-8)) && (pos_x<(x3+n_x3+8))
+                  && (pos_y>(y3)) && (pos_y<(y3+n_y3+7)) )
+        then
+          (
+            set_color black;
+            set_line_width 1;
+            draw_rect (x3-4) (y3-3) (n_x3+8) (n_y3+6);
+            (Computer, Computer);
+            (*renvoie au choix de la couleur*)
+          )
+        else choose_player ();
+      ) in
+  let players = choose_player () in
+  close_graph();
+
+  (*fenetre pour le choix des couleurs*)
+  open_graph(sprintf " %ix%i" 400 200);
+  set_window_title("choose color");
+
+  set_font "12x24kana";
+  let (n_x1, n_y1) = (text_size "Yellow")
+  and (n_x2, n_y2) = (text_size "Red") in
+
+  let x1 = (400-n_x1-n_x2)/3 and y1 = (200-n_y1)/2 in
+  moveto x1 y1;
+  draw_string "Yellow";
+  draw_rect (x1-4) (y1-3) (n_x1+8) (n_y1+6);
+  set_line_width 3;
+  draw_rect (x1-8) (y1-7) (n_x1+16) (n_y1+14);
+
+  set_line_width 1;
+  let x2 = 2*x1+n_x1 and y2 = (200-n_y2)/2 in
+  moveto x2 y2;
+  draw_string "Red";
+  draw_rect (x2-4) (y2-3) (n_x2+8) (n_y2+6);
+  set_line_width 3;
+  draw_rect (x2-8) (y2-7) (n_x2+16) (n_y2+14);
+
+  let rec choose_color() =
+    (*attente du clic sur un des boutons*)
+    let clic = wait_next_event [Button_down; Button_up] in
+    if button_down() then
+      (
+        let pos_x = clic.mouse_x and pos_y = clic.mouse_y in
+        if ( (pos_x>(x1-8)) && (pos_x<(x1+n_x1+8))
+             && (pos_y>(y1)) && (pos_y<(y1+n_y1+7)) )
+        then
+          (
+            set_color white;
+            draw_rect (x1-4) (y1-3) (n_x1+8) (n_y1+6);
+            choose_color()
+          )
+
+        else if ( (pos_x>(x2-8)) && (pos_x<(x2+n_x2+8))
+                  && (pos_y>(y2)) && (pos_y<(y2+n_y2+7)) )
+        then
+          (
+            set_color white;
+            draw_rect (x2-4) (y2-3) (n_x2+8) (n_y2+6);
+            choose_color()
+          )
+        else choose_color()
+      )
+    else
+      let pos_x = clic.mouse_x and pos_y = clic.mouse_y in
+      (*on a appuyé sur jaune*)
+      if ( (pos_x>(x1-8)) && (pos_x<(x1+n_x1+8))
+           && (pos_y>(y1)) && (pos_y<(y1+n_y1+7)) )
+      then
+        (
+          set_color black;
+          set_line_width 1;
+          draw_rect (x1-4) (y1-3) (n_x1+8) (n_y1+6);
+          (Yellow, Red)
+        )
+
+        (*On a appuyé sur 1 joueur*)
+        else if ( (pos_x>(x2-8)) && (pos_x<(x2+n_x2+8))
+                  && (pos_y>(y2)) && (pos_y<(y2+n_y2+7)) )
+        then
+          (
+            set_color black;
+            set_line_width 1;
+            draw_rect (x2-4) (y2-3) (n_x2+8) (n_y2+6);
+            (Red, Yellow)
+          )
+        else choose_color()
+  in
+  let color = choose_color() in
+  close_graph();
+
+  let play1 = {player=fst players; pion = fst color}
+  and play2 = {player = snd players; pion = snd color} in
+
   open_graph(sprintf " %ix%i" w h );
   set_window_title("Connect Four");
 
@@ -54,7 +246,8 @@ let gameboard current_game =
         draw_circle x_circle y_circle r_circle;
       done;
     done
-      (*permet de représenter le plateau de jeu en court de partie*)
+
+  (*permet de représenter le plateau de jeu en court de partie*)
   else
     for i=0 to 6 do
       for j=0 to 5 do
@@ -97,7 +290,7 @@ let gameboard current_game =
                   (
                     move current_game raw player1;
                     let action = List.hd current_game.list_event in
-                    if (player1 = Red) then
+                    if (player1.pion = Red) then
                       color_circle2 red (action.raw) (action.line)
                     else color_circle2 yellow (action.raw) (action.line);
                     set_color black;
@@ -107,11 +300,12 @@ let gameboard current_game =
                     if win = true then
                       (
                         let winner =
-                          (if action.piece = Red then "Le joueur ROUGE gagne!!!" else "Le joueur JAUNE gagne!!!")in
+                          (if action.piece = Red then "Le joueur ROUGE gagne!!!"
+                           else "Le joueur JAUNE gagne!!!") in
                         draw_string winner;
-                        let wait = ref true in 
+                        let wait = ref true in
                         while !wait do
-                          let st = wait_next_event [Button_down] in 
+                          let st = wait_next_event [Button_down] in
                           (
                             let pos_x = st.mouse_x and pos_y = st.mouse_y in
                             if ( (pos_x>(x-8)) && (pos_x<(x+n_x+6))
@@ -128,14 +322,15 @@ let gameboard current_game =
                                 for i=0 to 6 do
                                   for j=0 to 5 do
                                     set_color white;
-                                    let x_circle = w/6+i*w/9 and y_circle = 5*h/18+j*h/9 in
+                                    let x_circle = w/6+i*w/9
+                                    and y_circle = 5*h/18+j*h/9 in
                                     fill_circle x_circle y_circle r_circle;
                                     set_color black;
                                     draw_circle x_circle y_circle r_circle;
                                   done;
                                 done;
-                                new_part current_game;
-                                part Red Yellow;
+                                (*new_part current_game;*)
+                                part player1 player2
                               )
                           );
                         done;
@@ -147,7 +342,8 @@ let gameboard current_game =
               )
           )
       )
-        (*il recommence une nouvelle partie car le bouton New Part a été pressé*)
+        (*il recommence une nouvelle partie car le bouton New Part a été
+          pressé*)
     else
       (
         let pos_x = clic.mouse_x and pos_y = clic.mouse_y in
@@ -171,17 +367,13 @@ let gameboard current_game =
               done;
             done;
             new_part current_game;
-            part Red Yellow;
+            part player1 player2;
           );
         part player1 player2;
       );
     part player1 player2 in
-  part Red Yellow;
-  
+  part play1 play2
 ;;
-
-
-
 
 
 (*let st = wait_next_event [Button_down] in ();;*)
