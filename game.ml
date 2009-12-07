@@ -24,7 +24,7 @@ type couple_current_piece =
 (*attention raw et line démarre a 0 pour les algos*)
 type event =
     {
-      raw : int;
+      col : int;
       line : int;
       piece : piece
     }
@@ -41,7 +41,8 @@ type g =
       (*le tab intérieur et de taille 4, représente les 4 lignes
         : |, -, /, \ *)
       mutable list_event : event list;
-      mutable raw_st : int array;
+      mutable number_of_move : int;
+      mutable col_st : int array
     }
 
 (*création d'un jeu -> on initialise le tableau a vide et la liste d'événement
@@ -53,7 +54,8 @@ let make () =
       (fun i -> Array.init 6
          (fun i -> {current_piece = Empty; tab_line_piece = Array.make 4 0}));
     list_event = [];
-    raw_st = Array.make 7 0
+    number_of_move = 0;
+    col_st = Array.make 7 0
   }
 ;;
 
@@ -64,14 +66,15 @@ let get_piece current_game j i =
 
 (*l'acteur place le pion qui correspond a sa couleur dans la colonne j*)
 let move current_game j actor =
-  let i = current_game.raw_st.(j) in (*i est le nombre de piece dans la
+  let i = current_game.col_st.(j) in (*i est le nombre de piece dans la
                                        colonne j*)
 
   if (i <> 6) then
     (
-      current_game.raw_st.(j) <- i + 1;
+      current_game.col_st.(j) <- i + 1;
       current_game.tab.(j).(i) <- actor.pion;
       current_game.tab_line.(j).(i).current_piece <- actor.pion;
+      current_game.number_of_move <- current_game.number_of_move + 1;
       (*on remplit le tab_line_piece du pion courant et on modifie
         les tab des pions de meme couleurs qui lui sont alignés*)
       (* pour la ligne verticale *)
@@ -188,7 +191,7 @@ let move current_game j actor =
 
       (*mise à jour de la liste des évènements du jeu*)
       current_game.list_event <-
-        [{raw = j; line = i; piece = actor.pion}]@current_game.list_event
+        [{col = j; line = i; piece = actor.pion}]@current_game.list_event
     )
 ;;
 
@@ -197,12 +200,13 @@ let rec remove current_game num =
   if (num<>0)then
     (
       let next_event = List.hd current_game.list_event in
-      let j = next_event.raw
+      let j = next_event.col
       and i = next_event.line in
-      current_game.raw_st.(j) <- current_game.raw_st.(j) - 1;
+      current_game.col_st.(j) <- current_game.col_st.(j) - 1;
       current_game.tab.(j).(i) <- Empty;
       current_game.tab_line.(j).(i)
       <- {current_piece = Empty; tab_line_piece = [|0;0;0;0|]};
+      current_game.number_of_move <- current_game.number_of_move - 1;
       (*plus changer les valeurs des voisins...*)
       current_game.list_event <- List.tl current_game.list_event;
       remove current_game (num-1)
@@ -211,13 +215,25 @@ let rec remove current_game num =
 
 (*creer une copy du jeu courant*)
 let copy_game current_game =
-  let copy = make() in
-  copy.tab <- Array.copy current_game.tab;
-  copy.tab_line <- Array.copy current_game.tab_line;
-  copy.list_event <- current_game.list_event;
-  copy.raw_st <- current_game.raw_st;
-  copy
+  {
+    tab = Array.init 7 (fun i -> (Array.copy current_game.tab.(i)));
+
+    tab_line = Array.init 7
+      (fun i -> Array.init 6
+         (fun j ->
+            {current_piece = (current_game.tab_line.(i).(j)).current_piece;
+             tab_line_piece = Array.copy
+                (current_game.tab_line.(i).(j).tab_line_piece)
+            }
+         )
+      );
+
+    list_event = current_game.list_event;
+    number_of_move = current_game.number_of_move;
+    col_st = Array.copy current_game.col_st
+  }
 ;;
+
 
 (*création d'une nouvelle partie*)
 let new_part current_game =
@@ -226,17 +242,22 @@ let new_part current_game =
     (fun i -> Array.init 6
        (fun i -> ({current_piece = Empty; tab_line_piece = [|0;0;0;0|]})));
   current_game.list_event <- [];
-  current_game.raw_st <- Array.make 7 0
+  current_game.number_of_move <- 0;
+  current_game.col_st <- Array.make 7 0
 ;;
 
 (*retourne vrai qd le pion en (i,j) est ds une ligne de 4pions de meme couleur*)
 (*faire avec une methode recursif qui garde win*)
-let isWin current_game j i =
-  let win = ref false  and k = ref 0 in
-  while (!win = false && !k<4) do
-    if current_game.tab_line.(j).(i).tab_line_piece.(!k)=4
-    then win := true
-    else k := !k+1
-  done;
-  !win
+let isWin current_game =
+  if (current_game.number_of_move <> 0) then
+    let i = (List.hd (current_game.list_event)).line
+    and j = (List.hd (current_game.list_event)).col in
+    let rec winner won k =
+      if (won = false && k < 4) then
+        if (current_game.tab_line.(j).(i).tab_line_piece.(k)=4)
+        then winner true k
+        else winner won (k+1)
+      else won
+    in winner false 0
+  else false
 ;;
