@@ -34,14 +34,16 @@ type t =
       mutable col_st : int array
     }
 
+let init_matrix nrow ncol f =
+  Array.init nrow (fun i -> Array.init ncol (fun j -> f i j))
+
 (*création d'un jeu -> on initialise le tableau a vide et la liste d'événement
   est vide*)
 let make () =
   {
-    tab = Array.init 7 (fun i -> (Array.make 6 Empty));
-    tab_line = Array.init 7
-      (fun i -> Array.init 6
-         (fun i -> {current_piece = Empty; tab_line_piece = Array.make 4 0}));
+    tab = Array.make_matrix 7 6 Empty;
+    tab_line = init_matrix 7 6 (fun _ _ -> {current_piece = Empty;
+                                         tab_line_piece = Array.make 4 0});
     list_event = [];
     number_of_move = 0;
     col_st = Array.make 7 0
@@ -180,18 +182,13 @@ let rec remove current_game num =
 
 (*creer une copy du jeu courant*)
 let copy current_game =
+  let tl = current_game.tab_line in
   {
     tab = Array.init 7 (fun i -> (Array.copy current_game.tab.(i)));
 
-    tab_line = Array.init 7
-      (fun i -> Array.init 6
-         (fun j ->
-            {current_piece = (current_game.tab_line.(i).(j)).current_piece;
-             tab_line_piece = Array.copy
-                (current_game.tab_line.(i).(j).tab_line_piece)
-            }
-         )
-      );
+    tab_line = init_matrix 7 6
+      (fun i j -> {current_piece = (tl.(i).(j)).current_piece;
+                tab_line_piece = Array.copy tl.(i).(j).tab_line_piece } );
 
     list_event = current_game.list_event;
     number_of_move = current_game.number_of_move;
@@ -202,10 +199,9 @@ let copy current_game =
 
 (*création d'une nouvelle partie*)
 let new_part current_game =
-  current_game.tab <- Array.init 7 (fun i -> (Array.make 6 Empty));
-  current_game.tab_line <- Array.init 7
-    (fun i -> Array.init 6
-       (fun i -> ({current_piece = Empty; tab_line_piece = [|0;0;0;0|]})));
+  current_game.tab <- Array.make_matrix 7 6 Empty;
+  current_game.tab_line <- init_matrix 7 6
+    (fun _ _ -> {current_piece = Empty; tab_line_piece = [|0;0;0;0|]});
   current_game.list_event <- [];
   current_game.number_of_move <- 0;
   current_game.col_st <- Array.make 7 0
