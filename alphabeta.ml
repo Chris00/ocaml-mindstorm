@@ -86,5 +86,3 @@ move g 4 player2;
 move g 4 player1;;
 
 let cuple = alphabeta g player1 player2 (-.1.) 1.;;
-
-

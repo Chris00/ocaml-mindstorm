@@ -27,18 +27,17 @@ struct
   let return_fst (a, b, c, d) = a
 
   let parcourt =
-    let tab = Array.make 7 0 in
-    for i=0 to 6 do
-      set C.conn motor_right (speed ~tach_limit:119 (-15));
-      Robot.event light (fun d -> true);
-      tab.(i) <-
-        match (Robot.read ~retry:5 light) with
-        | Some v -> v.raw
-        | none -> -1
-    done;
-    tab
-
-  let speed motor ?tach_limit sp =
+    set C.conn motor_right (speed ~tach_limit:100 10);
+    (*Mindstorm.Sensor.set C.conn port_light `Light_active `Pct_full_scale;*)
+    let niveauGris = Robot.read ~retry:5 light in
+    let vraiNiveau =
+       match niveauGris with
+       | Some v -> v.raw
+       | none -> -1;
+     in printf "%s" (string_of_int(vraiNiveau)^"\n");  
+    Mindstorm.Sensor.set C.conn port_light `Light_inactive `Pct_full_scale
+ 
+let speed motor ?tach_limit sp =
     set C.conn motor (speed ?tach_limit (-sp))
 
   let turn tl sp =
@@ -50,10 +49,7 @@ struct
    (* turn 30 20;*)
     (*turn 15 20;*)
       (*Motor.set C.conn motor_right (Motor.speed ~tach_limit:120 15);*)
-    let a = parcourt in
-    for i=0 to 6 do
-      print_string (string_of_int(a.(i))^"\n")
-    done;
+    parcourt;
     Robot.run robot
 
 

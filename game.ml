@@ -64,6 +64,8 @@ let get_piece current_game j i =
   current_game.tab.(j).(i)
 ;;
 
+exception Plein;;
+
 (*l'acteur place le pion qui correspond a sa couleur dans la colonne j*)
 let move current_game j actor =
   let i = current_game.col_st.(j) in (*i est le nombre de piece dans la
@@ -193,6 +195,7 @@ let move current_game j actor =
       current_game.list_event <-
         [{col = j; line = i; piece = actor.pion}]@current_game.list_event
     )
+  else raise Plein
 ;;
 
 (*retourne de num coup en arrière dans le jeu*)
@@ -261,3 +264,92 @@ let isWin current_game =
     in winner false 0
   else false
 ;;
+
+
+
+
+let rec alphabeta current_game actor1 actor2 alpha beta bobo =
+  if(current_game.number_of_move <> 0 && isWin current_game) then
+    if (bobo) then (1., (List.hd current_game.list_event).col)
+    else (-1., (List.hd current_game.list_event).col)
+
+  else if (current_game.number_of_move = 42)
+  then (0., (List.hd current_game.list_event).col)
+  else
+    (
+      let game = copy_game current_game in
+      if (actor1.fst_player) then
+        (*faire un remove???*)
+          let rec cut_beta a b value col_current i =
+          if (i < Array.length game.tab) then
+            try
+              (
+                move game i actor1;
+                let test_value = fst (alphabeta
+                                        game actor2 actor1 a b (not bobo)) in
+                let (value_temp, col) = if test_value > value then
+                  (test_value, i) else (value, col_current) in
+                if value_temp > b then (value_temp, col)
+                else cut_beta (max a value_temp) b value_temp col (i+1)
+              )
+            with plein -> cut_beta a b value col_current (i+1)
+          else (value, col_current) in
+        cut_beta alpha beta neg_infinity 0 0
+      else let rec cut_alpha a b value col_current i =
+        if (i < (Array.length game.tab)) then
+          try
+            (
+              move game i actor1;
+              let test_value = fst (alphabeta
+                                      game actor2 actor1 a b (not bobo)) in
+              let (value_temp, col) = if test_value < value then
+                (test_value, i) else (value, col_current) in
+              if value_temp < a then (value_temp, col)
+              else cut_alpha a (min b value_temp) value_temp col (i+1)
+            )
+          with plein -> cut_alpha a b value col_current (i+1)
+        else (value, col_current) in
+      cut_alpha alpha beta infinity 0 0
+    )
+;;
+
+
+let g = make ();;
+let player1 = {player = Human; pion = Yellow; fst_player = true};;
+let player2 = {player = Human; pion = Red; fst_player = false};;
+move g 0 player1;
+move g 1 player2;
+move g 0 player1;
+move g 1 player2;
+move g 0 player1;
+move g 1 player2;
+
+move g 2 player1;
+move g 2 player2;
+move g 2 player1;
+move g 2 player2;
+move g 3 player1;
+move g 2 player2;
+move g 2 player1;
+move g 3 player2;
+move g 3 player1;
+move g 3 player2;
+move g 3 player1;
+move g 4 player2;
+move g 3 player1;
+move g 4 player2;
+move g 4 player1;
+move g 4 player2;
+move g 4 player1;
+move g 4 player2;
+move g 5 player1;
+move g 5 player2;
+move g 5 player1;
+move g 5 player2;
+move g 5 player1;
+move g 5 player2;
+
+
+g.tab;;
+
+let cuple = alphabeta g player2 player1 (-.1.) 1. false;;
