@@ -1,22 +1,11 @@
 (*un pion est rouge ou jaune, ou, dans le plateau, aucun pion*)
-type piece = Red | Yellow | Empty
-
-(*on peut etre soit un humain, soit un ordinateur*)
-type player = Computer | Human
-
-(*un acteur du jeu est un joueur avec une couleur qui lui correspond*)
-type actor =
-    {
-      player : player;
-      pion : piece;
-      fst_player : bool
-    }
+type slot_content = Red | Yellow | Empty
 
 (*un couple de la piece courrante, représente une piece et le tableau
   représentant les lignes dont la piece fait partie : horizontal, diagonal...*)
 type couple_current_piece =
     {
-      mutable current_piece : piece;
+      mutable current_piece : slot_content;
       mutable tab_line_piece : int array
     }
 
@@ -26,15 +15,15 @@ type event =
     {
       col : int;
       line : int;
-      piece : piece
+      piece : slot_content
     }
 
 (*un jeu c'est un tableau représentant l'état du jeu
   un autre tableau représentant le pion et les lignes dont il fait parti
   et une liste des événements placés du plus recents au plus vieux*)
-type g =
+type t =
     {
-      mutable tab : piece array array;
+      mutable tab : slot_content array array;
       mutable tab_line : couple_current_piece array array;
       (*on aurait pu le mettre ac tab mais c pour calculer si on a gagné
         sans l'arbre qu'on n'a pas encore implémenter*)
@@ -60,25 +49,25 @@ let make () =
 ;;
 
 (*récupération de la couleur (s'il y a ) du pion en i,j*)
-let get_piece current_game j i =
+let get current_game j i =
   current_game.tab.(j).(i)
 ;;
 
 (*l'acteur place le pion qui correspond a sa couleur dans la colonne j*)
-let move current_game j actor =
+let move current_game j pion =
   let i = current_game.col_st.(j) in (*i est le nombre de piece dans la
                                        colonne j*)
 
   if (i <> 6) then
     (
       current_game.col_st.(j) <- i + 1;
-      current_game.tab.(j).(i) <- actor.pion;
-      current_game.tab_line.(j).(i).current_piece <- actor.pion;
+      current_game.tab.(j).(i) <- pion;
+      current_game.tab_line.(j).(i).current_piece <- pion;
       current_game.number_of_move <- current_game.number_of_move + 1;
       (*on remplit le tab_line_piece du pion courant et on modifie
         les tab des pions de meme couleurs qui lui sont alignés*)
       (* pour la ligne verticale *)
-      if (i != 0 && current_game.tab_line.(j).(i-1).current_piece = actor.pion)
+      if (i != 0 && current_game.tab_line.(j).(i-1).current_piece = pion)
       then
         (
           let down = current_game.tab_line.(j).(i-1).tab_line_piece.(0) in
@@ -100,36 +89,27 @@ let move current_game j actor =
       if j>0
       then
         (
-          if current_game.tab_line.(j-1).(i).current_piece = actor.pion
+          if current_game.tab_line.(j-1).(i).current_piece = pion
           then
             l := current_game.tab_line.(j-1).(i).tab_line_piece.(1);
 
-          if(i>0 && current_game.tab_line.(j-1).(i-1).current_piece =
-              actor.pion)
-          then
+          if i>0 && current_game.tab_line.(j-1).(i-1).current_piece = pion then
             (down_l := current_game.tab_line.(j-1).(i-1).tab_line_piece.(2));
 
-          if (i<5 && current_game.tab_line.(j-1).(i+1).current_piece =
-              actor.pion)
-          then
+          if i<5 && current_game.tab_line.(j-1).(i+1).current_piece = pion then
             (up_l := current_game.tab_line.(j-1).(i+1).tab_line_piece.(3));
         );
 
       if j<6
       then
         (
-          if current_game.tab_line.(j+1).(i).current_piece = actor.pion
-          then
+          if current_game.tab_line.(j+1).(i).current_piece = pion then
             r := current_game.tab_line.(j+1).(i).tab_line_piece.(1);
 
-          if (i<5 && current_game.tab_line.(j+1).(i+1).current_piece =
-              actor.pion)
-          then
+          if i<5 && current_game.tab_line.(j+1).(i+1).current_piece = pion then
             up_r := current_game.tab_line.(j+1).(i+1).tab_line_piece.(2);
 
-          if (i>0 && current_game.tab_line.(j+1).(i-1).current_piece =
-              actor.pion)
-          then
+          if i>0 && current_game.tab_line.(j+1).(i-1).current_piece = pion then
             down_r := current_game.tab_line.(j+1).(i-1).tab_line_piece.(3);
         );
 
@@ -191,7 +171,7 @@ let move current_game j actor =
 
       (*mise à jour de la liste des évènements du jeu*)
       current_game.list_event <-
-        [{col = j; line = i; piece = actor.pion}]@current_game.list_event
+        [{col = j; line = i; piece = pion}]@current_game.list_event
     )
 ;;
 
@@ -214,7 +194,7 @@ let rec remove current_game num =
 ;;
 
 (*creer une copy du jeu courant*)
-let copy_game current_game =
+let copy current_game =
   {
     tab = Array.init 7 (fun i -> (Array.copy current_game.tab.(i)));
 
