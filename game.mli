@@ -14,9 +14,14 @@ val copy : t -> t
   (** [copy g] returns a copy of the game state [g]. *)
 
 val get : t -> int -> int -> slot_content
-  (** [get g i j] returns the content of the slot at the [i]th line
-      (the bottom one being numbered [0]) and the [j]th column (the
-      leftmost one having index [0]) in the game state [g]. *)
+  (** [get g row col] returns the content of the slot at the [row]th
+      line (the bottom one being numbered [0]) and the [col]th column
+      (the leftmost one having index [0]) in the game state [g]. *)
+
+exception Column_full
+  (** Raised to indicate that one tries to add a piece to a full
+      column. *)
 
 val move : t -> int -> slot_content -> unit
-
+  (** [move g col piece] modifiy [g] by adding [piece] to the column
+      [col].  If the column is full, raise [Column_full]. *)
