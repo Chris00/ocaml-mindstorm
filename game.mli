@@ -31,3 +31,12 @@ val reset : t -> unit
 
 val is_winning : t -> bool
   (** [is_winning game]  *)
+
+
+val number_of_moves : t -> int
+  (** Returns the number of moves to go from the initial state of the
+      game to the current one. *)
+
+val last_move_col : t -> int
+val npieces_col : t -> int -> int
+  (* Should not be here ?? *)

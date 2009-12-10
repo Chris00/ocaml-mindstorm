@@ -34,6 +34,10 @@ type t =
       mutable col_st : int array
     }
 
+let number_of_moves game = game.number_of_move
+let last_move_col game = (List.hd game.list_event).col
+let npieces_col game i = game.col_st.(i)
+
 let init_matrix nrow ncol f =
   Array.init nrow (fun i -> Array.init ncol (fun j -> f i j))
 
@@ -202,6 +206,6 @@ let is_winning game =
     let last_move = List.hd (game.list_event) in
     let piece = game.tab_line.(last_move.line).(last_move.col).tab_line_piece in
     let rec winner k = k < 4 && (piece.(k) = 4 || winner (k+1)) in
-    in winner 0
+    winner 0
   else false
 ;;

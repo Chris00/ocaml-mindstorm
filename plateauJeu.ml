@@ -1,7 +1,7 @@
 open Graphics
 open Printf
 open Game
-
+open Alphabeta
 
 (*rem:les colonnes du jeu sont numérotés de 0 à 6 et les lignes de 0 à 5*)
 let w = 1000 and h = 720
