@@ -25,3 +25,9 @@ exception Column_full
 val move : t -> int -> slot_content -> unit
   (** [move g col piece] modifiy [g] by adding [piece] to the column
       [col].  If the column is full, raise [Column_full]. *)
+
+val reset : t -> unit
+  (** [reset game] reinitialize the game (all slots being [Empty]). *)
+
+val is_winning : t -> bool
+  (** [is_winning game]  *)

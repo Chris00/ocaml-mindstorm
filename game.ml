@@ -149,7 +149,6 @@ let move game col pion =
 
   (*mise à jour de la liste des évènements du jeu*)
   game.list_event <- {col = col; line = i; piece = pion} :: game.list_event
-)
 ;;
 
 (*retourne de num coup en arrière dans le jeu*)
@@ -187,7 +186,7 @@ let copy game =
 
 
 (*création d'une nouvelle partie*)
-let new_part game =
+let reset game =
   game.tab <- Array.make_matrix 7 6 Empty;
   game.tab_line <- init_matrix 7 6
     (fun _ _ -> {current_piece = Empty; tab_line_piece = [|0;0;0;0|]});
@@ -198,16 +197,11 @@ let new_part game =
 
 (*retourne vrai qd le pion en (i,j) est ds une ligne de 4pions de meme couleur*)
 (*faire avec une methode recursif qui garde win*)
-let isWin game =
+let is_winning game =
   if game.number_of_move <> 0 then
-    let i = (List.hd (game.list_event)).line
-    and j = (List.hd (game.list_event)).col in
-    let rec winner won k =
-      if (won = false && k < 4) then
-        if (game.tab_line.(j).(i).tab_line_piece.(k)=4)
-        then winner true k
-        else winner won (k+1)
-      else won
-    in winner false 0
+    let last_move = List.hd (game.list_event) in
+    let piece = game.tab_line.(last_move.line).(last_move.col).tab_line_piece in
+    let rec winner k = k < 4 && (piece.(k) = 4 || winner (k+1)) in
+    in winner 0
   else false
 ;;
