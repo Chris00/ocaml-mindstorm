@@ -1,20 +1,22 @@
 open Printf
 
+type connection = Bluetooth of string | USB of string
+
 let new_brick_name = ref None
-let bt = ref ""
+let bt = ref None
 
 let args = Arg.align [
   "--name", Arg.String(fun n -> new_brick_name := Some n),
-  "n Set a new name for the brick"
+  "n Set a new name for the brick";
+  "--bt", Arg.String(fun n -> bt := Some(Bluetooth n)),
+  "addr Connects to this bluetooth address";
+  "--usb", Arg.String(fun n -> bt := Some(USB n)),
+  "dev Connects to this USB device";
 ]
-let usage_msg = sprintf "%s <bluetooth addr>" Sys.argv.(0)
+let usage_msg = sprintf "%s (--by addr|-usb dev)" Sys.argv.(0)
 
 
-let () =
-  Arg.parse args (fun a -> bt := a) usage_msg;
-  let conn =
-    if !bt <> "" then Mindstorm.connect_bluetooth !bt
-    else (Arg.usage args usage_msg; exit 0) in
+let print_info conn =
   printf "Connected!\n%!";
   begin match !new_brick_name with
   | None -> ()
@@ -32,3 +34,10 @@ let () =
   let bat = Mindstorm.battery_level conn in
   printf "%i millivolts\n%!" bat;
   Mindstorm.close conn
+
+let () =
+  Arg.parse args (fun a -> raise(Arg.Bad "no anonymous argument")) usage_msg;
+  match !bt with
+  | Some(Bluetooth addr) -> print_info(Mindstorm.connect_bluetooth addr)
+  | Some(USB dev) -> print_info(Mindstorm.connect_usb dev)
+  | None -> Arg.usage args usage_msg; exit 1
