@@ -47,8 +47,28 @@ val connect_bluetooth : ?check_status:bool -> string -> bluetooth conn
       particular, [Unix.Unix_error(Unix.EHOSTDOWN, _,_)] is raised if
       the brick is not turned on.  *)
 
-val connect_usb : ?check_status:bool -> string -> usb conn
-  (** Not yet implemented. *)
+(** Functions to choose and connect to NXT bricks connected through USB. *)
+module USB :
+sig
+  type device
+    (** Handle to a USB mindstorm device. *)
+
+  val bricks : unit -> device list
+    (** [bricks()] returns the list of LEGO NXT bricks on the
+        USB bus.
+
+        @raise Failure in case of problems. *)
+
+  val connect : ?check_status:bool -> device -> usb conn
+    (** [connect dev] connect through USB to the brick device [dev]
+        (given by {!Mindstorm.USB.bricks}).
+
+        @param check_status set the default value for the [check_status]
+        optional argument.  For more information, see
+        {!Mindstorm.connect_bluetooth}.
+
+        @raise Failure in case of a connection problem.   *)
+end
 
 val close : 'a conn -> unit
   (** [close conn] closes the connection [conn] to the brick. *)
@@ -397,7 +417,7 @@ sig
 
   val write : ?check_status:bool ->
     'a conn -> port -> ?rx_length:int -> string -> unit
-    (** [write conn port data] writes [data] to lowspeed I2C sensor
+    (** [write conn port yx_data] writes [tx_data] to lowspeed I2C sensor
         connected to the [port].  This is the protocol (e.g. for
         talking to the ultrasonic sensor).  Communication errors will
         be reported by raising [Error Bus_error]; your application
@@ -420,15 +440,15 @@ sig
       ultrasonic sensor through the I2C protocol. *)
   module Ultrasonic :
   sig
-    type t
+    type 'a t
       (** Represent an initialized ultrasonic sensor connected to a
           given port. *)
 
-    val make : 'a conn -> port -> t
+    val make : 'a conn -> port -> 'a t
       (** [make conn port] initialize the sensor on port [port] as
           being an ultrasonic one. *)
 
-    val set : ?check_status:bool -> t ->
+    val set : ?check_status:bool -> 'a t ->
       [ `Off | `Meas | `Meas_cont | `Event | `Reset
       | `Meas_interval of int | `Zero of int
       | `Scale_mul of int | `Scale_div of int ] -> unit
@@ -463,7 +483,7 @@ sig
           set itself up anyway and this avoids [Mindstorm.Buffer_full]
           errors if we try to get values from the sensor. *)
 
-    val get : t ->
+    val get : 'a t ->
       [ `Byte0 | `Byte1 | `Byte2 | `Byte3 | `Byte4 | `Byte5 | `Byte6 | `Byte7
       | `Meas_interval | `Zero | `Scale_mul | `Scale_div
       ] -> int
@@ -488,7 +508,7 @@ sig
           scaling factor (resp. divisor).  It is settable with the
           [`Scale_mul] (resp. [`Scale_div]) command.  *)
 
-    val get_state : t -> [`Off | `Meas | `Meas_cont | `Event | `Reset]
+    val get_state : 'a t -> [`Off | `Meas | `Meas_cont | `Event | `Reset]
       (** [get_state us] get the current state of the ultrasonic
           sensor [us]. *)
   end
@@ -563,10 +583,10 @@ end
 
 (** {3 Files} *)
 
-type in_channel
+type 'a in_channel
     (** Handle for reading from the brick. *)
 
-val open_in : 'a conn -> string -> in_channel
+val open_in : 'a conn -> string -> 'a in_channel
   (** [open_in conn fname] opens the file named [fname] on the brick
       for reading.  The channel must be closed with
       {!Mindstorm.close_in}.  Close it as soon as possible as channels
@@ -575,21 +595,21 @@ val open_in : 'a conn -> string -> in_channel
       @raise Invalid_argument if [fname] is not a ASCIIZ string with
       maximum 15.3 characters.  *)
 
-val in_channel_length : in_channel -> int
+val in_channel_length : 'a in_channel -> int
   (** [in_channel_length ch] returns the length of the channel [ch]. *)
 
-val close_in : in_channel -> unit
+val close_in : 'a in_channel -> unit
   (** [close_in ch] closes the channel [ch].  Closing an already
       closed channel does nothing.  *)
 
-val input : in_channel -> string -> int -> int -> int
+val input : 'a in_channel -> string -> int -> int -> int
   (** [input ch buf ofs len] reads a block of data of length [len]
       from the channel [ch] and write it to [buf] starting at position
       [ofs].
 
       @raise End_of_file if there is no more data to read. *)
 
-type out_channel
+type 'a out_channel
   (** Handle for writing data to the brick. *)
 
 (** The standard NXT firmware requires that executable files and icons
@@ -605,7 +625,7 @@ type out_flag =
     | `Data of int
     | `Append ]
 
-val open_out : 'a conn -> out_flag -> string -> out_channel
+val open_out : 'a conn -> out_flag -> string -> 'a out_channel
   (** [open_out conn flag fname] opens the file [fname] for writing.
       The channel must be closed with {!Mindstorm.close_in}.  Close it
       as soon as possible as channels are a scarce resource.
@@ -614,11 +634,11 @@ val open_out : 'a conn -> out_flag -> string -> out_channel
       brick does not like the extension you use, [Error File_is_full]
       may be raised. *)
 
-val close_out : out_channel -> unit
+val close_out : 'a out_channel -> unit
   (** [close_out ch] closes the channel [ch].  Closing an already
       closed channel does nothing. *)
 
-val output : out_channel -> string -> int -> int -> int
+val output : 'a out_channel -> string -> int -> int -> int
   (** [output ch buf ofs len] ouputs the substring [buf.[ofs
       .. ofs+len-1]] to the channel [fd].  Returns the number of bytes
       actually written.  If you try to write more bytes than declared
@@ -630,10 +650,10 @@ val remove : 'a conn -> string -> unit
 (** List files on the brick matching a given pattern. *)
 module Find :
 sig
-  type iterator
+  type 'a iterator
       (** An iterator to allow to enumerate files on the brick. *)
 
-  val patt : 'a conn -> string -> iterator
+  val patt : 'a conn -> string -> 'a iterator
     (** [Find.patt conn fpatt] returns an iterator listing the filenames
         mathing the pattern [fpatt].  The following types of wildcards
         are accepted:
@@ -643,18 +663,18 @@ sig
         - *.*
 
         @raise File_not_found if no file was found *)
-  val current : iterator -> string
+  val current : 'a iterator -> string
     (** [Find.current i] returns the current filename. *)
-  val current_size : iterator -> int
+  val current_size : 'a iterator -> int
     (** [Find.current_size i] returns the current filename size
         (number of bytes). *)
-  val next : iterator -> unit
+  val next : 'a iterator -> unit
     (** Execute a new request to the brick to retrieve the next
         filename matching the pattern.
 
         @raise File_not_found if no more file was found.  When this
         exception is raised, the iterator is closed. *)
-  val close : iterator -> unit
+  val close : 'a iterator -> unit
     (** [close_iterator i] closes the iterator [i].  Closing an
         already closed iterator does nothing. *)
 

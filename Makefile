@@ -9,10 +9,10 @@ INSTALL_FILES = mindstorm.mli mindstorm.cmi mindstorm.cma \
   mindstorm.cmx mindstorm.cmxa mindstorm.a
 DISTFILES = $(INTERFACES) $(wildcard *.ml *.h *.c Makefile*) tests/ examples/
 
-CFLAGS= -Wall -fPIC
+CFLAGS= -Wall -fPIC $(D_HAS_USB) $(USB_INCLUDE)
 OCAMLC_FLAGS = -g -dtypes
 
-PP = camlp4o pa_macro.cmo $(D_OS) $(D_ARCH64)
+PP = camlp4o pa_macro.cmo $(D_OS) $(D_ARCH64) $(D_HAS_USB)
 
 VERSION=$(shell grep "@version" mindstorm.mli | sed "s/[^0-9]*//")
 ROOT_TARBALL=$(PKGNAME)-$(VERSION)

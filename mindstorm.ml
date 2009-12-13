@@ -132,7 +132,7 @@ let check_status_as_exn status =
 (* [really_input fd buf ofs len] reads [len] bytes from [fd] and store
    them into [buf] starting at position [ofs]. *)
 IFDEF WIN32 THEN
-let really_input =
+let really_input_fd =
   let rec loop ntries fd buf i n =
     if ntries > 50 && i = 0 then
       (* Naive way of detecting that we are not connected -- because,
@@ -150,7 +150,7 @@ let really_input =
 
 ELSE
 (* Unix & Mac OS X *)
-let really_input =
+let really_input_fd =
   let rec loop fd buf i n =
     let r = Unix.read fd buf i n in
     if r < n then (
@@ -165,7 +165,7 @@ ENDIF
 
 let really_read fd n =
   let buf = String.create n in
-  really_input fd buf 0 n;
+  really_input_fd fd buf 0 n;
   buf
 
 (* Char of a signed int, 2's complement.  All uses of this function
@@ -301,34 +301,41 @@ let usleep sec =
 (** Connection *)
 
 type usb
-type bluetooth
+type bluetooth = Unix.file_descr
 
 (* The type parameter is because we want to distinguish usb and
    bluetooth connections as some commands are only available through USB. *)
-type conn_send = Unix.file_descr -> string -> unit
-type conn_recv = Unix.file_descr -> int -> string
+type 'a conn_send = 'a -> string -> unit
+type 'a conn_recv = 'a -> int -> string
+type 'a conn_really_input = 'a -> string -> int -> int -> unit
 type 'a conn = {
-  fd : Unix.file_descr;
+  fd : 'a;
   (* We need specialized function depending on the fact that the
      connection is USB or bluetooth because bluetooth requires a
      prefix of 2 bytes indicating the length of the packet. *)
-  send : conn_send;
+  send : 'a conn_send;
   (* [send fd pkg] sends the package [pkg] over [fd].  [pkg] is
      supposed to come prefixed with 2 bytes indicating its length
      (since this is necessary for bluetooth) -- they will be stripped
      for USB. *)
-  recv : conn_recv;
+  recv : 'a conn_recv;
   (* [recv fd n] reads a package a length [n] and return it as a
      string.  For bluetooth, the prefix of 2 bytes indicating the
      length are also read but not returned (and not counted in [n]).
      [recv] checks the status byte and raise an exception accordingly
      (if needed). *)
+  really_input : 'a conn_really_input;
+  (* [really_input fd buf ofs len] reads [len] characters from [fd]
+     and puts thrm in [buf] starting at position [ofs].  Do NOT read
+     the bluetooth prefix bytes, so should not be used for packages
+     but only for additional data. *)
+  close : 'a -> unit;
+  (* Close the connection. *)
   check_status : bool;
   (* Default value of the [check_status] optional arg. *)
 }
 
-let close conn =
-  Unix.close conn.fd
+let close conn = conn.close conn.fd
 
 let recv conn n =
   let pkg = conn.recv conn.fd n in
@@ -340,40 +347,82 @@ let default_check_status conn = function
   | Some s -> s
 
 
-(** USB ---------- *)
+(** USB -------------------- *)
+module USB =
+struct
+  type device (* a handle to a USB LEGO device. *)
 
-(* Ignore the first 2 bytes of [pkg] that are for bluetooth only *)
-let usb_send fd pkg = ignore(Unix.write fd pkg 2 (String.length pkg - 2))
+  IFDEF HAS_USB THEN
+  IFDEF MACOS THEN
+  (* Mac OS X *)
+  let usb_bricks () = []
+  let connect_usb ?(check_status=false) socket = failwith "Not yet implemented"
 
-let generic_recv fd n =
+  ELSE
+  IFDEF WIN32 THEN
+  (* Windows *)
+  let usb_bricks () = []
+  let connect_usb ?(check_status=false) socket = failwith "Not yet implemented"
+
+  ELSE
+  (* Unix *)
+  external bricks : unit -> device list = "ocaml_mindstorm_bricks"
+  external exit_libusb : unit -> unit = "ocaml_mindstorm_exit"
+  external connect_device : device -> usb = "ocaml_mindstorm_connect_usb"
+  external close : usb -> unit = "ocaml_mindstorm_close_usb"
+  external write : usb -> string -> int -> int -> unit
+    = "ocaml_mindstorm_usb_write"
+  external really_input : usb -> string -> int -> int -> unit
+    = "ocaml_mindstorm_usb_really_input"
+
+  let () = at_exit exit_libusb
+
+  let recv usb n =
+    let buf = String.create n in
+    really_input usb buf 0 n;
+    buf
+
+  (* Ignore the first 2 bytes of [pkg] that are for bluetooth only *)
+  let send fd pkg = write fd pkg 2 (String.length pkg - 2)
+
+  let connect ?(check_status=false) dev =
+    let fd = connect_device dev in
+    { fd = fd;  send = send;
+      recv = recv;  really_input = really_input;
+      close = close;
+      check_status = check_status }
+
+  ENDIF
+  ENDIF
+  ELSE
+  (* No USB libary *)
+  let usb_bricks () = []
+  let connect_usb ?(check_status=false) socket =
+    failwith "The Mindstorm module was compliled without USB support"
+  ENDIF
+end
+
+(** Bluetooth -------------------- *)
+
+let bt_send fd pkg = ignore(Unix.write fd pkg 0 (String.length pkg))
+
+let bt_recv fd n =
+  let _size = really_read fd 2 in
   let pkg = really_read fd n in
   assert(pkg.[0] = '\x02');
   (* pkg.[1] is the cmd id, do we check it ?? *)
   (* We wanted to check the status and raise the corresponding
      exception here but we cannot because of the behavior of [input]. *)
   pkg
-
-let usb_recv = generic_recv
-
-let connect_usb ?(check_status=false) socket =
-  let fd = Unix.openfile socket [] 0 (* FIXME *) in
-  { fd = fd;  send = usb_send;  recv = usb_recv;
-    check_status = check_status }
-
-(** Bluetooth ---------- *)
-
-let bt_send fd pkg = ignore(Unix.write fd pkg 0 (String.length pkg))
-
-let bt_recv fd n =
-  let _size = really_read fd 2 in
-  generic_recv fd n
 ;;
 
 IFDEF MACOS THEN
 (* Mac OS X *)
 let connect_bluetooth ?(check_status=false) tty =
   let fd = Unix.openfile tty [Unix.O_RDWR] 0o660 in
-  { fd = fd;  send = bt_send;  recv = bt_recv;
+  { fd = fd;  send = bt_send;
+    recv = bt_recv;  really_input = really_input_fd;
+    close = Unix.close;
     check_status = check_status }
 
 ELSE
@@ -384,7 +433,9 @@ external socket_bluetooth : string -> Unix.file_descr
 
 let connect_bluetooth ?(check_status=false) addr =
   let fd = socket_bluetooth ("\\\\.\\" ^ addr) in
-  { fd = fd;  send = bt_send;  recv = bt_recv;
+  { fd = fd;  send = bt_send;
+    recv = bt_recv;  really_input = really_input_fd;
+    close = Unix.close;
     check_status = check_status }
 
 ELSE
@@ -394,7 +445,9 @@ external socket_bluetooth : string -> Unix.file_descr
 
 let connect_bluetooth ?(check_status=false) addr =
   let fd = socket_bluetooth addr in
-  { fd = fd;  send = bt_send;  recv = bt_recv;
+  { fd = fd;  send = bt_send;
+    recv = bt_recv;  really_input = really_input_fd;
+    close = Unix.close;
     check_status = check_status }
 
 ENDIF
@@ -404,10 +457,11 @@ ENDIF
 (* ---------------------------------------------------------------------- *)
 (** System commands *)
 
-type in_channel = {
-  in_fd : Unix.file_descr;
-  in_send : conn_send;
-  in_recv : conn_recv;
+type 'a in_channel = {
+  in_fd : 'a;
+  in_send : 'a conn_send;
+  in_recv : 'a conn_recv;
+  in_really_input : 'a conn_really_input;
   in_handle : char; (* the handle given by the brick *)
   in_length : int; (* file size *)
   mutable in_left : int; (* number of bytes left to be read,
@@ -428,6 +482,7 @@ let open_in conn fname =
   { in_fd = conn.fd;
     in_send = conn.send;
     in_recv = conn.recv;
+    in_really_input = conn.really_input;
     in_handle = ans.[3];
     in_length = len;
     in_left = len;
@@ -475,7 +530,7 @@ let input ch buf ofs len =
     let ans = ch.in_recv ch.in_fd 6 in
     let r = uint16 ans 4 in (* # bytes read *)
     assert(r = len_to_read);
-    really_input ch.in_fd buf ofs len_to_read;
+    ch.in_really_input ch.in_fd buf ofs len_to_read;
     ch.in_left <- ch.in_left - len_to_read;
     let status = ans.[2] in
     (* We manage EOF ourselves to respect OCaml conventions: *)
@@ -483,10 +538,10 @@ let input ch buf ofs len =
     else (check_status_as_exn status; 0)
   end
 
-type out_channel = {
-  out_fd : Unix.file_descr;
-  out_send : conn_send;
-  out_recv : conn_recv;
+type 'a out_channel = {
+  out_fd : 'a;
+  out_send : 'a conn_send;
+  out_recv : 'a conn_recv;
   out_handle : char; (* the handle given by the brick *)
   out_length : int; (* size provided by the user of the brick *)
   mutable out_closed : bool;
@@ -565,14 +620,13 @@ let output ch buf ofs len =
   if ofs < 0 || len < 0 || ofs + len > String.length buf || len > 0xFFFC then
     invalid_arg "Mindstorm.output";
   if ch.out_closed then raise(Sys_error "Closed NXT out_channel");
-  let pkg = String.create 5 in
+  let pkg = String.create (5 + len) in
   copy_uint16 (len + 3) pkg 0; (* 2 BT length bytes; len+3 <= 0xFFFF *)
   pkg.[2] <- '\x01';
   pkg.[3] <- '\x83'; (* WRITE *)
   pkg.[4] <- ch.out_handle;
+  String.blit buf ofs pkg 5 len;
   ch.out_send ch.out_fd pkg;
-  (* FIXME: how does USB know the length of the data? *)
-  ignore(Unix.write ch.out_fd buf ofs len);
   let ans = ch.out_recv ch.out_fd 6 in
   check_status_as_exn ans.[2];
   uint16 ans 4
@@ -591,10 +645,10 @@ let remove conn fname =
 
 module Find =
 struct
-  type iterator = {
-    it_fd : Unix.file_descr;
-    it_send : conn_send;
-    it_recv : conn_recv;
+  type 'a iterator = {
+    it_fd : 'a;
+    it_send : 'a conn_send;
+    it_recv : 'a conn_recv;
     it_handle : char;
     mutable it_closed : bool;
     mutable it_fname : string; (* current filename *)
@@ -1115,15 +1169,15 @@ struct
     if n > 255 then invalid_arg "Mindstorm.Sensor.write: length tx_data > 255";
     if rx_length < 0 || rx_length > 255 then
       invalid_arg "Mindstorm.Sensor.write: length rx_length not in 0 .. 255";
-    let pkg = String.create 7 in
+    let pkg = String.create (7 + n) in
     copy_uint16 (n + 5) pkg 0; (* 2 bluetooth bytes *)
     pkg.[2] <- if check_status then '\x00' else '\x80';
     pkg.[3] <- '\x0F'; (* LSWRITE *)
     pkg.[4] <- char_of_port port;
     pkg.[5] <- Char.unsafe_chr n; (* tx bytes (# bytes sent) *)
     pkg.[6] <- Char.unsafe_chr rx_length;
+    String.blit tx_data 0 pkg 7 n;
     conn.send conn.fd pkg;
-    ignore(Unix.write conn.fd tx_data 0 n);
     if check_status then ignore(recv conn 3)
 
   let read conn port =
@@ -1144,10 +1198,10 @@ struct
      http://mindstorms.lego.com/Overview/NXTreme.aspx *)
   module Ultrasonic =
   struct
-    type t = {
-      u_fd : Unix.file_descr;
-      u_send : conn_send;
-      u_recv : conn_recv;
+    type 'a t = {
+      u_fd : 'a;
+      u_send : 'a conn_send;
+      u_recv : 'a conn_recv;
       port : char;
       ls_status : string; (* share the string across all status calls *)
     }

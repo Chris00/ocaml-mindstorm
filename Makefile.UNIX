@@ -1,8 +1,12 @@
-# Makefile for Unix
+# Makefile for Unix					-*-makefile-gmake-*-
 STUBS=mindstorm_unix.c
 
 CC_LIB=-lbluetooth
 EXT_O=.o
+
+ifdef D_HAS_USB
+  CC_LIB+=-lusb-1.0
+endif
 
 INSTALL_FILES += libmindstorm.a dllmindstorm.so
 

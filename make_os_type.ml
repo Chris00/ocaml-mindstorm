@@ -19,6 +19,12 @@
 (** Return the platform on stdout for conditional statements in the
     Makefile. *)
 
+(* Naive libusb location detection *)
+let libusb () =
+  if Sys.file_exists "/usr/include/libusb-1.0/libusb.h" then
+    "/usr/include/libusb-1.0/"
+  else ""
+
 let () =
   let os = match Sys.os_type with
   | "Win32" | "Cygwin" -> "WIN32"
@@ -31,6 +37,11 @@ let () =
       os  in
   print_endline("OS_TYPE=" ^ os);
   print_endline("D_OS=-D" ^ os);
+  let usb = libusb() in
+  if usb <> ""  then (
+    print_endline("D_HAS_USB=-DHAS_USB");
+    print_endline("USB_INCLUDE=-I \"" ^ usb ^ "\"");
+  );
   if Sys.word_size = 64 then print_endline "D_ARCH64=-DARCH64";
   print_endline("-include Makefile." ^ os)
 

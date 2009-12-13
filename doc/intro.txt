@@ -30,8 +30,8 @@ text after the $ sign is what you type, underneath is the answer):
 v}
 
 to discover the address of your brick.  Then use
-[Mindstorm.connect_bluetooth "00:16:53:03:A5:32"] to establish the
-connection (of course, replace "00:16:53:03:A5:32" by your actual
+{!Mindstorm.connect_bluetooth}[ "00:16:53:03:A5:32"] to establish the
+connection (of course, replace ["00:16:53:03:A5:32"] by your actual
 bluetooth address) -- the first time, the brick will ask you to enter
 a code and the bluetooth applet will pop up a box in which you need to
 copy the very same code (this is to forbid unwanted connections).
@@ -64,7 +64,7 @@ Serial Port To NXT in OSX}":
 
 You're done! You should now have a [/dev/tty.NXT-DevB-1].
 
-Now you can connect to the brick using [Mindstorm.connect_bluetooth
+Now you can connect to the brick using {!Mindstorm.connect_bluetooth}[
 "/dev/tty.NXT-DevB-1"].  Beware that if you rename the brick with
 {!Mindstorm.set_brick_name}, you will have to change the TTY device
 accordingly.
@@ -77,7 +77,7 @@ accordingly.
 From windows, open the bluetooth control panel, create a new
 connection to the NXT brick, right click on your connection and select
 "details" to see which serial port is used, for example COM40.  Then
-use [Mindstorm.connect_bluetooth "COM40"] to connect to the brick from
+use {!Mindstorm.connect_bluetooth}[ "COM40"] to connect to the brick from
 your programs.  ATM, you have to always start by establishing the
 connection by hand before you can use the brick.  Patches are welcome
 so that is is enough to pass the bluetooth address to
@@ -106,24 +106,25 @@ This will be investigated in a subsequent revision of this library.
 
 {3 Linux}
 
-Create a [lego] group, add your user to it and create a file
-[/etc/udev/rules.d/70-lego.rules] containing
-
+For easy access, create a [lego] group, add your user to it, and create
+a file [/etc/udev/rules.d/70-lego.rules] containing:
 {v
 	# Lego NXT                                               -*-conf-*-
 	BUS=="usb", SYSFS{idVendor}=="0694", GROUP="lego", MODE="0660"
-	
-	# Links for specific bricks (use udevinfo to find the serial)
-	SYSFS{idVendor}=="0694", SYSFS{serial}=="xxxxxxxxxxxx", SYMLINK+="lego"
 v}
 
-To be completed.
+To list the NXT bricks connected through USB to your computer, use
+{!Mindstorm.USB.bricks}. To connect to one of these bricks, say [b],
+use {!Mindstorm.USB.connect}[ b] (you can the query the brick, say for
+its name, to decide whether it is the device you want to talk to).
 
 {3 MacOS X}
 
 TBD.
 
 {3 Windows}
+
+Install {{:http://libusb-win32.sourceforge.net/}libusb-win32}.
 
 you need the LEGO® Mindstorms NXT software installed, as its USB
 drivers are used. ???
