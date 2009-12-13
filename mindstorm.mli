@@ -2,7 +2,7 @@
 
    Copyright (C) 2007
 
-     Christophe Troestler <Christophe.Troestler@umh.ac.be>
+     Christophe Troestler <Christophe.Troestler@umons.ac.be>
      WWW: http://math.umh.ac.be/an/software/
 
    This library is free software; you can redistribute it and/or modify
@@ -22,6 +22,7 @@
     through bluetooth (and possibly eventually USB).
 
     @version 0.5.2
+    @author Christophe Troestler <Christophe.Troestler\@umons.ac.be>
 *)
 
 type usb
@@ -47,7 +48,9 @@ val connect_bluetooth : ?check_status:bool -> string -> bluetooth conn
       particular, [Unix.Unix_error(Unix.EHOSTDOWN, _,_)] is raised if
       the brick is not turned on.  *)
 
-(** Functions to choose and connect to NXT bricks connected through USB. *)
+(** Functions to choose and connect to NXT bricks connected through
+    USB.  So far, it works on Linux (users of other platforms, your
+    help is welcome). *)
 module USB :
 sig
   type device

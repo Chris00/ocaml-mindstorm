@@ -13,7 +13,7 @@ let args = Arg.align [
   "--usb", Arg.Unit(fun () -> bt := Some USB),
   " Connects to a USB NXT brick";
 ]
-let usage_msg = sprintf "%s (--by addr|-usb dev)" Sys.argv.(0)
+let usage_msg = sprintf "%s (--by addr|--usb)" Sys.argv.(0)
 
 
 let print_info conn =

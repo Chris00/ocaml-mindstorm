@@ -1,12 +1,15 @@
 open Printf
 module Sensor = Mindstorm.Sensor
 
-let bt =
-  if Array.length Sys.argv < 2 then begin
-    printf "%s <bluetooth addr>\n" Sys.argv.(0);
-    exit 1;
-  end
-  else Sys.argv.(1)
+type connection = Bluetooth of string | USB
+let dev = ref None
+
+let args = Arg.align [
+  "--bt", Arg.String(fun n -> dev := Some(Bluetooth n)),
+  "addr Connects to this bluetooth address";
+  "--usb", Arg.Unit(fun () -> dev := Some USB), " Connects to a USB NXT brick";
+]
+let usage_msg = sprintf "%s (--by addr|--usb)" Sys.argv.(0)
 
 IFDEF WIN32 THEN
 (* Win32 command shell is poor *)
@@ -35,14 +38,12 @@ let repeat_till_ENTER msg f =
     raise e
 ENDIF
 
-let () =
+let sensors conn =
   printf "It is assumed that sensors are connected as follows:\n";
   printf "- port 1: touch sensor\n";
   printf "- port 2: light sensor\n";
   printf "- port 3: sound sensor\n";
   printf "- port 4: ultrasonic sensor\n%!";
-
-  let conn = Mindstorm.connect_bluetooth bt in
 
   let test_sensor name port =
     repeat_till_ENTER (sprintf "- %s sensor" name) begin fun i ->
@@ -60,7 +61,7 @@ let () =
   Sensor.set conn `S1 `Switch `Period_counter;
   test_sensor "Touch (period)" `S1;
 
-  Sensor.set conn `S2 `Light_active `Pct_full_scale;
+  Sensor.set conn `S2 `Light_active Pct_full_scale;
   (*   Sensor.set conn `S2 `Switch `Light_inactive; *)
   test_sensor "Light" `S2;
   Sensor.set conn `S2 `No_sensor `Pct_full_scale;
@@ -82,3 +83,13 @@ let () =
   printf "\n";
 
   Mindstorm.close conn
+
+let () =
+  Arg.parse args (fun a -> raise(Arg.Bad "no anonymous argument")) usage_msg;
+  match !dev with
+  | Some(Bluetooth addr) -> sensors(Mindstorm.connect_bluetooth addr)
+  | Some USB ->
+      (match Mindstorm.USB.bricks() with
+       | dev :: _ -> sensors(Mindstorm.USB.connect dev)
+       | [] -> print_endline "No NXT brick connected to a USB port.")
+  | None -> Arg.usage args usage_msg; exit 1

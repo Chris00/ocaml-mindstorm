@@ -357,12 +357,14 @@ struct
   (* Mac OS X *)
   let usb_bricks () = []
   let connect_usb ?(check_status=false) socket = failwith "Not yet implemented"
+    (* libusb should work *)
 
   ELSE
   IFDEF WIN32 THEN
   (* Windows *)
   let usb_bricks () = []
   let connect_usb ?(check_status=false) socket = failwith "Not yet implemented"
+    (* See http://www.microsoft.com/whdc/connect/usb/winusb_howto.mspx *)
 
   ELSE
   (* Unix *)
