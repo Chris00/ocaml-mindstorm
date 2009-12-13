@@ -1,16 +1,19 @@
+connect.cmo: connect.cmi 
+connect.cmx: connect.cmi 
 disconnect.cmo: 
 disconnect.cmx: 
 file_list.cmo: 
 file_list.cmx: 
-info.cmo: 
-info.cmx: 
+info.cmo: connect.cmi 
+info.cmx: connect.cmx 
 keep_alive.cmo: 
 keep_alive.cmx: 
 motor.cmo: 
 motor.cmx: 
-sensors.cmo: 
-sensors.cmx: 
+sensors.cmo: connect.cmi 
+sensors.cmx: connect.cmx 
 sound.cmo: 
 sound.cmx: 
 upload.cmo: 
 upload.cmx: 
+connect.cmi: 

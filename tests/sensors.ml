@@ -1,16 +1,6 @@
 open Printf
 module Sensor = Mindstorm.Sensor
 
-type connection = Bluetooth of string | USB
-let dev = ref None
-
-let args = Arg.align [
-  "--bt", Arg.String(fun n -> dev := Some(Bluetooth n)),
-  "addr Connects to this bluetooth address";
-  "--usb", Arg.Unit(fun () -> dev := Some USB), " Connects to a USB NXT brick";
-]
-let usage_msg = sprintf "%s (--by addr|--usb)" Sys.argv.(0)
-
 IFDEF WIN32 THEN
 (* Win32 command shell is poor *)
 let repeat_till_ENTER msg f =
@@ -38,33 +28,47 @@ let repeat_till_ENTER msg f =
     raise e
 ENDIF
 
+let color_sensor = ref true
+
 let sensors conn =
   printf "It is assumed that sensors are connected as follows:\n";
-  printf "- port 1: touch sensor\n";
-  printf "- port 2: light sensor\n";
+  if !color_sensor then printf "- port 1: NXT 2.0 color sensor\n"
+  else printf "- port 1: NXT 1.0 light sensor\n";
+  printf "- port 2: touch sensor\n";
   printf "- port 3: sound sensor\n";
   printf "- port 4: ultrasonic sensor\n%!";
 
-  let test_sensor name port =
+  let default_scaled data = sprintf "%-5i" data.Sensor.scaled in
+  let test_sensor ?(scaled=default_scaled) name port =
     repeat_till_ENTER (sprintf "- %s sensor" name) begin fun i ->
       let data = Sensor.get conn port in
-      printf "%4i:\t raw = %4i   normalized = %4i   scaled = %-5i\r%!"
-        i data.Sensor.raw data.Sensor.normalized data.Sensor.scaled;
+      printf "%4i:\t raw = %4i   normalized = %4i   scaled = %s\r%!"
+        i data.Sensor.raw data.Sensor.normalized (scaled data);
     end;
     printf "\n" in
 
-  Sensor.set conn `S1 `Switch `Bool;
-  test_sensor "Touch (bool)" `S1;
-  Sensor.set conn `S1 `Switch `Transition_cnt;
-  test_sensor "Touch (transition)" `S1;
-  Sensor.reset_scaled conn `S1;
-  Sensor.set conn `S1 `Switch `Period_counter;
-  test_sensor "Touch (period)" `S1;
+  if !color_sensor then (
+    let color_of_data data = match Sensor.color_of_data data with
+      | `Black  -> "black " | `Blue -> "blue  " | `Green -> "green "
+      | `Yellow -> "yellow" | `Red  -> "red   " | `White -> "white " in
+    Sensor.set conn `S1 `Color_full `Pct_full_scale;
+    test_sensor "Color" `S1 ~scaled:color_of_data;
+  )
+  else (
+    (* Sensor.set conn `S1 `Light_active `Pct_full_scale; *)
+    Sensor.set conn `S1 `Color_full `Pct_full_scale;
+    (*   Sensor.set conn `S1 `Switch `Light_inactive; *)
+    test_sensor "Light" `S1;
+  );
+  Sensor.set conn `S1 `No_sensor `Raw; (* => turn off light *)
 
-  Sensor.set conn `S2 `Light_active Pct_full_scale;
-  (*   Sensor.set conn `S2 `Switch `Light_inactive; *)
-  test_sensor "Light" `S2;
-  Sensor.set conn `S2 `No_sensor `Pct_full_scale;
+  Sensor.set conn `S2 `Switch `Bool;
+  test_sensor "Touch (bool)" `S2;
+  Sensor.set conn `S2 `Switch `Transition_cnt;
+  test_sensor "Touch (transition)" `S2;
+  Sensor.reset_scaled conn `S2;
+  Sensor.set conn `S2 `Switch `Period_counter;
+  test_sensor "Touch (period)" `S2;
 
   Sensor.set conn `S3 `Sound_db `Pct_full_scale;
   (*   Sensor.set conn `S3 `Sound_dba `Pct_full_scale; *)
@@ -80,16 +84,10 @@ let sensors conn =
       printf "%4i:\t %s\r%!" i (Printexc.to_string e);
       Unix.sleep 1
   end;
-  printf "\n";
-
-  Mindstorm.close conn
+  printf "\n"
 
 let () =
-  Arg.parse args (fun a -> raise(Arg.Bad "no anonymous argument")) usage_msg;
-  match !dev with
-  | Some(Bluetooth addr) -> sensors(Mindstorm.connect_bluetooth addr)
-  | Some USB ->
-      (match Mindstorm.USB.bricks() with
-       | dev :: _ -> sensors(Mindstorm.USB.connect dev)
-       | [] -> print_endline "No NXT brick connected to a USB port.")
-  | None -> Arg.usage args usage_msg; exit 1
+  Connect.and_do {
+    Connect.args = [ "--light", Arg.Clear color_sensor,
+                     " says that the sensor on port 1 is the old light sensor"];
+    f = sensors }
