@@ -1040,7 +1040,13 @@ struct
       | `Custom
       | `Lowspeed
       | `Lowspeed_9v
-      | `Highspeed ] (* aka NO_OF_SENSOR_TYPES *)
+      | `Highspeed
+      | `Color_full
+      | `Color_red
+      | `Color_green
+      | `Color_blue
+      | `Color_none
+      ]
   type mode =
       [ `Raw
       | `Bool
@@ -1076,7 +1082,13 @@ struct
                   | `Custom	 -> '\x09'
                   | `Lowspeed	 -> '\x0A'
                   | `Lowspeed_9v -> '\x0B'
-                  | `Highspeed	 -> '\x0C');
+                  | `Highspeed	 -> '\x0C'
+                  (* From the Lejos "SensorsConstants.java": *)
+                  | `Color_full   -> '\x0D'
+                  | `Color_red    -> '\x0E'
+                  | `Color_green  -> '\x0F'
+                  | `Color_blue   -> '\x10'
+                  | `Color_none   -> '\x11');
       pkg.[6] <- (match sensor_mode with
                   | `Raw	 -> '\x00'
                   | `Bool	 -> '\x20'
@@ -1126,7 +1138,12 @@ struct
                      | '\x0A' -> `Lowspeed
                      | '\x0B' -> `Lowspeed_9v
                      | '\x0C' -> `Highspeed
-                     | _ -> raise(Error Insane));
+                     | '\x0D' -> `Color_full
+                     | '\x0E' -> `Color_red
+                     | '\x0F' -> `Color_green
+                     | '\x10' -> `Color_blue
+                     | '\x11' -> `Color_none
+                     | _ -> raise(Error Out_of_range));
         mode = (match ans.[7] with
                 | '\x00' -> `Raw
                 | '\x20' -> `Bool
@@ -1138,12 +1155,23 @@ struct
                 | '\xE0' -> `Angle_steps
                 | '\x1F' -> `Slope_mask
                 (*| '\xE0' -> `Mode_mask*)
-                | _ -> raise(Error Insane));
+                | _ -> raise(Error Out_of_range));
       raw = uint16 ans 8;
       normalized = uint16 ans 10;
       scaled = int16 ans 12;
       (* calibrated = int16 and 14; *)
     }
+
+  let color_of_scaled_tab =
+    [| `Black (* unused *) ; `Black; `Blue; `Green; `Yellow; `Red; `White |]
+  let color_of_data data =
+    if data.sensor_type <> `Color_full then
+      invalid_arg "Mindstorm.Sensor.color_of_scaled: the sensor type must \
+	be `Color_full";
+    if data.scaled < 1 || data.scaled > 6 then
+      invalid_arg "Mindstorm.Sensor.color_of_scaled: scaled data out of range";
+    color_of_scaled_tab.(data.scaled)
+
 
   let reset_scaled ?check_status conn port =
     let check_status = default_check_status conn check_status in

@@ -101,7 +101,7 @@ include .os_type
 
 .PHONY: clean
 clean::
+	$(MAKE) -C tests RM="$(RM)" $@
+	$(MAKE) -C examples RM="$(RM)" $@
 	-$(RM) META .os_type $(wildcard *.exe) $(PKG_TARBALL)
 	-cd $(DOC_DIR) && $(RM) $(wildcard *~ *.html *.css)
-	-cd tests/ && $(MAKE) RM="$(RM)" clean
-	-cd examples/ && $(MAKE) RM="$(RM)" clean

@@ -305,7 +305,13 @@ sig
       | `Custom
       | `Lowspeed
       | `Lowspeed_9v
-      | `Highspeed ]
+      | `Highspeed
+      | `Color_full
+      | `Color_red
+      | `Color_green
+      | `Color_blue
+      | `Color_none
+      ]
   (** Sensor type for a port.  The sensor type primarily affects
       scaling factors used to calculate the normalized sensor value
       [`Raw], but some values have other side effects.
@@ -326,7 +332,22 @@ sig
       - [`Lowspeed_9v]:   I2C digital sensor, 9V power (e.g. ultrasonic).
       - [`Highspeed]:     Set [`S4] to highspeed mode.  This is currently
       unused by LEGO® sensors.  This targets the P-Net communication
-      protocol (www.P-net.org).  *)
+      protocol (www.P-net.org).
+
+      The LEGO® NXT 2.0 (8547) includes a color sensor with a
+      tri-color led.  The following values allow to configure it.  If
+      you have an older brick, this may require that you update its
+      firmware.  Todo it under Linux, you can issue the command
+      [./fwflash path_to_firmware.rfw] (as root) where [fwflash] comes
+      from {{:http://code.google.com/p/libnxt/}libnxt}.  The firmware
+      1.28 can be dowloaded from
+      http://legoengineering.com/library/doc_details/250-nxt-firmware-v128.html
+
+      - [Color_full] white floodlight (all 3 leds on).
+      - [Color_red] red floodlight.
+      - [Color_green] green floodlight.
+      - [Color_blue] blue  floodlight.
+      - [Color_none] no floodlight (passive mode).  *)
 
   type mode =
       [ `Raw
@@ -402,6 +423,12 @@ sig
     (** [get conn p] returns the data read on port [p].  Before using
         this function, you must set the sensor type with
         {!Mindstorm.Sensor.set}. *)
+
+  val color_of_data : data ->
+    [`Black | `Blue | `Green | `Yellow | `Red | `White]
+      (** Returns the color seen by the color sensor from its reading.
+          This is usually only accurate at a distance of about 1cm.
+          @raise Invalid_argument if not applied to a [`Color_full] sensor. *)
 
   val reset_scaled : ?check_status:bool -> 'a conn -> port -> unit
     (** [reset_scaled conn port]
