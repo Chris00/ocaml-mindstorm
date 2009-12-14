@@ -168,9 +168,18 @@ value ocaml_mindstorm_exit(value vunit)
   alloc_custom(&ocaml_mindstorm_usb_handle_ops,                         \
                sizeof(libusb_device_handle*) + 2 * sizeof(uint8_t), 1, 50)
 
-static void handle_finalize(value vd)
+#define USB_HANDLE_CLOSE(vhandle)                       \
+  libusb_release_interface(USB_HANDLE_VAL(vhandle), 0); \
+  libusb_close(USB_HANDLE_VAL(vhandle));                \
+  USB_HANDLE_VAL(vhandle) = NULL
+
+static void handle_finalize(value vhandle)
 {
-  libusb_close(USB_HANDLE_VAL(vd));
+  /* Closing (see ocaml_mindstorm_close_usb) the handle several times
+   * triggers a "double free" in glibc which aborts the program.  On
+   * the Caml side, freeing an already closed USB connection should
+   * emit no noise. */
+  if (USB_HANDLE_VAL(vhandle) != NULL) { USB_HANDLE_CLOSE(vhandle); }
 }
 
 static int handle_compare(value vd1, value vd2)
@@ -267,10 +276,10 @@ value ocaml_mindstorm_connect_usb(value vdev)
 value ocaml_mindstorm_close_usb(value vhandle)
 {
   CAMLparam1(vhandle);
-  libusb_device_handle *handle = USB_HANDLE_VAL(vhandle);
-  libusb_release_interface(handle, 0);
-  /* FIXME: Can we close a handle several times? */
-  libusb_close(handle);
+  /* To be coherent with the bluetooth connection, we raise an
+   * exception if the handle is already closed. */
+  if (USB_HANDLE_VAL(vhandle) != NULL) { USB_HANDLE_CLOSE(vhandle); }
+  else invalid_argument("Mindstorm.close: USB connection already closed.");
   CAMLreturn(Val_unit);
 }
 
@@ -278,12 +287,15 @@ value ocaml_mindstorm_usb_write(value vhandle,
                                 value vdata, value vofs, value vlength)
 {
   CAMLparam4(vhandle, vdata, vofs, vlength);
+  libusb_device_handle *handle = USB_HANDLE_VAL(vhandle);
   int err, transferred;
   unsigned char *data = ((unsigned char *) String_val(vdata)) + Int_val(vofs);
   int length = Int_val(vlength);
+
+  if (handle == NULL) invalid_argument("Mindstorm.USB: connection closed.");
   
   while (length > 0) {
-    err = libusb_bulk_transfer(USB_HANDLE_VAL(vhandle), USB_HANDLE_OUT(vhandle),
+    err = libusb_bulk_transfer(handle, USB_HANDLE_OUT(vhandle),
                                data, length, &transferred, 0);
     switch (err) {
     case LIBUSB_SUCCESS:
@@ -308,12 +320,15 @@ value ocaml_mindstorm_usb_really_input(value vhandle,
                                        value vdata, value vofs, value vlength)
 {
   CAMLparam4(vhandle, vdata, vofs, vlength);
+  libusb_device_handle *handle = USB_HANDLE_VAL(vhandle);
   int err, transferred;
   int length = Int_val(vlength);
   unsigned char *data = ((unsigned char *) String_val(vdata)) + Int_val(vofs);
+
+  if (handle == NULL) invalid_argument("Mindstorm.USB: connection closed.");
   
   while (length > 0) {
-    err = libusb_bulk_transfer(USB_HANDLE_VAL(vhandle), USB_HANDLE_IN(vhandle),
+    err = libusb_bulk_transfer(handle, USB_HANDLE_IN(vhandle),
                                data, length, &transferred, 0);
     switch (err) {
     case LIBUSB_SUCCESS:

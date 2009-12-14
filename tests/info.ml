@@ -20,8 +20,7 @@ let print_info conn =
   printf "- protocol = %i.%i, firmware = %i.%02i\n" p1 p0 f1 f0;
   printf "Battery level: %!";
   let bat = Mindstorm.battery_level conn in
-  printf "%i millivolts\n%!" bat;
-  Mindstorm.close conn
+  printf "%i millivolts\n%!" bat
 
 let () =
   Connect.and_do {
