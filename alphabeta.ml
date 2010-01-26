@@ -43,12 +43,14 @@ let rec alphabeta current_game actor1 actor2 alpha beta =
                 if value_temp < a then (value_temp, col)
                 else cut_alpha a (min b value_temp) value_temp col (i+1)
               )
-            else cut_alpha a b value col_current (i+1);
+            else cut_alpha neg_infinity infinity value col_current (i+1);
           )
         else (value, col_current) in
       cut_alpha alpha beta infinity 0 0
     )
 ;;
+
+
 
 let g = make ();;
 let player1 = {player = Human; pion = Yellow; fst_player = true};;

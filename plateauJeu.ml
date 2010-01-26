@@ -53,6 +53,7 @@ let rec gameboard current_game =
   draw_rect (x3-4) (y3-3) (n_x3+8) (n_y3+6);
   set_line_width 3;
   draw_rect (x3-8) (y3-7) (n_x3+16) (n_y3+14);
+  synchronize();
 
   (*Méthode qui crée les deux joueurs*)
   let rec choose_player () =
@@ -152,6 +153,7 @@ let rec gameboard current_game =
   draw_rect (x2-4) (y2-3) (n_x2+8) (n_y2+6);
   set_line_width 3;
   draw_rect (x2-8) (y2-7) (n_x2+16) (n_y2+14);
+  synchronize();
 
   let rec choose_color() =
     (*attente du clic sur un des boutons*)
@@ -191,17 +193,17 @@ let rec gameboard current_game =
           (Yellow, Red)
         )
 
-        (*On a appuyé sur 1 joueur*)
-        else if ( (pos_x>(x2-8)) && (pos_x<(x2+n_x2+8))
-                  && (pos_y>(y2)) && (pos_y<(y2+n_y2+7)) )
-        then
-          (
-            set_color black;
-            set_line_width 1;
-            draw_rect (x2-4) (y2-3) (n_x2+8) (n_y2+6);
-            (Red, Yellow)
-          )
-        else choose_color()
+      (*On a appuyé sur 1 joueur*)
+      else if ( (pos_x>(x2-8)) && (pos_x<(x2+n_x2+8))
+                && (pos_y>(y2)) && (pos_y<(y2+n_y2+7)) )
+      then
+        (
+          set_color black;
+          set_line_width 1;
+          draw_rect (x2-4) (y2-3) (n_x2+8) (n_y2+6);
+          (Red, Yellow)
+        )
+      else choose_color()
   in
   let color = choose_color() in
   close_graph();
@@ -225,8 +227,8 @@ let rec gameboard current_game =
 
   (*creation du quadrillage*)
   set_color blue;
-  let x_rect = w/9 and y_rect = 2*h/9
-                    and w_rect = 7*w/9 and h_rect = 6*h/9 in
+  let x_rect = w/9 and y_rect = 2*h/9 in
+  let w_rect = 7*w/9 and h_rect = 6*h/9 in
   fill_rect x_rect y_rect w_rect h_rect;
   set_color black;
   set_line_width 3;
@@ -235,32 +237,23 @@ let rec gameboard current_game =
   set_line_width  2;
   let worh = min (w/9) (h/9) in
   let r_circle = 7*worh/16 in
-
-  if (List.length current_game.list_event = 0) then
-    for i=0 to 6 do
-      for j=0 to 5 do
-        set_color white;
-        let x_circle = w/6+i*w/9 and y_circle = 5*h/18+j*h/9 in
-        fill_circle x_circle y_circle r_circle;
-        set_color black;
-        draw_circle x_circle y_circle r_circle;
-      done;
-    done
+  synchronize();
 
   (*permet de représenter le plateau de jeu en court de partie*)
-  else
-    for i=0 to 6 do
-      for j=0 to 5 do
-        if (current_game.tab.(i).(j) = Empty) then set_color white
-        else if (current_game.tab.(i).(j) = Red) then set_color red
-        else set_color yellow;
+  for i=0 to 6 do
+    for j=0 to 5 do
+      set_color (match current_game.tab.(i).(j) with
+                 | Empty -> white
+                 | Red -> red
+                 | Yellow -> yellow);
 
-        let x_circle = w/6+i*w/9 and y_circle = 5*h/18+j*h/9 in
-        fill_circle x_circle y_circle r_circle;
-        set_color black;
-        draw_circle x_circle y_circle r_circle;
-      done;
+      let x_circle = w/6+i*w/9 and y_circle = 5*h/18+j*h/9 in
+      fill_circle x_circle y_circle r_circle;
+      set_color black;
+      draw_circle x_circle y_circle r_circle;
     done;
+  done;
+  synchronize();
 
   (*permet de jouer au puissance4 en passant par l'interface graphique*)
   let rec part player1 player2 =
@@ -279,7 +272,7 @@ let rec gameboard current_game =
           )
             (*si on clique dans une colonne du jeu*)
         else if ((pos_x>(w/9)) && (pos_x<(8*w/9)) &&
-                  (pos_y>(2*h/9)) && (pos_y<(8*h/9))) then
+                   (pos_y>(2*h/9)) && (pos_y<(8*h/9))) then
           (
             let col = pos_x/(w/9)-1 in
             (*si la colonne n'est pas pleine, on peut encore y jouer*)
@@ -296,7 +289,6 @@ let rec gameboard current_game =
                 let win = isWin current_game in
                 if win = true then
                   (
-                    close_graph();
                     open_graph(sprintf " %ix%i" 400 200);
                     set_window_title("and the winner is...");
 
@@ -382,5 +374,5 @@ let rec gameboard current_game =
 
 
 (*let st = wait_next_event [Button_down] in ();;*)
-let game_test = make() in
-gameboard game_test;;
+let () =
+  gameboard(Game.make())

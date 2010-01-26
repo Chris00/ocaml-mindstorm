@@ -254,7 +254,7 @@ let isWin current_game =
     and j = (List.hd (current_game.list_event)).col in
     let rec winner won k =
       if (won = false && k < 4) then
-        if (current_game.tab_line.(j).(i).tab_line_piece.(k)=4)
+        if (current_game.tab_line.(j).(i).tab_line_piece.(k)>=4)
         then winner true k
         else winner won (k+1)
       else won
