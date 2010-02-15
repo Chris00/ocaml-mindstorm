@@ -1,9 +1,7 @@
 open Graphics
 open Printf
-open Game
-
-type player = Human | Computer
-type actor = { player : player; pion : int}
+open Gamebis
+open Alphabeta
 
 (*rem:les colonnes du jeu sont numérotés de 0 à 6 et les lignes de 0 à 5*)
 let w = 1000 and h = 720
@@ -39,7 +37,6 @@ let rec gameboard current_game =
   draw_rect (x1-4) (y1-3) (n_x1+8) (n_y1+6);
   set_line_width 3;
   draw_rect (x1-8) (y1-7) (n_x1+16) (n_y1+14);
-  synchronize();
 
   set_line_width 1;
   let x2 = 2*x1+n_x1 and y2 = (200-n_y2)/2 in
@@ -48,7 +45,6 @@ let rec gameboard current_game =
   draw_rect (x2-4) (y2-3) (n_x2+8) (n_y2+6);
   set_line_width 3;
   draw_rect (x2-8) (y2-7) (n_x2+16) (n_y2+14);
-  synchronize();
 
   set_line_width 1;
   let x3 = x2+x1+n_x2 and y3 = (200-n_y3)/2 in
@@ -194,10 +190,10 @@ let rec gameboard current_game =
           set_color black;
           set_line_width 1;
           draw_rect (x1-4) (y1-3) (n_x1+8) (n_y1+6);
-          (1, 0)
+          (Gamebis.Yellow, Gamebis.Red)
         )
 
-      (*On a appuyé sur rouge*)
+      (*On a appuyé sur 1 joueur*)
       else if ( (pos_x>(x2-8)) && (pos_x<(x2+n_x2+8))
                 && (pos_y>(y2)) && (pos_y<(y2+n_y2+7)) )
       then
@@ -205,7 +201,7 @@ let rec gameboard current_game =
           set_color black;
           set_line_width 1;
           draw_rect (x2-4) (y2-3) (n_x2+8) (n_y2+6);
-          (0, 1)
+          (Gamebis.Red, Gamebis.Yellow)
         )
       else choose_color()
   in
@@ -237,21 +233,21 @@ let rec gameboard current_game =
   set_color black;
   set_line_width 3;
   draw_rect x_rect y_rect w_rect h_rect;
-  synchronize();
 
   set_line_width  2;
   let worh = min (w/9) (h/9) in
   let r_circle = 7*worh/16 in
+  synchronize();
 
   (*permet de représenter le plateau de jeu en court de partie*)
-  for j=0 to 6 do
-    for i=0 to 5 do
-      set_color (match Game.get current_game i j with (*ici!!!*)
-                 | 2 -> white
-                 | 0 -> red
-                 | 1 -> yellow);
+  for i=0 to 6 do
+    for j=0 to 5 do
+      set_color (match (Gamebis.get_tab current_game).(i).(j) with
+                 | Empty -> white
+                 | Red -> red
+                 | Yellow -> yellow);
 
-      let x_circle = w/6+j*w/9 and y_circle = 5*h/18+i*h/9 in
+      let x_circle = w/6+i*w/9 and y_circle = 5*h/18+j*h/9 in
       fill_circle x_circle y_circle r_circle;
       set_color black;
       draw_circle x_circle y_circle r_circle;
@@ -279,25 +275,25 @@ let rec gameboard current_game =
                    (pos_y>(2*h/9)) && (pos_y<(8*h/9))) then
           (
             let col = pos_x/(w/9)-1 in
+            
             (*si la colonne n'est pas pleine, on peut encore y jouer*)
-            if Game.get current_game 5 col = 2 then
+            if ((Gamebis.get_tab current_game).(col).(5) = Empty) then
               (
                 move current_game col player1.pion;
-                if (player1.pion = 0) then
-                  color_circle2 red col (get_row current_game col)
-                else color_circle2 yellow col (get_row current_game col);
+                let action = Gamebis.last_move current_game in
+                if (player1.pion = Red) then
+                  color_circle2 red (action.col) (action.line)
+                else color_circle2 yellow (action.col) (action.line);
                 set_color black;
                 moveto 10 10;
-                let win = is_winning current_game col in
-                Printf.printf "coucou";
-                if win then
+                let win = is_winning current_game in
+                if win = true then
                   (
-                    (*changer l'interface!!!!!*)
                     open_graph(sprintf " %ix%i" 400 200);
                     set_window_title("and the winner is...");
 
                     let winner =
-                      (if player1.pion = 0 then "Le joueur ROUGE gagne!!!"
+                      (if action.piece = Red then "Le joueur ROUGE gagne!!!"
                        else "Le joueur JAUNE gagne!!!") in
 
                     let (n_xw, n_yw) = (text_size winner)
@@ -378,6 +374,6 @@ let rec gameboard current_game =
 
 
 (*let st = wait_next_event [Button_down] in ();;*)
-let jeu = Game.make() in
-Game.move jeu 3 0;
-gameboard jeu;;
+let () =
+  gameboard(Gamebis.make());;
+

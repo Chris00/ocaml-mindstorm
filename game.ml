@@ -1,211 +1,138 @@
 (*un pion est rouge ou jaune, ou, dans le plateau, aucun pion*)
-type slot_content = Red | Yellow | Empty
+(* Yellow = 1, Red = 0*)
 
-(*un couple de la piece courrante, représente une piece et le tableau
-  représentant les lignes dont la piece fait partie : horizontal, diagonal...*)
-type couple_current_piece =
-    {
-      mutable current_piece : slot_content;
-      mutable tab_line_piece : int array
-    }
-
-(*un evenement c'est l'endroit ou l'on place le pion et la couleur de celui-ci*)
-(*attention raw et line démarre a 0 pour les algos*)
-type event =
-    {
-      col : int;
-      line : int;
-      piece : slot_content
-    }
-
-(*un jeu c'est un tableau représentant l'état du jeu
-  un autre tableau représentant le pion et les lignes dont il fait parti
-  et une liste des événements placés du plus recents au plus vieux*)
 type t =
     {
-      mutable tab : slot_content array array;
-      mutable tab_line : couple_current_piece array array;
-      (*on aurait pu le mettre ac tab mais c pour calculer si on a gagné
-        sans l'arbre qu'on n'a pas encore implémenter*)
-      (*le tab intérieur et de taille 4, représente les 4 lignes
-        : |, -, /, \ *)
-      mutable list_event : event list;
-      mutable number_of_move : int;
-      mutable col_st : int array
+      mutable cols_left : int;
+      mutable cols_right : int
     }
 
-let number_of_moves game = game.number_of_move
-let last_move_col game = (List.hd game.list_event).col
-let npieces_col game i = game.col_st.(i)
-
-let init_matrix nrow ncol f =
-  Array.init nrow (fun i -> Array.init ncol (fun j -> f i j))
-
-(*création d'un jeu -> on initialise le tableau a vide et la liste d'événement
-  est vide*)
-let make () =
+let make() =
   {
-    tab = Array.make_matrix 7 6 Empty;
-    tab_line = init_matrix 7 6 (fun _ _ -> {current_piece = Empty;
-                                         tab_line_piece = Array.make 4 0});
-    list_event = [];
-    number_of_move = 0;
-    col_st = Array.make 7 0
+    cols_left = 0x204081;
+    cols_right = 0x204081
   }
-;;
 
-(*récupération de la couleur (s'il y a ) du pion en i,j*)
-let get game row col = game.tab.(col).(row)
+let get_col game j =
+  match j with
+  |0 -> (game.cols_left lsr 21) land 0x7F
+  |1 -> (game.cols_left lsr 14) land 0x7F
+  |2 -> (game.cols_left lsr 7) land 0x7F
+  |3 -> (game.cols_left) land 0x7F
+  |4 -> (game.cols_right lsr 14) land 0x7F
+  |5 -> (game.cols_right lsr 7) land 0x7F
+  |6 -> (game.cols_right) land 0x7F
+  |_ -> raise (Failure "ici")
+
+let expo =
+  let a = Array.make 22 1 in
+  for i=1 to 21 do
+    a.(i) <- a.(i-1)*2
+  done;
+  a
+
+let nbr_pieces col =
+  if col >= 64 then 6
+  else if col >= 32 then 5
+  else if col >= 16 then 4
+  else if col >= 8 then 3
+  else if col >= 4 then 2
+  else if col >= 2 then 1
+  else 0
+
+(*on veut la ligne de la derniere piece dans la colonne j*)
+let get_row game j =
+   nbr_pieces (get_col game j) -1
+  
+
+(* on conte a partir de 0*)
+(* i est la ligne, j est la colonne*)
+let get game i j =
+  let col = get_col game j in
+  if i < 0 or i > 5 or j < 0 or j > 6 or (nbr_pieces col) <= i then 2
+  else (col lsr i) land 1
+
+
+let copy game =
+{
+  cols_left = game.cols_left;
+  cols_right = game.cols_right
+}
 
 exception Column_full
 
-(*l'acteur place le pion qui correspond a sa couleur dans la colonne j*)
-let move game col pion =
-  let i = game.col_st.(col) in (*i est le nombre de piece dans la
-                                       colonne [col] *)
-  if i = 6 then raise Column_full;
-  game.col_st.(col) <- i + 1;
-  game.tab.(col).(i) <- pion;
-  game.tab_line.(col).(i).current_piece <- pion;
-  game.number_of_move <- game.number_of_move + 1;
-  (*on remplit le tab_line_piece du pion courant et on modifie
-    les tab des pions de meme couleurs qui lui sont alignés*)
-  (* pour la ligne verticale *)
-  if i <> 0 && game.tab_line.(col).(i-1).current_piece = pion then (
-    let down = game.tab_line.(col).(i-1).tab_line_piece.(0) in
-    for k = 0 to down do
-      game.tab_line.(col).(i-k).tab_line_piece.(0) <- down + 1;
-    done
-  )
-  else game.tab_line.(col).(i).tab_line_piece.(0) <- 1;
+(*0 -> red, 1 -> yellow*)
+(*on ajoute un pion color dans le colonne j*)
+let move game j color =
+  let col = get_col game j in
+  let nbr = nbr_pieces col in
+  if col >= 64 then raise Column_full;
 
-  (*on récupère les données pour toutes les cases adjacentes sauf
-    la verticale pour qui c'est déjà fait juste au dessus*)
-  let l = ref 0
-  and r = ref 0
-  and up_r = ref 0
-  and down_l = ref 0
-  and down_r = ref 0
-  and up_l = ref 0 in
+  let new_col = match color with
+    |0 -> col + expo.(nbr)
+    |1 -> col + expo.(nbr+1)
+    |_ -> raise (Failure "") in
+  if j < 3 then game.cols_left <- game.cols_left + (new_col - col) lsl ((3-j)*7)
+  else if j = 3 then
+    (
+      game.cols_left <- game.cols_left + (new_col - col);
+      game.cols_right <- game.cols_right + (new_col - col) lsl 21
+    )
+  else game.cols_right <- game.cols_right + (new_col - col) lsl ((6-j)*7)
 
-  if col > 0 then (
-    let left = game.tab_line.(col-1) in
-    if left.(i).current_piece = pion then l := left.(i).tab_line_piece.(1);
-    if i>0 && left.(i-1).current_piece = pion then
-      down_l := left.(i-1).tab_line_piece.(2);
-    if i<5 && left.(i+1).current_piece = pion then
-      up_l := left.(i+1).tab_line_piece.(3);
-  );
-
-  if col < 6 then (
-    let right = game.tab_line.(col+1) in
-    if right.(i).current_piece = pion then r := right.(i).tab_line_piece.(1);
-    if i<5 && right.(i+1).current_piece = pion then
-      up_r := right.(i+1).tab_line_piece.(2);
-    if i>0 && right.(i-1).current_piece = pion then
-      down_r := right.(i-1).tab_line_piece.(3);
-  );
-
-  (*on modifie les données de tav_line pour la case courante*)
-  game.tab_line.(col).(i).tab_line_piece.(1) <- !l + 1 + !r;
-  game.tab_line.(col).(i).tab_line_piece.(2) <- !down_l + 1 + !up_r;
-  game.tab_line.(col).(i).tab_line_piece.(3) <- !up_l + 1 + !down_r;
-
-  (*on modifie les données des cases adjacentes se trouvant dans une
-    meme ligne que le pion courant*)
-  (*mise à jour de la ligne horizontale*)
-  if !l <> 0 then (
-    for k = 1 to !l do
-      game.tab_line.(col-k).(i).tab_line_piece.(1) <- !l + 1 + !r
-    done;
-  );
-  if !r <> 0 then (
-    for k = 1 to !r do
-      game.tab_line.(col+k).(i).tab_line_piece.(1) <- !l  + 1 + !r
-    done;
-  );
-
-  (*pour la première diagonale*)
-  if !down_l <> 0 then (
-    for k = 1 to !down_l do
-      game.tab_line.(col-k).(i-k).tab_line_piece.(2) <- !down_l + 1 + !up_r
-    done;
-  );
-  if !up_r <> 0 then (
-    for k = 1 to !up_r do
-      game.tab_line.(col+k).(i+k).tab_line_piece.(2) <-
-        !down_l  + 1 + !up_r
-    done;
-  );
-
-  (*pour la deuxième diagonale*)
-  if !up_l <> 0 then (
-    for k = 1 to !up_l do
-      game.tab_line.(col-k).(i+k).tab_line_piece.(3) <- !up_l + 1 + !down_r
-    done;
-  );
-  if !down_r <> 0 then (
-    for k = 1 to !down_r do
-      game.tab_line.(col+k).(i-k).tab_line_piece.(3) <-
-        !up_l  + 1 + !down_r
-    done;
-  );
-
-  (*mise à jour de la liste des évènements du jeu*)
-  game.list_event <- {col = col; line = i; piece = pion} :: game.list_event
-;;
-
-(*retourne de num coup en arrière dans le jeu*)
-let rec remove game num =
-  if num <> 0 then (
-    let next_event = List.hd game.list_event in
-    let j = next_event.col
-    and i = next_event.line in
-    game.col_st.(j) <- game.col_st.(j) - 1;
-    game.tab.(j).(i) <- Empty;
-    game.tab_line.(j).(i)
-    <- {current_piece = Empty; tab_line_piece = [|0;0;0;0|]};
-    game.number_of_move <- game.number_of_move - 1;
-    (*plus changer les valeurs des voisins...*)
-    game.list_event <- List.tl game.list_event;
-    remove game (num-1)
-  )
-;;
-
-(*creer une copy du jeu courant*)
-let copy game =
-  let tl = game.tab_line in
-  {
-    tab = Array.map Array.copy game.tab;
-
-    tab_line = init_matrix 7 6
-      (fun i j -> {current_piece = (tl.(i).(j)).current_piece;
-                tab_line_piece = Array.copy tl.(i).(j).tab_line_piece } );
-
-    list_event = game.list_event;
-    number_of_move = game.number_of_move;
-    col_st = Array.copy game.col_st
-  }
-;;
-
-
-(*création d'une nouvelle partie*)
 let reset game =
-  game.tab <- Array.make_matrix 7 6 Empty;
-  game.tab_line <- init_matrix 7 6
-    (fun _ _ -> {current_piece = Empty; tab_line_piece = [|0;0;0;0|]});
-  game.list_event <- [];
-  game.number_of_move <- 0;
-  game.col_st <- Array.make 7 0
+  game.cols_left <- 0x204081;
+  game.cols_right <- 0x204081
+
+let rec win ?(cur_zero=0) ?(cur_one=0) ?(act=0) pos =
+  if cur_zero = 4 or cur_one = 4 then true
+  else if ((act - cur_zero) > 3 && (act - cur_one) > 3) then false
+  else if pos mod 10 = 0 then win ~cur_zero:(cur_zero+1)
+    ~cur_one:0 ~act:(act+1) (pos/10)
+  else if pos mod 10 = 1 then win ~cur_zero:0 ~cur_one:(cur_one+1)
+    ~act:(act+1) (pos/10)
+  else win ~cur_zero:0 ~cur_one:0 ~act:(act+1) (pos/10)
+
+(*on regarde si on a gagne dans la colonne j ou lon vient de jouer*)
+let is_winning ?(pos=ref 0) game j =
+  let col = get_col game j in
+  (*cas vertical*)
+  if col = 31 || col = 62 || col = 124 || col = 16 || col = 33 || col = 67
+  then true
+  else
+    (
+      let i = (nbr_pieces col - 1) in
+      for k = 0 to 6 do
+          pos := !pos * 10 + get game i k
+      done;
+      if win !pos then true
+      else
+        (
+          for k = 0 to 6 do
+            if i - j + k < 0 || i - j + k > 6 then
+              pos := !pos * 10 + 2
+            else pos := !pos*10 + get game (k-j) k;
+              Printf.printf "%i" !pos;
+              Printf.printf "\n";
+          done;
+          if win !pos then true
+          else
+            (
+              for k = 0 to 6 do
+                if i + j - k < 0 || i + j - k > 6 then
+                  pos := !pos * 10 + 2
+                else pos := !pos * 10 + get game (i+j-k) k
+              done;
+              if win !pos then true
+              else false
+            )
+        )
+    )
 ;;
 
-(*retourne vrai qd le pion en (i,j) est ds une ligne de 4pions de meme couleur*)
-(*faire avec une methode recursif qui garde win*)
-let is_winning game =
-  if game.number_of_move <> 0 then
-    let last_move = List.hd (game.list_event) in
-    let piece = game.tab_line.(last_move.line).(last_move.col).tab_line_piece in
-    let rec winner k = k < 4 && (piece.(k) = 4 || winner (k+1)) in
-    winner 0
-  else false
-;;
+let bibi = make();;
+move bibi 3 0;
+move bibi 4 0;
+move bibi 5 0;
+move bibi 6 1;
+is_winning bibi 6;;
