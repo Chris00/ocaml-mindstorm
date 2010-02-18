@@ -1,9 +1,11 @@
+open Game
+
 type player = Human | Computer
-type actor = {player : player; pion : slot_content}
+type actor = { player : player; pion : int}
 type mode = Max | Min;;
 
 
-let h current_game =
+let h current_game mode color =
  (*le joueur a des pieces dans le jeu, on va calculer le nombre de possibilité
 qu'il a, a partir du jeu courrant, de faire des alignements. on va ensuite
 calculer le nombre d'alignement possible de l'autre joueur
@@ -15,105 +17,113 @@ On favorise aussi les pions sur la colonne du milieu
 0.5;;
 
 (*peut etre renvoyer une liste des colonnes a jouer*)
-let rec minmax current_game mode level color =
-  if number_of_moves current_game <> 0 && is_winning current_game then
+let rec minmax ?(col=0) current_game mode level color =
+  if is_winning current_game col then
     if (mode = Max) then 1.
     else -1.
 
-  else if number_of_moves current_game = 42 then 0.
+  else if is_draw current_game then 0.
 
   else
     (
-      if level = 0 then h current_game
+      if level = 0 then h current_game mode color
       else
         (
           let value = match mode with
             |Max -> ref neg_infinity
             |Min -> ref infinity
           in
-          (*probleme de copy du jeu*)
 
-          for i = 0 to 6 do
-            if npieces_col current_game i < 6 then
+          for j = 0 to 6 do
+            if get_row current_game j < 5 then
               (
-                let game = copy current_game in
-                move game col color;
+                move current_game j color;
                 if mode = Max then value := max !value
-                  (minmax game Min (level-1) (match color with
-                                              |Yellow -> Red
-                                              |Red -> Yellow
-                                              |Empty -> Empty
-                                                 (*narrive pas*)))
-                else value := min !value (minmax game Max (level-1)
-                                            (match color with
-                                             |Yellow -> Red
-                                             |Red -> Yellow
-                                             |Empty -> Empty))
+                  (minmax ~col:j current_game Min (level-1) (match color with
+                                              |0 -> 1
+                                              |1 -> 0
+                                              |_ -> raise (Failure"")))
+                else value := min !value (minmax ~col:j current_game Max
+                                            (level-1) (match color with
+                                                       |0 -> 1
+                                                       |1 -> 0
+                                                       |_ -> raise (Failure ""))
+                                         );
+                remove current_game j color
               )
           done;
-            !value
+          !value
         )
     )
+;;
 
-let rec alphabeta current_game gamer actor1 actor2 alpha beta =
-  if Game.number_of_moves current_game <> 0 && Game.is_winning current_game then
-    if (gamer) then (1., Game.last_move_col current_game)
-    else (-1., Game.last_move_col current_game)
+let rec alphabeta ?(col=0) current_game alpha beta mode level color =
+  if is_winning current_game col then
+    if (mode = Max) then 1.
+    else -1.
 
-  else if Game.number_of_moves current_game = 42 then
-    (0., Game.last_move_col current_game)
+  else if is_draw current_game then 0.
+
   else
     (
-      let game = Game.copy current_game in
-      if gamer then
-        (*faire un remove???*)
-        let rec cut_beta a b col i =
-          if i < 7 then
-            (
-              if Game.npieces_col game i < 6 then
-                (
-                  Game.move game i actor1.pion;
-                  let value = fst (alphabeta game (not gamer) actor2 actor1
-                                     (max alpha a) b) in
-                  let (a_temp, col_temp) =
-                    if a > value then (a, col)
-                    else (value, i) in
-                  if a_temp >= beta then (a_temp, col_temp)
-                  else cut_beta a_temp b col_temp (i+1)
-                )
-              else cut_beta a b col (i+1);
-            )
-          else (a, col) in
-        cut_beta neg_infinity infinity 0 0;
+      if level = 0 then h current_game mode color
+      else
+        (
+          let value = ref 0. in
 
-      else let rec cut_alpha a b col i =
-        if i < 7 then
-          (
-            if Game.npieces_col game i < 6 then
-              (
-                Game.move game i actor1.pion;
-                let value = fst (alphabeta game (not gamer) actor2 actor1
-                                        a (min beta b)) in
-                let (b_temp, col_temp) =
-                  if b < value then (b, col) else (value, i) in
-                if alpha >= b_temp then (b_temp, col_temp)
-                else cut_alpha a b_temp col_temp (i+1)
-              )
-            else cut_alpha a b col (i+1);
-          )
-        else (b, col) in
-      cut_alpha neg_infinity infinity 0 0
+          if mode = Min then
+            (
+            let beta_p = ref infinity and j = ref 0 in
+            while (!j < 7) do
+              if get_row current_game !j < 5 then
+                (
+                  move current_game !j color;
+                  value:=alphabeta ~col:!j current_game alpha (min beta !beta_p)
+                    Max (level-1) (match color with
+                                   |0 -> 1
+                                   |1 -> 0
+                                   |_ -> raise (Failure ""));
+                  beta_p := min !beta_p !value;
+                  remove current_game !j color;
+                  if alpha >= !beta_p then (j:=7)
+                  else j := !j + 1
+                )
+            done;
+            !beta_p
+            )
+
+          else
+            (
+            let alpha_p = ref neg_infinity and j = ref 0 in
+            while (!j < 7) do
+              if get_row current_game !j < 5 then
+                (
+                  move current_game !j color;
+                  value:= alphabeta ~col:!j current_game (max alpha !alpha_p)
+                    beta Min (level-1) (match color with
+                                        |0 -> 1
+                                        |1 -> 0
+                                        |_ -> raise (Failure ""));
+                  alpha_p := max !alpha_p !value;
+                  remove current_game !j color;
+                  if !alpha_p >= beta then (j:=7)
+                  else j:= !j + 1
+                )
+            done;
+            !alpha_p
+            )
+        )
     )
 ;;
 
 let affich g =
   Printf.printf "\n";
-  for i = 0 to 6 do
-    for j = 0 to 5 do
-      let couleur = match (g.tab.(i).(j)) with
-        | Empty -> "       "
-        | Yellow -> " Yellow"
-        | Red -> " Red   " in
+  for j = 0 to 6 do
+    for i = 0 to 5 do
+      let couleur = match (get g i j) with
+        | 2 -> "       "
+        | 1 -> " Yellow"
+        | 0 -> " Red   " in
       Printf.printf "%s" couleur;
     done;
     Printf.printf"\n"
@@ -121,14 +131,12 @@ let affich g =
   Printf.printf"------------------------------------------\n";;
 
 let aColor pion =
-  if pion = Yellow then Printf.printf " Yellow"
+  if pion = 0 then Printf.printf " Yellow"
   else Printf.printf" Red";;
 
-let g = make();;
-affich g;;
-let player1 = {player = Human; pion = Yellow};;
-let player2 = {player = Human; pion = Red};;
-
+let g = make() and
+    player1 = {player = Human; pion = 1}
+               and player2 = {player = Human; pion = 0};;
 
 move g 0 player1.pion;
 move g 1 player2.pion;
@@ -138,10 +146,8 @@ move g 0 player1.pion;
 move g 1 player2.pion;
 move g 1 player1.pion;
 move g 0 player2.pion;
-move g 0 player1.pion;
-move g 1 player2.pion;
-(*move g 1 player1;*)
-(*move g 0 player2;*)
+(*move g 0 player1.pion;*)
+(*move g 1 player2.pion;*)
 move g 3 player1.pion;
 move g 2 player2.pion;
 move g 2 player1.pion;
@@ -150,32 +156,24 @@ move g 3 player1.pion;
 move g 2 player2.pion;
 move g 2 player1.pion;
 move g 3 player2.pion;
-move g 3 player1.pion;
-move g 2 player2.pion;
-(*move g 2 player1;*)
-(*move g 3 player2;*)
+(*move g 3 player1.pion;*)
+(*move g 2 player2.pion;*)
 move g 5 player1.pion;
 move g 6 player2.pion;
 move g 6 player1.pion;
 move g 5 player2.pion;
 move g 5 player1.pion;
+(*move g 6 player2.pion;*)
+(*move g 6 player1.pion;*)
+(*move g 5 player2.pion;*)
+(*move g 5 player1.pion;*)
 move g 6 player2.pion;
-move g 6 player1.pion;
-move g 5 player2.pion;
-move g 5 player1.pion;
-move g 6 player2.pion;
-(*move g 6 player1;*)
-(*move g 5 player2;*)
 move g 4 player1.pion;
 move g 4 player2.pion;
 move g 4 player1.pion;
-move g 4 player2.pion;
-move g 4 player1.pion;;
-(* g.tab;; *)
-
-move g 3 player1.pion;;
-
-g.tab;;
+(*move g 4 player2.pion;*)
+(*move g 4 player1.pion*)
+;;
 affich g;;
-
-minmax g Max 42 Red;;
+minmax g Max 42 0 ;;
+alphabeta g neg_infinity infinity Max 42 0;;

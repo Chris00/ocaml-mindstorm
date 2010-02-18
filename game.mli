@@ -20,13 +20,23 @@ val get : t -> int -> int -> int
 exception Column_full
   (** Raised to indicate that one tries to add a piece to a full
       column. *)
+exception Column_empty
+  (** Raised to indicate that one tries to remove a piece to a empty
+      column. *)
 
 val move : t -> int -> int -> unit
   (** [move g col color] modifiy [g] by adding [color] to the column
       [col].  If the column is full, raise [Column_full]. *)
 
+val remove : t -> int -> int -> unit
+  (** [remove g col color] modifiy [g] by remove [color] to the column
+      [col]. if the column is empty, raise [column_empty]. *)
+
 val reset : t -> unit
   (** [reset game] reinitialize the game (all slots being [Empty]). *)
+
+val is_draw : t -> bool
+  (** [is_draw game] *)
 
 val is_winning : t -> int -> bool
   (** [is_winning game]  *)
