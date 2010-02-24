@@ -37,7 +37,7 @@ let get_col game j =
   |4 -> (game.cols_right lsr 14) land 0x7F
   |5 -> (game.cols_right lsr 7) land 0x7F
   |6 -> (game.cols_right) land 0x7F
-  |_ -> raise (Failure "ici")
+  |a -> raise (Failure (string_of_int a))
 
 let nbr_pieces col =
   if col >= 64 then 6
@@ -83,22 +83,22 @@ let move game j color =
     )
 
 let remove game j color =
-  let col = get_col game j in
-  let nbr = nbr_pieces col in
-  if col < 2 then raise Column_empty;
-  let new_col = match color with
-    |0 -> col - expo.(nbr-1)
-    |1 -> col - expo.(nbr)
-    |_ -> raise (Failure "") in
+    let col = get_col game j in
+    let nbr = nbr_pieces col in
+    if col < 2 then raise Column_empty;
+    let new_col = match color with
+      |0 -> col - expo.(nbr-1)
+      |1 -> col - expo.(nbr)
+      |_ -> raise (Failure "") in
 
-  if j < 3 then game.cols_left <- game.cols_left + (new_col - col) lsl ((3-j)*7)
-  else if j > 3 then
-    game.cols_right <- game.cols_right + (new_col - col) lsl ((6-j)*7)
-  else
-    (
-      game.cols_left <- game.cols_left + (new_col - col);
-      game.cols_right <- game.cols_right + (new_col - col) lsl 21
-    )
+    if j < 3 then game.cols_left <- game.cols_left + (new_col - col) lsl ((3-j)*7)
+    else if j > 3 then
+      game.cols_right <- game.cols_right + (new_col - col) lsl ((6-j)*7)
+    else
+      (
+        game.cols_left <- game.cols_left + (new_col - col);
+        game.cols_right <- game.cols_right + (new_col - col) lsl 21
+      )
 
 let reset game =
   game.cols_left <- 0x204081;
@@ -157,13 +157,3 @@ let is_winning game j =
         )
     )
 ;;
-
-let bibi = make();;
-move bibi 2 1;;
-bibi;;
-move bibi 3 0;;
-bibi;;
-remove bibi 3 0;;
-bibi;;
-remove bibi 2 1;;
-bibi;;

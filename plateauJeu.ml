@@ -336,12 +336,15 @@ let rec gameboard current_game =
                   else color_circle2 yellow col (get_row game col);
                   set_color black;
                   moveto 10 10;
-                  let win = is_winning game col in
-                  if win then
+                  let win = is_winning game col
+                  and nul = is_draw game in
+                  if win || nul then
                     (
                       let winner =
-                        (if player1.pion = 0 then "Le joueur ROUGE gagne!!!"
-                         else "Le joueur JAUNE gagne!!!") in
+                        if nul then "Match Nul"
+                        else
+                          (if player1.pion = 0 then "Le joueur ROUGE gagne!!!"
+                           else "Le joueur JAUNE gagne!!!") in
 
                       let (n_xw, n_yw) = (text_size winner) in
 
