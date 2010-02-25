@@ -1,68 +1,173 @@
 open Printf
-open Mindstorm.Sensor
+open  Mindstorm.Sensor
 open Mindstorm.Motor
+module Motor = Mindstorm.Motor
 
+let switch_port = `S1
+let port_light = `S2
+let motor_captor_color_l = Motor.a
+let motor_captor_color_r = Motor.b
+let motor_captor_vert = Motor.c
+let motor_open_pincer = Motor.b
+let motor_pincer = Motor.a
+let motor_dist = Motor.c
 
-let port_ultra = `S4
-let port_light = `S1
-let motor_right = a
-(*let motor_left = Motor.b*)
-let dir = -1
+let dir = 1
+(*angle d'ouverture de la pince*)
+let open_rot = 120
+  (* translation initiale*)
+let init_translation = 245
+  (*rotation par case*)
+let case_rot = 135
 
-module Run(C: sig val conn : Mindstorm.bluetooth Mindstorm.conn end) =
+module Run(C: sig val conn1 : Mindstorm.bluetooth Mindstorm.conn
+                  val conn2 : Mindstorm.bluetooth Mindstorm.conn end) =
 struct
 
-  let robot = Robot.make()
-(*
-  let ultra =
-    let u = Mindstorm.Sensor.Ultrasonic.make C.conn port_ultra in
-    Mindstorm.Sensor.Ultrasonic.set u `Meas_cont;
-    Robot.meas robot (fun _ -> Mindstorm.Sensor.Ultrasonic.get u `Byte0)
-*)
-  let light =
-    Mindstorm.Sensor.set C.conn port_light `Light_active `Pct_full_scale;
-    let donne_lumiere = Mindstorm.Sensor.get C.conn port_light in
-    Robot.meas robot (fun _ -> donne_lumiere)
+  
+  let last (a, b, c, d) = d
+  
+  let r = Robot.make()
+  
+  let touch = Robot.touch C.conn1 switch_port r
 
-  let return_fst (a, b, c, d) = a
+(*nous retourne l'angle courant du moteur distribuant les pièces*)
+  let meas_dist =
+    Robot.meas r (fun _ -> last (Motor.get C.conn2 motor_dist))
 
-  let parcourt =
-    set C.conn motor_right (speed ~tach_limit:100 10);
-    (*Mindstorm.Sensor.set C.conn port_light `Light_active `Pct_full_scale;*)
-    let niveauGris = Robot.read ~retry:5 light in
-    let vraiNiveau =
-       match niveauGris with
-       | Some v -> v.raw
-       | none -> -1;
-     in printf "%s" (string_of_int(vraiNiveau)^"\n");  
-    Mindstorm.Sensor.set C.conn port_light `Light_inactive `Pct_full_scale
+ (*nous retourne l'angle courant du moteur déplaçant la pince*)
+  let meas_translation_pincer =
+    Robot.meas r (fun _ ->  last (Motor.get C.conn2 motor_pincer))
  
-let speed motor ?tach_limit sp =
-    set C.conn motor (speed ?tach_limit (-sp))
+ (*nous retourne l'angle courant du moteur ouvrant la pince*)
+  let meas_open_pincer =
+    Robot.meas r (fun _ -> last (Motor.get C.conn2 motor_open_pincer))
 
-  let turn tl sp =
-    speed motor_right ~tach_limit:tl sp
+ 
+  
+  let rec stop _ =
+    Motor.set C.conn1 Motor.all (Motor.speed 0);
+    raise Exit
 
-  let run() =
-    (* Motor.set C.conn motor_right (Motor.speed (15*dir));*)
-    (* Motor.set C.conn motor_left (Motor.speed (30*dir));*)
-   (* turn 30 20;*)
-    (*turn 15 20;*)
-      (*Motor.set C.conn motor_right (Motor.speed ~tach_limit:120 15);*)
-    parcourt;
-    Robot.run robot
+  let go_vertical_init() =
+    Robot.event_is touch stop;
+    Motor.set C.conn1 motor_pincer  (Motor.speed (20 * dir) ~sync:true);
+    Motor.set C.conn1 motor_open_pincer (Motor.speed (20 * dir) ~sync:true)
 
 
-end;;
+  let go_vertical() =
+    reset_pos C.conn1 motor_open_pincer;
+    reset_pos C.conn1 motor_pincer;
+    Motor.set C.conn1 motor_pincer (Motor.speed ~tach_limit: 130 10 ~sync:true);
+    Motor.set C.conn1 motor_open_pincer (Motor.speed ~tach_limit:130 10
+                                           ~sync:true)
+
+
+  let put_in_pincer _ =
+    (Motor.set C.conn2 motor_dist (Motor.speed ~tach_limit: 60 (-10)))
+
+  (*attendre que le distributeur de pieces prenne un piece pour ensuite la
+    mettre dans la pince*)
+  let wait_dist _ =
+    Robot.event meas_dist (function
+                           |None -> false
+                           |Some d -> d > 60)
+    (put_in_pincer)
+
+
+  let put_piece_in_pincer _ =
+    (*positif prendre la pièce*)
+    (*négatif faire tomber pièce*)
+    Motor.set C.conn2 motor_open_pincer(Motor.speed 0);
+    Motor.set C.conn2 motor_dist (Motor.speed  10);
+    wait_dist ()
+
+  let go_pincer r dir =
+    (*négatif vers réserve*)
+    Motor.set C.conn2 motor_pincer (Motor.speed  ~tach_limit:r (dir*15));
+    Motor.set C.conn2 motor_open_pincer((Motor.speed ~tach_limit: ((r*9)/10))
+                                          (dir*15))
+
+
+ (*attendre que la pince soit en position initiale pour mettre une pièce dedans*)
+  let wait_init_pos col _ = 
+   Robot.event meas_translation_pincer (function
+                                        |None -> false
+                                        |Some d -> d < 5)
+    (put_piece_in_pincer) 
+
+
+  let return_init_pos col _ =
+    reset_pos C.conn2  motor_open_pincer;
+    go_pincer (case_rot*col + init_translation + 10) (-1);
+    wait_init_pos col ()
+
+  let wait_pincer_closed col =
+    Robot.event meas_open_pincer (function
+                                  |None -> false
+                                  |Some d -> d >= 35)
+    (return_init_pos col)
+
+    
+  let close_pincer col m =
+    Motor.set C.conn2 motor_open_pincer (Motor.speed 10);
+    wait_pincer_closed col
+
+  let wait_pincer_opened col = 
+    Robot.event meas_open_pincer (function
+                                  | None -> false
+                                  | Some d -> d <= -open_rot)
+      (close_pincer col)
+
+  let open_pincer col _ =
+    (*négatif pour ouvrir la pince*)
+    reset_pos C.conn2 motor_open_pincer;
+    Motor.set C.conn2 motor_open_pincer (Motor.speed (-10));
+    wait_pincer_opened col
+
+  let wait_open_pincer col  =
+    Robot.event meas_translation_pincer (function
+                                         |None -> false
+                                         |Some d -> d > (case_rot*col +
+                                                           init_translation))
+   (open_pincer col)
+
+  (*methode pour déposer la pièce*)
+  let put_piece col =
+    reset_pos C.conn2 motor_open_pincer;
+    reset_pos C.conn2 motor_pincer;
+    reset_pos C.conn2 motor_dist;
+    go_pincer (case_rot*col + init_translation + 10) 1;
+    wait_open_pincer col
+
+  let go_captor_color_horizontal () =
+    Robot.event_is touch stop;
+    Motor.set C.conn1 motor_captor_color_r (Motor.speed ~tach_limit:130 (10));
+    Motor.set C.conn1 motor_captor_color_l (Motor.speed ~tach_limit:130 (10))
+
+  let go_captor_color_vertical () =
+    (*positif pour monter*)
+    Robot.event_is touch stop;
+    Motor.set C.conn1 motor_captor_color_r(Motor.speed(5))
+    
+
+  let run col =
+   put_piece col;
+   (*go_captor_color_horizontal();*)
+   Robot.run r
+
+end
 
 let () =
- let bt =
-    if Array.length Sys.argv < 2 then (
-      printf "%s <bluetooth addr>\n" Sys.argv.(0);
+  let (bt1,bt2,col)=
+    if Array.length Sys.argv < 4 then (
+      printf "%s <bluetooth addr><bluetooth addr><co>\n" Sys.argv.(0);
       exit 1;
     )
-    else Sys.argv.(1) in
-  let conn = Mindstorm.connect_bluetooth bt in
-  let module R = Run(struct let conn = conn end) in
+    else (Sys.argv.(1),Sys.argv.(2),Sys.argv.(3)) in
+  let conn1 = Mindstorm.connect_bluetooth bt1
+  and conn2 = Mindstorm.connect_bluetooth bt2
+  and column = int_of_string col in
+  let module R = Run(struct let conn1 = conn1 and conn2 = conn2 end) in
   printf "Press the button on the robot to stop.\n%!";
-  R.run()
+  R.run(column)
