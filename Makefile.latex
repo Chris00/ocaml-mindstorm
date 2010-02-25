@@ -1,0 +1,106 @@
+# Makefile.latex : general make rules for LaTeX documents (including images)
+
+LATEX	?= latex
+PDFLATEX ?= pdflatex
+MAKEINDEX ?= makeindex
+BIBTEX	?= bibtex
+FIG2DEV ?= fig2dev
+MP	?= mpost
+CONVERT	?= convert
+DVIPS   ?= dvips
+PSNUP   ?= psnup
+# package PDFjam:
+PDFNUP  ?= pdfnup
+
+CROSS_REFS= [ -n "`grep 'cross-references right' $*.log`" ] \
+	|| [ -n "`grep 'has been referenced' $*.log`" ]
+
+OLD_NAV=if [ -f $*.nav ]; then cp $*.nav $*.old.nav; else touch $*.old.nav; fi
+NEW_NAV= ([ -f "$*.nav" ] && [ -n "`diff $*.old.nav $*.nav`" ])
+
+%.dvi: %.tex
+	if [ -f $*.idx ]; then cp $*.idx $*.old.idx; fi
+	$(LATEX) $< && \
+	if $(CROSS_REFS); then $(LATEX) $< ; fi && \
+	if [ -f $*.old.idx ]; then \
+		if [ -n "`diff $*.old.idx $*.idx`" ]; then \
+			$(MAKEINDEX) $* && $(LATEX) $< ; fi; \
+	else \
+		if [ -f $*.idx ]; then $(MAKEINDEX) $* && $(LATEX) $<; fi; \
+	fi  && \
+	if $(CROSS_REFS); then $(LATEX) $< ; fi && \
+	if $(CROSS_REFS); then $(LATEX) $< ; fi
+
+%.pdf: %.tex
+	if [ -f $*.idx ]; then cp $*.idx $*.old.idx; fi
+	$(OLD_NAV); $(PDFLATEX) $< && \
+	if $(CROSS_REFS) || $(NEW_NAV); then \
+		$(OLD_NAV); $(PDFLATEX) $<; fi && \
+	if [ -f $*.old.idx ]; then \
+		if [ -n "`diff $*.old.idx $*.idx`" ]; then \
+		$(MAKEINDEX) $* && $(PDFLATEX) $< ; fi; \
+	else \
+		if [ -f $*.idx ]; then \
+		$(MAKEINDEX) $* && $(PDFLATEX) $< ; fi; \
+	fi  && \
+	if $(CROSS_REFS) || $(NEW_NAV); then \
+		$(OLD_NAV); $(PDFLATEX) $<; fi && \
+	if $(CROSS_REFS) || $(NEW_NAV); then $(OLD_NAV); $(PDFLATEX) $<; fi
+
+
+## Generic rules for graphics (if one above doesn't apply)
+## (produce also the .eps.gz for viewing with xdvi)
+%.eps.bb : %.eps.gz
+	zcat $< | grep 'BoundingBox:' > $@
+
+%.eps.gz : %.fig
+	$(FIG2DEV) -L eps  $<  $(*F).eps  && gzip --force $(*F).eps
+
+%.png : %.fig
+	$(FIG2DEV) -L png -S 4  $<  $(*F).png
+
+%.mp: %.fig
+	$(FIG2DEV) -L mp  $<  $@
+
+%.mps: %.mp
+	$(MP) $< && mv $(basename $<).0 $@
+
+
+%.ps : %.dvi
+	$(DVIPS) $< -o $@
+
+%.4.ps : %.ps
+	$(PSNUP) -4 -r -b-6mm -m8mm $< $@
+
+# Beamer: PS Handouts
+%.hd.ps: %.ps
+	$(PSNUP) -4 -W128mm -H96mm -pa4 $< $@
+
+# Beamer: PDF Handouts (requires PDFjam)
+%.hd.pdf: %.pdf
+	@echo "** For $@, use the package 'pgfpages' and put in your document"
+	@echo -n "   \\pgfpagesuselayout{4 on 1}[a4paper,"
+	@echo "border shrink=5mm,landscape]"
+#	$(PDFNUP) --nup 4 --paper a4paper --delta "3mm 0mm" --scale 0.95 \
+#	  --outfile $@ $<
+
+# Beamer: PS Handouts -> slides
+%.1.ps: %.ps
+	$(PSNUP) -1 -W128mm -H96mm -pa4 -b4mm $< $@
+
+%.eps: %.png
+	$(CONVERT) $< $@
+
+
+.PHONY: clean
+clean::
+	-$(RM) $(wildcard *~ *.aux *.log *.nav *.out *.snm *.toc)
+	-$(RM) $(wildcard *.idx *.ind *.ilg *.rip *.lof *.ofl *.tpt)
+	-$(RM) $(wildcard *.dvi *.ps *.pdf  *.mp $.mpx *.mps *.eps.gz *.eps.bb)
+# AUCTeX temporary files (aks whether to do it):
+	-@if [ -d auto/ ]; then \
+	  echo -n "Erase AUCTeX directory auto/ ? [y/N] "; \
+	  read ANSWER; \
+	  if [ "$$ANSWER" = "y" -o "$$ANSWER" = "Y" ]; then \
+	    $(RM) -rf auto/; fi; \
+	fi
