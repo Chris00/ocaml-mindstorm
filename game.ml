@@ -1,355 +1,159 @@
 (*un pion est rouge ou jaune, ou, dans le plateau, aucun pion*)
-type piece = Red | Yellow | Empty
+(* Yellow = 1, Red = 0*)
 
-(*on peut etre soit un humain, soit un ordinateur*)
-type player = Computer | Human
+(*expo est le tableau des puissances de 2 jusque expo 21*)
+let expo =
+  let a = Array.make 22 1 in
+  for i=1 to 21 do
+    a.(i) <- a.(i-1)*2
+  done;
+  a
 
-(*un acteur du jeu est un joueur avec une couleur qui lui correspond*)
-type actor =
+type t =
     {
-      player : player;
-      pion : piece;
-      fst_player : bool
+      mutable cols_left : int;
+      mutable cols_right : int
     }
 
-(*un couple de la piece courrante, représente une piece et le tableau
-  représentant les lignes dont la piece fait partie : horizontal, diagonal...*)
-type couple_current_piece =
-    {
-      mutable current_piece : piece;
-      mutable tab_line_piece : int array
-    }
-
-(*un evenement c'est l'endroit ou l'on place le pion et la couleur de celui-ci*)
-(*attention raw et line démarre a 0 pour les algos*)
-type event =
-    {
-      col : int;
-      line : int;
-      piece : piece
-    }
-
-(*un jeu c'est un tableau représentant l'état du jeu
-  un autre tableau représentant le pion et les lignes dont il fait parti
-  et une liste des événements placés du plus recents au plus vieux*)
-type g =
-    {
-      mutable tab : piece array array;
-      mutable tab_line : couple_current_piece array array;
-      (*on aurait pu le mettre ac tab mais c pour calculer si on a gagné
-        sans l'arbre qu'on n'a pas encore implémenter*)
-      (*le tab intérieur et de taille 4, représente les 4 lignes
-        : |, -, /, \ *)
-      mutable list_event : event list;
-      mutable number_of_move : int;
-      mutable col_st : int array
-    }
-
-(*création d'un jeu -> on initialise le tableau a vide et la liste d'événement
-  est vide*)
-let make () =
+let make() =
   {
-    tab = Array.init 7 (fun i -> (Array.make 6 Empty));
-    tab_line = Array.init 7
-      (fun i -> Array.init 6
-         (fun i -> {current_piece = Empty; tab_line_piece = Array.make 4 0}));
-    list_event = [];
-    number_of_move = 0;
-    col_st = Array.make 7 0
+    cols_left = 0x204081;
+    cols_right = 0x204081
   }
-;;
 
-(*récupération de la couleur (s'il y a ) du pion en i,j*)
-let get_piece current_game j i =
-  current_game.tab.(j).(i)
-;;
+let copy game =
+{
+  cols_left = game.cols_left;
+  cols_right = game.cols_right
+}
 
-exception Plein;;
+(*retourne la colonne j sous forme d'entier*)
+let get_col game j =
+  match j with
+  |0 -> (game.cols_left lsr 21) land 0x7F
+  |1 -> (game.cols_left lsr 14) land 0x7F
+  |2 -> (game.cols_left lsr 7) land 0x7F
+  |3 -> (game.cols_left) land 0x7F
+  |4 -> (game.cols_right lsr 14) land 0x7F
+  |5 -> (game.cols_right lsr 7) land 0x7F
+  |6 -> (game.cols_right) land 0x7F
+  |a -> raise (Failure (string_of_int a))
 
-(*l'acteur place le pion qui correspond a sa couleur dans la colonne j*)
-let move current_game j actor =
-  let i = current_game.col_st.(j) in (*i est le nombre de piece dans la
-                                       colonne j*)
+let nbr_pieces col =
+  if col >= 64 then 6
+  else if col >= 32 then 5
+  else if col >= 16 then 4
+  else if col >= 8 then 3
+  else if col >= 4 then 2
+  else if col >= 2 then 1
+  else 0
 
-  if (i <> 6) then
-    (
-      current_game.col_st.(j) <- i + 1;
-      current_game.tab.(j).(i) <- actor.pion;
-      current_game.tab_line.(j).(i).current_piece <- actor.pion;
-      current_game.number_of_move <- current_game.number_of_move + 1;
-      (*on remplit le tab_line_piece du pion courant et on modifie
-        les tab des pions de meme couleurs qui lui sont alignés*)
-      (* pour la ligne verticale *)
-      if (i != 0 && current_game.tab_line.(j).(i-1).current_piece = actor.pion)
-      then
-        (
-          let down = current_game.tab_line.(j).(i-1).tab_line_piece.(0) in
-          for k = 0 to down do
-            current_game.tab_line.(j).(i-k).tab_line_piece.(0) <- down + 1;
-          done
-        )
-      else current_game.tab_line.(j).(i).tab_line_piece.(0) <- 1;
+(*on veut la ligne de la derniere piece dans la colonne j*)
+let get_row game j =
+  (nbr_pieces (get_col game j)-1)
 
-      (*on récupère les données pour toutes les cases adjacentes sauf
-        la verticale pour qui c'est déjà fait juste au dessus*)
-      let l = ref 0
-      and r = ref 0
-      and up_r = ref 0
-      and down_l = ref 0
-      and down_r = ref 0
-      and up_l = ref 0 in
+(* on conte a partir de 0*)
+    (* i est la ligne, j est la colonne*)
+let get game i j =
+  let col = get_col game j in
+  if i < 0 or i > 5 or j < 0 or j > 6 or (nbr_pieces col) <= i then 2
+  else (col lsr i) land 1
 
-      if j>0
-      then
-        (
-          if current_game.tab_line.(j-1).(i).current_piece = actor.pion
-          then
-            l := current_game.tab_line.(j-1).(i).tab_line_piece.(1);
+exception Column_full
+exception Column_empty
 
-          if(i>0 && current_game.tab_line.(j-1).(i-1).current_piece =
-              actor.pion)
-          then
-            (down_l := current_game.tab_line.(j-1).(i-1).tab_line_piece.(2));
+(*0 -> red, 1 -> yellow*)
+(*on ajoute un pion color dans le colonne j*)
+let move game j color =
+  let col = get_col game j in
+  let nbr = nbr_pieces col in
+  if col >= 64 then raise Column_full;
 
-          if (i<5 && current_game.tab_line.(j-1).(i+1).current_piece =
-              actor.pion)
-          then
-            (up_l := current_game.tab_line.(j-1).(i+1).tab_line_piece.(3));
-        );
-
-      if j<6
-      then
-        (
-          if current_game.tab_line.(j+1).(i).current_piece = actor.pion
-          then
-            r := current_game.tab_line.(j+1).(i).tab_line_piece.(1);
-
-          if (i<5 && current_game.tab_line.(j+1).(i+1).current_piece =
-              actor.pion)
-          then
-            up_r := current_game.tab_line.(j+1).(i+1).tab_line_piece.(2);
-
-          if (i>0 && current_game.tab_line.(j+1).(i-1).current_piece =
-              actor.pion)
-          then
-            down_r := current_game.tab_line.(j+1).(i-1).tab_line_piece.(3);
-        );
-
-      (*on modifie les données de tav_line pour la case courante*)
-      current_game.tab_line.(j).(i).tab_line_piece.(1) <- !l + 1 + !r;
-      current_game.tab_line.(j).(i).tab_line_piece.(2) <- !down_l + 1 + !up_r;
-      current_game.tab_line.(j).(i).tab_line_piece.(3) <- !up_l + 1 + !down_r;
-
-      (*on modifie les données des cases adjacentes se trouvant dans une
-        meme ligne que le pion courant*)
-      (*mise à jour de la ligne horizontale*)
-      if (!l != 0) then
-        (
-          for k = 1 to !l do
-            current_game.tab_line.(j-k).(i).tab_line_piece.(1) <- !l + 1 + !r
-          done;
-        );
-
-      if (!r != 0) then
-        (
-          for k = 1 to !r do
-            current_game.tab_line.(j+k).(i).tab_line_piece.(1) <- !l  + 1 + !r
-          done;
-        );
-
-      (*pour la première diagonale*)
-      if (!down_l != 0) then
-        (
-          for k = 1 to !down_l do
-            current_game.tab_line.(j-k).(i-k).tab_line_piece.(2) <-
-              !down_l + 1 + !up_r
-          done;
-        );
-
-      if (!up_r != 0) then
-        (
-          for k = 1 to !up_r do
-            current_game.tab_line.(j+k).(i+k).tab_line_piece.(2) <-
-              !down_l  + 1 + !up_r
-          done;
-        );
-
-      (*pour la deuxième diagonale*)
-      if (!up_l != 0) then
-        (
-          for k = 1 to !up_l do
-            current_game.tab_line.(j-k).(i+k).tab_line_piece.(3) <-
-              !up_l + 1 + !down_r
-          done;
-        );
-
-      if (!down_r != 0) then
-        (
-          for k = 1 to !down_r do
-            current_game.tab_line.(j+k).(i-k).tab_line_piece.(3) <-
-              !up_l  + 1 + !down_r
-          done;
-        );
-
-      (*mise à jour de la liste des évènements du jeu*)
-      current_game.list_event <-
-        [{col = j; line = i; piece = actor.pion}]@current_game.list_event
-    )
-  else raise Plein
-;;
-
-(*retourne de num coup en arrière dans le jeu*)
-let rec remove current_game num =
-  if (num<>0)then
-    (
-      let next_event = List.hd current_game.list_event in
-      let j = next_event.col
-      and i = next_event.line in
-      current_game.col_st.(j) <- current_game.col_st.(j) - 1;
-      current_game.tab.(j).(i) <- Empty;
-      current_game.tab_line.(j).(i)
-      <- {current_piece = Empty; tab_line_piece = [|0;0;0;0|]};
-      current_game.number_of_move <- current_game.number_of_move - 1;
-      (*plus changer les valeurs des voisins...*)
-      current_game.list_event <- List.tl current_game.list_event;
-      remove current_game (num-1)
-    )
-;;
-
-(*creer une copy du jeu courant*)
-let copy_game current_game =
-  {
-    tab = Array.init 7 (fun i -> (Array.copy current_game.tab.(i)));
-
-    tab_line = Array.init 7
-      (fun i -> Array.init 6
-         (fun j ->
-            {current_piece = (current_game.tab_line.(i).(j)).current_piece;
-             tab_line_piece = Array.copy
-                (current_game.tab_line.(i).(j).tab_line_piece)
-            }
-         )
-      );
-
-    list_event = current_game.list_event;
-    number_of_move = current_game.number_of_move;
-    col_st = Array.copy current_game.col_st
-  }
-;;
-
-
-(*création d'une nouvelle partie*)
-let new_part current_game =
-  current_game.tab <- Array.init 7 (fun i -> (Array.make 6 Empty));
-  current_game.tab_line <- Array.init 7
-    (fun i -> Array.init 6
-       (fun i -> ({current_piece = Empty; tab_line_piece = [|0;0;0;0|]})));
-  current_game.list_event <- [];
-  current_game.number_of_move <- 0;
-  current_game.col_st <- Array.make 7 0
-;;
-
-(*retourne vrai qd le pion en (i,j) est ds une ligne de 4pions de meme couleur*)
-(*faire avec une methode recursif qui garde win*)
-let isWin current_game =
-  if (current_game.number_of_move <> 0) then
-    let i = (List.hd (current_game.list_event)).line
-    and j = (List.hd (current_game.list_event)).col in
-    let rec winner won k =
-      if (won = false && k < 4) then
-        if (current_game.tab_line.(j).(i).tab_line_piece.(k)=4)
-        then winner true k
-        else winner won (k+1)
-      else won
-    in winner false 0
-  else false
-;;
-
-
-
-
-let rec alphabeta current_game actor1 actor2 alpha beta bobo =
-  if(current_game.number_of_move <> 0 && isWin current_game) then
-    if (bobo) then (1., (List.hd current_game.list_event).col)
-    else (-1., (List.hd current_game.list_event).col)
-
-  else if (current_game.number_of_move = 42)
-  then (0., (List.hd current_game.list_event).col)
+  let new_col = match color with
+    |0 -> col + expo.(nbr)
+    |1 -> col + expo.(nbr+1)
+    |_ -> raise (Failure "") in
+  if j < 3 then game.cols_left <- game.cols_left + (new_col - col) lsl ((3-j)*7)
+  else if j > 3 then
+    game.cols_right <- game.cols_right + (new_col - col) lsl ((6-j)*7)
   else
     (
-      let game = copy_game current_game in
-      if (actor1.fst_player) then
-        (*faire un remove???*)
-          let rec cut_beta a b value col_current i =
-          if (i < Array.length game.tab) then
-            try
-              (
-                move game i actor1;
-                let test_value = fst (alphabeta
-                                        game actor2 actor1 a b (not bobo)) in
-                let (value_temp, col) = if test_value > value then
-                  (test_value, i) else (value, col_current) in
-                if value_temp > b then (value_temp, col)
-                else cut_beta (max a value_temp) b value_temp col (i+1)
-              )
-            with plein -> cut_beta a b value col_current (i+1)
-          else (value, col_current) in
-        cut_beta alpha beta neg_infinity 0 0
-      else let rec cut_alpha a b value col_current i =
-        if (i < (Array.length game.tab)) then
-          try
+      game.cols_left <- game.cols_left + (new_col - col);
+      game.cols_right <- game.cols_right + (new_col - col) lsl 21
+    )
+
+let remove game j color =
+    let col = get_col game j in
+    let nbr = nbr_pieces col in
+    if col < 2 then raise Column_empty;
+    let new_col = match color with
+      |0 -> col - expo.(nbr-1)
+      |1 -> col - expo.(nbr)
+      |_ -> raise (Failure "") in
+
+    if j < 3 then game.cols_left <- game.cols_left + (new_col - col) lsl ((3-j)*7)
+    else if j > 3 then
+      game.cols_right <- game.cols_right + (new_col - col) lsl ((6-j)*7)
+    else
+      (
+        game.cols_left <- game.cols_left + (new_col - col);
+        game.cols_right <- game.cols_right + (new_col - col) lsl 21
+      )
+
+let reset game =
+  game.cols_left <- 0x204081;
+  game.cols_right <- 0x204081
+
+let is_draw game =
+  (game.cols_left land 0x8102040 = 0x8102040
+      && game.cols_right land 0x8102040 = 0x8102040)
+
+let rec win ?(cur_zero=0) ?(cur_one=0) ?(act=0) pos =
+  if cur_zero = 4 or cur_one = 4 then true
+  else if ((act - cur_zero) > 3 && (act - cur_one) > 3) then false
+  else if pos mod 10 = 0 then win ~cur_zero:(cur_zero+1)
+    ~cur_one:0 ~act:(act+1) (pos/10)
+  else if pos mod 10 = 1 then win ~cur_zero:0 ~cur_one:(cur_one+1)
+    ~act:(act+1) (pos/10)
+  else win ~cur_zero:0 ~cur_one:0 ~act:(act+1) (pos/10)
+
+(*on regarde si on a gagne dans la colonne j ou lon vient de jouer*)
+let is_winning game j =
+  let col = get_col game j and
+      pos = ref 0 in
+  (*cas vertical*)
+  if col = 31 || col = 62 || col = 124 || col = 16 || col = 33 || col = 67
+  then true
+  else
+    (
+      (*cas horizontal*)
+      let i = (nbr_pieces col - 1) in
+      for k = 0 to 6 do
+        pos := !pos * 10 + get game i k;
+      done;
+      if win !pos then true
+      else
+        (
+          (*cas diagonal /*)
+          pos := 0;
+          for k = 0 to 6 do
+            if i - j + k < 0 || i - j + k > 6 then
+              pos := !pos * 10 + 2
+            else pos := !pos*10 + get game (i+k-j) k;
+          done;
+          if win !pos then true
+          else
             (
-              move game i actor1;
-              let test_value = fst (alphabeta
-                                      game actor2 actor1 a b (not bobo)) in
-              let (value_temp, col) = if test_value < value then
-                (test_value, i) else (value, col_current) in
-              if value_temp < a then (value_temp, col)
-              else cut_alpha a (min b value_temp) value_temp col (i+1)
+              (*cas diagonal \ *)
+              pos := 0;
+              for k = 0 to 6 do
+                if i + j - k < 0 || i + j - k > 6 then
+                  pos := !pos * 10 + 2
+                else pos := !pos * 10 + get game (i+j-k) k
+              done;
+              if win !pos then true
+              else false
             )
-          with plein -> cut_alpha a b value col_current (i+1)
-        else (value, col_current) in
-      cut_alpha alpha beta infinity 0 0
+        )
     )
 ;;
-
-
-let g = make ();;
-let player1 = {player = Human; pion = Yellow; fst_player = true};;
-let player2 = {player = Human; pion = Red; fst_player = false};;
-move g 0 player1;
-move g 1 player2;
-move g 0 player1;
-move g 1 player2;
-move g 0 player1;
-move g 1 player2;
-
-move g 2 player1;
-move g 2 player2;
-move g 2 player1;
-move g 2 player2;
-move g 3 player1;
-move g 2 player2;
-move g 2 player1;
-move g 3 player2;
-move g 3 player1;
-move g 3 player2;
-move g 3 player1;
-move g 4 player2;
-move g 3 player1;
-move g 4 player2;
-move g 4 player1;
-move g 4 player2;
-move g 4 player1;
-move g 4 player2;
-move g 5 player1;
-move g 5 player2;
-move g 5 player1;
-move g 5 player2;
-move g 5 player1;
-move g 5 player2;
-
-
-g.tab;;
-
-let cuple = alphabeta g player2 player1 (-.1.) 1. false;;
