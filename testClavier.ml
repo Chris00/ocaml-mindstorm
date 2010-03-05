@@ -15,17 +15,17 @@ let motor_dist = Motor.c
 (*let motor_elev = Motor.c*)
 let dir = 1
 (*angle d'ouverture de la pince*)
-let open_rot = 120
+let open_rot = 135
   (* translation initiale*)
 let init_translation = 240
   (*rotation par case*)
-let case_rot = 137
-let move_speed = 15
+let case_rot = 131
+let move_speed = 10
 let open_speed = -10
 let close_speed = 10
 
-module Run(C: sig val conn1 : Mindstorm.bluetooth Mindstorm.conn
-                  val conn2 : Mindstorm.bluetooth Mindstorm.conn end) =
+module Run(C: sig val conn2 : Mindstorm.bluetooth Mindstorm.conn
+                 (* val conn1 : Mindstorm.bluetooth Mindstorm.conn*) end) =
 struct
 
   
@@ -46,7 +46,7 @@ let meas_dist =
     Robot.meas r (fun _ -> last (Motor.get C.conn2 motor_open_pincer))
 
   let rec stop _ =
-    Motor.set C.conn1 Motor.all (Motor.speed 0);
+   (* Motor.set C.conn1 Motor.all (Motor.speed 0);*)
     Motor.set C.conn2 Motor.all (Motor.speed 0)
 
  
@@ -72,8 +72,8 @@ let meas_dist =
     (*négatif vers réserve*)
     Motor.set C.conn2 motor_pincer (Motor.speed  ~tach_limit:r 
                                       (dir*move_speed));
-    Motor.set C.conn2 motor_open_pincer ((Motor.speed ~tach_limit: ((r*9)/10))
-                                           (dir*move_speed))
+    Motor.set C.conn2 motor_open_pincer ((Motor.speed ~tach_limit:r
+                                           (dir*move_speed)))
 
 
  (*attendre que la pince soit en position initiale pour mettre une pièce 
@@ -93,7 +93,7 @@ let meas_dist =
   let wait_pincer_closed col =
     Robot.event meas_open_pincer (function
                                   |None -> false
-                                  |Some d -> d >= 35)
+                                  |Some d -> d > 4)
       (return_init_pos col)
   
   let close_pincer col _ =
@@ -134,16 +134,17 @@ let meas_dist =
 end
 
 let () =
-  let (bt1,bt2)=
-    if Array.length Sys.argv < 3 then (
+  (*let (bt1,bt2)*)
+  let (bt2)=
+    if Array.length Sys.argv < 2 then (
       printf "%s <bluetooth addr><bluetooth addr>\n" Sys.argv.(0);
       exit 1;
     )
-    else (Sys.argv.(1),Sys.argv.(2)) in
-  let conn1 = Mindstorm.connect_bluetooth bt1
-  and conn2 = Mindstorm.connect_bluetooth bt2 in
+    else (Sys.argv.(1)) in
+  let conn2 = Mindstorm.connect_bluetooth bt2 in
+  (*and conn1 = Mindstorm.connect_bluetooth bt in *)
   while true do
-    let module R = Run(struct let conn1 = conn1 and conn2 = conn2 end) in
+    let module R = Run(struct let conn2 = conn2 end) in
     try
       printf "Enter the column: ";
       let column = read_int () in
