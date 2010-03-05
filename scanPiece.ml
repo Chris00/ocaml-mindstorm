@@ -13,34 +13,58 @@ let init_game = 0 (*representation du jeu par un entier*)
 (*num du jeu: de 0 a 6 de gauche à droit du cote du joueur*)
 let expo_10 = [| 1000000; 100000; 10000; 1000; 100; 10; 1|]
 
+let shift_h = 204
+let shift_up_v = 132
+let shift_up_r = 189
+let shift_up_l = 189
+let rot_v l =
+  shift_up_v * l
+
+let rot_r l c =
+  (shift_up_r*l)+(c*shift_h)
+
+let rot_l l c =
+  (shift_up_l*l)-(c*shift_h)
+
 (*tableau des angles courants des moteurs pour avoir le capteur de couleur en
 face des trous pour chaque ligne du jeu
 la première valeur est pour le moteur vert, la seconde pr l; la troisième pr r*)
 let tab_scan =
   [|
     [|
-      (0, 0, 0); (0, -206, 206); (0, -415, 415); (0, -622, 622);
-      (0, -830, 830); (0, -1038, 1038); (0, -1246, 1246);
+      (0, 0, 0); (0, rot_l 0 1, rot_r 0 1); (0, rot_l 0 2, rot_r 0 2);
+      (0, rot_l 0 3, rot_r 0 3); (0, rot_l 0 4, rot_r 0 4);
+      (0, rot_l 0 5, rot_r 0 5); (0, rot_l 0 6, rot_r 0 5);
     |];
     [|
-      (131, 193, 193); (131, -15, 401); (131, -223, 609); (131, -431, 817);
-      (131, -639, 1025); (131, -847, 1233); (131, -1055, 1441)
+      (rot_v 1, rot_l 1 0, rot_r 1 0); (rot_v 1, rot_l 1 1, rot_r 1 1);
+      (rot_v 1, rot_l 1 2, rot_r 1 2); (rot_v 1, rot_l 1 3, rot_r 1 3);
+      (rot_v 1, rot_l 1 4, rot_r 1 4); (rot_v 1, rot_l 1 5, rot_r 1 5);
+      (rot_v 1, rot_l 1 6, rot_r 1 6)
     |];
     [|
-      (262, 386, 386); (262, 178, 594); (262, -30, 802); (262, -238, 1010);
-      (262, -446, 1218); (262, -654, 1426); (262, -862, 1634)
+      (rot_v 2, rot_l 2 0, rot_r 2 0); (rot_v 2, rot_l 2 1, rot_r 2 1);
+      (rot_v 2, rot_l 2 2, rot_r 2 2); (rot_v 2, rot_l 2 3, rot_r 2 3);
+      (rot_v 2, rot_l 2 4, rot_r 2 4); (rot_v 2, rot_l 2 5, rot_r 2 5);
+      (rot_v 2, rot_l 2 6, rot_r 2 6)
     |];
     [|
-      (393, 579, 579); (393, 371, 787); (393, 163, 995); (393, -45, 1203);
-      (393, -253, 1411); (393, -461, 1619); (393, -669, 1827)
+      (rot_v 3, rot_l 3 0, rot_r 3 0); (rot_v 3, rot_l 3 1, rot_r 3 1);
+      (rot_v 3, rot_l 3 2, rot_r 3 2); (rot_v 3, rot_l 3 3, rot_r 3 3);
+      (rot_v 3, rot_l 3 4, rot_r 3 4); (rot_v 3, rot_l 3 5 ,rot_r 3 5);
+      (rot_v 3, rot_l 3 6, rot_r 3 6)
     |];
     [|
-      (524, 772, 772); (524, 564, 980); (524, 356, 1188); (524, 148, 1396);
-      (524, -60, 1604); (524, -268, 1812); (524, -476, 2020)
+      (rot_v 4, rot_l 4 0, rot_r 4 0); (rot_v 4, rot_l 4 1, rot_r 4 1);
+      (rot_v 4, rot_l 4 2, rot_r 4 2); (rot_v 4, rot_l 4 3, rot_r 4 3);
+      (rot_v 4, rot_l 4 4, rot_r 4 4); (rot_v 4, rot_l 4 5 ,rot_r 4 5);
+      (rot_v 4, rot_l 4 6, rot_r 4 6)
     |];
     [|
-      (655, 965, 965); (655, 757, 1173); (655, 549, 1381); (655, 341, 1589);
-      (655, 133, 1797); (655, -75, 2005); (655, -283, 2213)
+      (rot_v 5, rot_l 5 0, rot_r 5 0); (rot_v 5, rot_l 5 1, rot_r 5 1);
+      (rot_v 5, rot_l 5 2, rot_r 5 2); (rot_v 5, rot_l 5 3, rot_r 5 3);
+      (rot_v 5, rot_l 5 4, rot_r 5 4); (rot_v 5, rot_l 5 5 ,rot_r 5 5);
+      (rot_v 5, rot_l 5 6, rot_r 5 6)
     |]
   |]
 
@@ -55,7 +79,9 @@ struct
   let lst (a, b, c) = c
 
   let last (a, b, c, d) = d
- 
+
+  let first (a, b, c, d) = a
+
   let r = Robot.make()
 
   let touch = Robot.touch C.conn switch_port r
@@ -118,39 +144,51 @@ struct
     Motor.set C.conn motor_captor_r (Motor.speed 9)
 
   (*méthode pr déplacer le capteur horizontalement
-    dir = 1 vers le distributeur de pieces*)
+    sir = 1 vers le distributeur de pieces*)
   let go_horizontal dir =
     Robot.event_is touch stop;
     Motor.set C.conn motor_captor_l (Motor.speed ((-13) * dir) );
     Motor.set C.conn motor_captor_r (Motor.speed (13 * dir) )
 
+  let go_right _ =
+    Motor.set C.conn motor_captor_l (Motor.speed (10));
+    Motor.set C.conn motor_captor_r (Motor.speed (-9))
+
+   
+
+  let go_left _ =
+    Motor.set C.conn motor_captor_l (Motor.speed (-9));
+    Motor.set C.conn motor_captor_r (Motor.speed 10 )
 
   (*attendre d'avoir fait le déplacement vers la droite*)
-  let wait_trans_right_r deg_new_pos =
+  let wait_trans_right_r deg_new_pos_r _ =
+    Motor.set C.conn motor_captor_l (Motor.speed 0);
     Robot.event meas_right (function
                             |None -> false
-                            |Some d -> d <= lst(deg_new_pos))
+                            |Some d -> d <= deg_new_pos_r)
       scan_lum
 
   let wait_trans_right_l deg_new_pos =
     Robot.event meas_left (function
                             |None -> false
                             |Some d -> d >= scd(deg_new_pos))
-      scan_lum
+      (wait_trans_right_r (lst(deg_new_pos)))
 
 
   (*attendre d'avoir fait le déplacement vers la gauche*)
+  let wait_trans_left_l deg_new_pos_l _ =
+    Motor.set C.conn motor_captor_r (Motor.speed 0);
+    Robot.event meas_left (function
+                            |None -> false
+                            |Some d -> d <= deg_new_pos_l)
+      scan_lum
+
   let wait_trans_left_r deg_new_pos =
     Robot.event meas_right (function
                             |None -> false
                             |Some d -> d >= lst(deg_new_pos))
-      scan_lum
+      (wait_trans_left_l (scd(deg_new_pos)))
 
-  let wait_trans_left_l deg_new_pos =
-    Robot.event meas_left (function
-                            |None -> false
-                            |Some d -> d <= scd(deg_new_pos))
-      scan_lum
 
   (*déplacement horizontal pr etre ds la bonne colonne*)
   let trans_hor diff_col deg_new_pos _ =
@@ -159,14 +197,12 @@ struct
       (
         if (diff_col > 0) then
           (
-            go_horizontal 1;
-            wait_trans_left_r deg_new_pos;
-            wait_trans_left_l deg_new_pos
+            go_left ();
+            wait_trans_left_r deg_new_pos
           )
         else
           (
-            go_horizontal (-1);
-            wait_trans_right_r deg_new_pos;
+            go_right ();
             wait_trans_right_l deg_new_pos
           )
       )
@@ -195,13 +231,12 @@ struct
   (*condition d'arret qd le mobile monte*)
   let wait_vert_up angle_up diff_col deg_new_pos _ =
     Motor.set C.conn motor_captor_l (Motor.speed 0);
-    Motor.set C.conn motor_captor_r (Motor.speed 0) ;
+    Motor.set C.conn motor_captor_r (Motor.speed 0);
     Robot.event meas_vert (function
                            |None -> false
                            |Some d -> d >= angle_up)
       (trans_hor diff_col deg_new_pos)
 
-  (*on coupe les moteurs l et r et on attend que le moteur vert ait fini*)
 
   (*attente du travail des moteurs l et r*)
   let wait_r_l_up angle_down angle_up diff_col deg_new_pos =
@@ -224,14 +259,11 @@ struct
         if diff_line > 0 then
           (
             go_up ();
-            (*c'est d'abord les moteurs l et r qui ont fini leur boulot
-              puis le vert*)
             wait_r_l_up angle_down angle_up diff_col deg_new_pos
           )
         else
           (
             go_down ();
-            (*c'est d'abord le moteur vert qui a fini son boulot puis l et r*)
             wait_vert_down angle_down angle_up diff_col deg_new_pos
           )
       )
@@ -239,11 +271,9 @@ struct
       trans_hor diff_col deg_new_pos ()
 
 
+
   let run () =
-    (* reset_pos C.conn motor_captor_vert; *)
-    (* reset_pos C.conn motor_captor_l; *)
-    (* reset_pos C.conn motor_captor_r; *)
-    scan_case 0 3 0 0;
+    scan_case 1 1 4 5;
     Robot.run r
 
 end
