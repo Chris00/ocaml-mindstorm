@@ -5,7 +5,7 @@ module Motor = Mindstorm.Motor
 module Sensor = Mindstorm.Sensor
 
 let switch_port = `S3
-let color_port = `S1
+let color_port = `S4
 let motor_captor_l = Motor.a
 let motor_captor_r = Motor.b
 let motor_captor_vert = Motor.c
@@ -132,16 +132,16 @@ struct
   (*méthode pour descendre le capteur; vitesse neg pour descendre*)
   let go_down _ =
     Robot.event_is touch stop;
-    Motor.set C.conn motor_captor_vert (Motor.speed (-8));
-    Motor.set C.conn motor_captor_l (Motor.speed (-11));
-    Motor.set C.conn motor_captor_r (Motor.speed (-11))
+    Motor.set C.conn motor_captor_vert (Motor.speed (-12));
+    Motor.set C.conn motor_captor_l (Motor.speed (-15));
+    Motor.set C.conn motor_captor_r (Motor.speed (-15))
 
   (*méthode pour monter le capteur; vitesse pos pour monter*)
   let go_up _ =
     Robot.event_is touch stop;
-    Motor.set C.conn motor_captor_vert (Motor.speed 6);
-    Motor.set C.conn motor_captor_l (Motor.speed 9);
-    Motor.set C.conn motor_captor_r (Motor.speed 9)
+    Motor.set C.conn motor_captor_vert (Motor.speed 10);
+    Motor.set C.conn motor_captor_l (Motor.speed 20);
+    Motor.set C.conn motor_captor_r (Motor.speed 20)
 
   (*méthode pr déplacer le capteur horizontalement
     sir = 1 vers le distributeur de pieces*)
@@ -151,14 +151,13 @@ struct
     Motor.set C.conn motor_captor_r (Motor.speed (13 * dir) )
 
   let go_right _ =
-    Motor.set C.conn motor_captor_l (Motor.speed (10));
-    Motor.set C.conn motor_captor_r (Motor.speed (-9))
+    Motor.set C.conn motor_captor_l (Motor.speed (12));
+    Motor.set C.conn motor_captor_r (Motor.speed (-11))
 
-   
 
   let go_left _ =
-    Motor.set C.conn motor_captor_l (Motor.speed (-9));
-    Motor.set C.conn motor_captor_r (Motor.speed 10 )
+    Motor.set C.conn motor_captor_l (Motor.speed (-11));
+    Motor.set C.conn motor_captor_r (Motor.speed 12 )
 
   (*attendre d'avoir fait le déplacement vers la droite*)
   let wait_trans_right_r deg_new_pos_r _ =
@@ -209,13 +208,25 @@ struct
     else scan_lum ()
 
 
+ let wait_r_l_down_end angle_down diff_col deg_new_pos _ =
+   let st = {speed = 0; motor_on = true; brake = true;
+             regulation = `Motor_sync; turn_ratio = 100;
+             run_state = `Ramp_down; tach_limit = 40} in
+   Motor.set C.conn motor_captor_vert st;
+   Robot.event meas_right (function
+                           |None -> false
+                           |Some d -> d <= angle_down)
+     (trans_hor diff_col deg_new_pos)
+
+
+
   (*condition d'arret qd le mobile descend*)
   let wait_r_l_down angle_down diff_col deg_new_pos _ =
     Motor.set C.conn motor_captor_vert (Motor.speed 0);
     Robot.event meas_right (function
                         |None -> false
-                        |Some d -> d <= angle_down)
-      (trans_hor diff_col deg_new_pos)
+                        |Some d -> d <= angle_down + 30)
+     (wait_r_l_down_end angle_down diff_col deg_new_pos)
 
 
   let wait_vert_down angle_down angle_up diff_col deg_new_pos =
@@ -228,14 +239,29 @@ struct
 
 
 
+
+
   (*condition d'arret qd le mobile monte*)
+  let wait_vert_up_end angle_up diff_col deg_new_pos _ =
+    let st = {speed = 0; motor_on = true; brake = true;
+                   regulation = `Motor_sync; turn_ratio = 100;
+                   run_state = `Ramp_down; tach_limit = 40} in
+    Motor.set C.conn motor_captor_r st;
+    Motor.set C.conn motor_captor_l st;
+    Robot.event meas_vert (function
+                           |None -> false
+                           |Some d -> d >= angle_up)
+      (trans_hor diff_col deg_new_pos)
+
+
   let wait_vert_up angle_up diff_col deg_new_pos _ =
     Motor.set C.conn motor_captor_l (Motor.speed 0);
     Motor.set C.conn motor_captor_r (Motor.speed 0);
     Robot.event meas_vert (function
                            |None -> false
-                           |Some d -> d >= angle_up)
-      (trans_hor diff_col deg_new_pos)
+                           |Some d -> d >= angle_up-30)
+      (wait_vert_up_end angle_up diff_col deg_new_pos)
+
 
 
   (*attente du travail des moteurs l et r*)
@@ -270,10 +296,8 @@ struct
     else
       trans_hor diff_col deg_new_pos ()
 
-
-
   let run () =
-    scan_case 1 1 4 5;
+    scan_case 1 1 2 2;
     Robot.run r
 
 end
