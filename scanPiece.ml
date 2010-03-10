@@ -9,9 +9,11 @@ let color_port = `S4
 let motor_captor_l = Motor.a
 let motor_captor_r = Motor.b
 let motor_captor_vert = Motor.c
-let init_game = 0 (*representation du jeu par un entier*)
+let current_line = ref 0
+let current_col = ref 0
+let init_game = 5234426 (*representation du jeu par un entier*)
 (*num du jeu: de 0 a 6 de gauche à droit du cote du joueur*)
-let expo_10 = [| 1000000; 100000; 10000; 1000; 100; 10; 1|]
+let expo_10 = [| 1; 10; 100; 1000; 10000; 100000; 1000000|]
 
 let shift_h = 204
 let shift_up_v = 132
@@ -34,7 +36,7 @@ let tab_scan =
     [|
       (0, 0, 0); (0, rot_l 0 1, rot_r 0 1); (0, rot_l 0 2, rot_r 0 2);
       (0, rot_l 0 3, rot_r 0 3); (0, rot_l 0 4, rot_r 0 4);
-      (0, rot_l 0 5, rot_r 0 5); (0, rot_l 0 6, rot_r 0 5);
+      (0, rot_l 0 5, rot_r 0 5); (0, rot_l 0 6, rot_r 0 6);
     |];
     [|
       (rot_v 1, rot_l 1 0, rot_r 1 0); (rot_v 1, rot_l 1 1, rot_r 1 1);
@@ -115,10 +117,6 @@ struct
   let add_piece col game =
     game + expo_10.(col)
 
-  let ecrit _ =
-    Printf.printf "%s" " erreur!!!!!!";
-    Printf.printf "\n%!"
-
   (* retourne la couleur devant le capteur*)
   let scan_lum f _ =
     Motor.set C.conn Motor.all (Motor.speed 0);
@@ -139,9 +137,9 @@ struct
   (*méthode pour descendre le capteur; vitesse neg pour descendre*)
   let go_down _ =
     Robot.event_is touch stop;
-    Motor.set C.conn motor_captor_vert (Motor.speed (-12));
-    Motor.set C.conn motor_captor_l (Motor.speed (-15));
-    Motor.set C.conn motor_captor_r (Motor.speed (-15))
+    Motor.set C.conn motor_captor_vert (Motor.speed (-10));
+    Motor.set C.conn motor_captor_l (Motor.speed (-13));
+    Motor.set C.conn motor_captor_r (Motor.speed (-13))
 
   (*méthode pour monter le capteur; vitesse pos pour monter*)
   let go_up _ =
@@ -150,21 +148,15 @@ struct
     Motor.set C.conn motor_captor_l (Motor.speed 20);
     Motor.set C.conn motor_captor_r (Motor.speed 20)
 
-  (*méthode pr déplacer le capteur horizontalement
-    sir = 1 vers le distributeur de pieces*)
-  let go_horizontal dir =
-    Robot.event_is touch stop;
-    Motor.set C.conn motor_captor_l (Motor.speed ((-13) * dir) );
-    Motor.set C.conn motor_captor_r (Motor.speed (13 * dir) )
 
   let go_right _ =
-    Motor.set C.conn motor_captor_l (Motor.speed (12));
-    Motor.set C.conn motor_captor_r (Motor.speed (-11))
+    Motor.set C.conn motor_captor_l (Motor.speed (13));
+    Motor.set C.conn motor_captor_r (Motor.speed (-12))
 
 
   let go_left _ =
-    Motor.set C.conn motor_captor_l (Motor.speed (-11));
-    Motor.set C.conn motor_captor_r (Motor.speed 12 )
+    Motor.set C.conn motor_captor_l (Motor.speed (-13));
+    Motor.set C.conn motor_captor_r (Motor.speed 12)
 
   (*attendre d'avoir fait le déplacement vers la droite*)
   let wait_trans_right_r deg_new_pos_r f _ =
@@ -198,7 +190,7 @@ struct
 
   (*déplacement horizontal pr etre ds la bonne colonne*)
   let trans_hor diff_col deg_new_pos f _ =
-    Motor.set C.conn motor_captor_vert (Motor.speed 0);
+    Motor.set C.conn Motor.all (Motor.speed 0);
     if (diff_col <> 0) then
       (
         if (diff_col > 0) then
@@ -215,31 +207,49 @@ struct
     else scan_lum f ()
 
 
- let wait_r_l_down_end angle_down diff_col deg_new_pos f _ =
-   let st = {speed = 0; motor_on = true; brake = true;
-             regulation = `Idle; turn_ratio = 100;
-             run_state = `Ramp_down; tach_limit = 40} in
-   Motor.set C.conn motor_captor_vert st;
-   Robot.event meas_right (function
-                           |None -> false
-                           |Some d -> d <= angle_down)
-     (trans_hor diff_col deg_new_pos f)
+
+
+  (*condition d'arret de l et r qd le mobile descend*)
+  let wait_r_l_down_end angle_down diff_col deg_new_pos f _ =
+    let st = {speed = 0; motor_on = true; brake = true;
+              regulation = `Idle; turn_ratio = 100;
+              run_state = `Ramp_down; tach_limit = 30} in
+    Motor.set C.conn motor_captor_r st;
+    Motor.set C.conn motor_captor_l st;
+
+    Robot.event meas_right (function
+                            |None -> false
+                            |Some d -> d <= angle_down+18)
+      (trans_hor diff_col deg_new_pos f)
 
 
 
-  (*condition d'arret qd le mobile descend*)
+  (*les moteurs l et r font presque tout à grande vitesse puis décélère sur
+    les 30 derniers degrés*)
   let wait_r_l_down angle_down diff_col deg_new_pos f _ =
     Motor.set C.conn motor_captor_vert (Motor.speed 0);
     Robot.event meas_right (function
                         |None -> false
-                        |Some d -> d <= angle_down + 30)
+                        |Some d -> d <= angle_down+18 + 20)
      (wait_r_l_down_end angle_down diff_col deg_new_pos f)
 
+
+(*
+  let wait_vert_down_end  angle_down angle_up diff_col deg_new_pos f _ =
+    let st = {speed = 0; motor_on = true; brake = true;
+              regulation = `Idle; turn_ratio = 100;
+              run_state = `Ramp_down; tach_limit = 40} in
+    Motor.set C.conn motor_captor_vert st;
+    Robot.event meas_vert (function
+                           |None -> false
+                           |Some d -> d <= angle_up+10)
+      (wait_r_l_down angle_down diff_col deg_new_pos f)
+*)
 
   let wait_vert_down angle_down angle_up diff_col deg_new_pos f =
     Robot.event meas_vert (function
                            |None -> false
-                           |Some d -> d <= angle_up)
+                           |Some d -> d <= angle_up+13)
       (wait_r_l_down angle_down diff_col deg_new_pos f)
 
 
@@ -248,19 +258,18 @@ struct
 
 
 
-  (*condition d'arret qd le mobile monte*)
+  (*condition d'arret de vert qd le mobile monte*)
   let wait_vert_up_end angle_up diff_col deg_new_pos f _ =
     let st = {speed = 0; motor_on = true; brake = true;
                    regulation = `Idle; turn_ratio = 100;
                    run_state = `Ramp_down; tach_limit = 40} in
-    Motor.set C.conn motor_captor_r st;
-    Motor.set C.conn motor_captor_l st;
+    Motor.set C.conn motor_captor_vert st;
     Robot.event meas_vert (function
                            |None -> false
                            |Some d -> d >= angle_up)
       (trans_hor diff_col deg_new_pos f)
 
-
+  (* le moteur vert monte vite d'abord et décélère pdt les 30 derniers degrés *)
   let wait_vert_up angle_up diff_col deg_new_pos f _ =
     Motor.set C.conn motor_captor_l (Motor.speed 0);
     Motor.set C.conn motor_captor_r (Motor.speed 0);
@@ -279,35 +288,50 @@ struct
       (wait_vert_up angle_up diff_col deg_new_pos f)
 
 
-  let scan_case old_pos_line old_pos_col new_pos_line new_pos_col f _=
-    let diff_line = new_pos_line - old_pos_line and
-        diff_col = new_pos_col - old_pos_col and
-        deg_new_line = tab_scan.(new_pos_line).(old_pos_col) and
-        deg_new_pos = tab_scan.(new_pos_line).(new_pos_col) in
+  let scan_case new_pos_line new_pos_col f _ =
+     if new_pos_line = 6 then
+      f()
+     else
+       (
+         let diff_line = new_pos_line - !current_line and
+             diff_col = new_pos_col - !current_col and
+             deg_new_line = tab_scan.(new_pos_line).(!current_col) and
+             deg_new_pos = tab_scan.(new_pos_line).(new_pos_col) in
 
+         current_line := new_pos_line;
+         current_col := new_pos_col;
 
-    (*on le déplace d'abord verticalement puis horizontalement*)
-    if (diff_line <> 0) then
-      (
-        let angle_up, _, angle_down = deg_new_line in
-        if diff_line > 0 then
-          (
-            go_up ();
-            wait_r_l_up angle_down angle_up diff_col deg_new_pos f
-          )
-        else
-          (
-            go_down ();
-            wait_vert_down angle_down angle_up diff_col deg_new_pos f
-          )
-      )
-    else
-      trans_hor diff_col deg_new_pos f ()
-
+         (*on le déplace d'abord verticalement puis horizontalement*)
+         if (diff_line <> 0) then
+           (
+             let angle_up, _, angle_down = deg_new_line in
+             if diff_line > 0 then
+               (
+                 go_up ();
+                 wait_r_l_up angle_down angle_up diff_col deg_new_pos f
+               )
+             else
+               (
+                 go_down ();
+                 wait_vert_down angle_down angle_up diff_col deg_new_pos f
+               )
+           )
+         else
+           trans_hor diff_col deg_new_pos f ()
+       )
+  let scan_game current_game =
+    scan_case (piece_in_col 0 current_game) 0
+      (scan_case (piece_in_col 1 current_game) 1
+         (scan_case (piece_in_col 2 current_game) 2
+            (scan_case (piece_in_col 3 current_game) 3
+               (scan_case (piece_in_col 4 current_game) 4
+                  (scan_case (piece_in_col 5 current_game) 5
+                     (scan_case (piece_in_col 6 current_game) 6 (stop ))))))) ()
 
 
   let run () =
-    scan_case 2 2 1 1 (scan_case 1 1 0 0 (stop )) ();
+     scan_game init_game;
+    (* scan_case 0 0 (stop )(); *)
     Robot.run r
 
 end
