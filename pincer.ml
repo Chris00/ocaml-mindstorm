@@ -80,7 +80,7 @@ struct
   let wait_init_pos col _ = 
    Robot.event meas_translation_pincer (function
                                         |None -> false
-                                        |Some d -> d < 5)
+                                        |Some d -> d < 10)
     (put_piece_in_pincer) 
 
 
