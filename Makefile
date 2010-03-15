@@ -16,14 +16,18 @@ LIBS_CMXA=$(LIBS_CMA:.cma=.cmxa) robot.cmx
 
 all: byte native
 
-SOURCES = DeuxUnitesPush.ml scanPiece.ml testLum.ml testRamp.ml
+SOURCES = game.ml alphabeta.ml plateauJeu.ml testLum.ml DeuxUnitesPush.ml testClavier.ml scan.ml pincer.ml scanPiece.ml
 byte: $(SOURCES:.ml=.exe)
 native: $(SOURCES: .ml=.com)
 
 DeuxUnitesPush.exe : robot.cma
-scanPiece.exe : robot.cma
 testLum.exe : robot.cma
-testRamp.exe : robot.cma
+testClavier.exe : robot.cma
+scan.exe : robot.cma
+alphabeta.exe : game.cmo
+plateauJeu.exe : game.cmo
+pincer.exe : robot.cma
+scanPiece.exe : robot.cma
 
 
 # General "event" library
