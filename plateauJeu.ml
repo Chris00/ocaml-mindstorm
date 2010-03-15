@@ -3,7 +3,7 @@ open Printf
 open Game
 
 type player = Human | Computer
-type actor = { player : player; pion : int}
+type actor = { player : player; pion : color}
 
 (*rem:les colonnes du jeu sont numérotés de 0 à 6 et les lignes de 0 à 5*)
 let w = 1000 and h = 720
@@ -194,7 +194,7 @@ let rec gameboard current_game =
           set_color black;
           set_line_width 1;
           draw_rect (x1-4) (y1-3) (n_x1+8) (n_y1+6);
-          (1, 0)
+          (Game.Yellow, Game.Red)
         )
 
       (*On a appuyé sur rouge*)
@@ -205,7 +205,7 @@ let rec gameboard current_game =
           set_color black;
           set_line_width 1;
           draw_rect (x2-4) (y2-3) (n_x2+8) (n_y2+6);
-          (0, 1)
+          (Game.Red, Game.Yellow)
         )
       else choose_color()
   in
@@ -270,11 +270,11 @@ let rec gameboard current_game =
     (*permet de représenter le plateau de jeu en court de partie*)
     for j=0 to 6 do
       for i=0 to 5 do
-        set_color (match Game.get game i j with
-                   | 2 -> white
-                   | 0 -> red
-                   | 1 -> yellow
-                   | _ -> raise (Failure ""));
+        set_color (match Game.get_color game i j with
+                   | None -> white
+                   | Some Game.Red -> red
+                   | Some Game.Yellow -> yellow
+                  );
 
         let x_circle = w/6+j*w/9 and y_circle = 5*h/18+i*h/9 in
         fill_circle x_circle y_circle r_circle;
@@ -328,10 +328,10 @@ let rec gameboard current_game =
             (
               let col = pos_x/(w/9)-1 in
               (*si la colonne n'est pas pleine, on peut encore y jouer*)
-              if Game.get game 5 col = 2 then
+              if Game.get_color game 5 col = None then
                 (
                   move game col player1.pion;
-                  if (player1.pion = 0) then
+                  if (player1.pion = Game.Red) then
                     color_circle2 red col (get_row game col)
                   else color_circle2 yellow col (get_row game col);
                   set_color black;
@@ -343,7 +343,8 @@ let rec gameboard current_game =
                       let winner =
                         if nul then "Match Nul"
                         else
-                          (if player1.pion = 0 then "Le joueur ROUGE gagne!!!"
+                          (if player1.pion = Game.Red then
+                             "Le joueur ROUGE gagne!!!"
                            else "Le joueur JAUNE gagne!!!") in
 
                       let (n_xw, n_yw) = (text_size winner) in
