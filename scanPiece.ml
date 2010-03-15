@@ -11,7 +11,7 @@ let motor_captor_r = Motor.b
 let motor_captor_vert = Motor.c
 let current_line = ref 0
 let current_col = ref 0
-let init_game = 5234426 (*representation du jeu par un entier*)
+let current_game = 1634421 (*representation du jeu par un entier*)
 (*num du jeu: de 0 a 6 de gauche à droit du cote du joueur*)
 let expo_10 = [| 1; 10; 100; 1000; 10000; 100000; 1000000|]
 
@@ -19,56 +19,19 @@ let shift_h = 204
 let shift_up_v = 132
 let shift_up_r = 189
 let shift_up_l = 189
+
+(*angle de rotation de moteur_captor_vert pr la ligne [l]*)
 let rot_v l =
   shift_up_v * l
 
+(*angle de rotation de moteur_captor_r pr la ligne [l], colonne [c]*)
 let rot_r l c =
   (shift_up_r*l)+(c*shift_h)
 
+(*angle de rotation de moteur_captor_l pr la ligne [l], colonne [c]*)
 let rot_l l c =
   (shift_up_l*l)-(c*shift_h)
 
-(*tableau des angles courants des moteurs pour avoir le capteur de couleur en
-face des trous pour chaque ligne du jeu
-la première valeur est pour le moteur vert, la seconde pr l; la troisième pr r*)
-let tab_scan =
-  [|
-    [|
-      (0, 0, 0); (0, rot_l 0 1, rot_r 0 1); (0, rot_l 0 2, rot_r 0 2);
-      (0, rot_l 0 3, rot_r 0 3); (0, rot_l 0 4, rot_r 0 4);
-      (0, rot_l 0 5, rot_r 0 5); (0, rot_l 0 6, rot_r 0 6);
-    |];
-    [|
-      (rot_v 1, rot_l 1 0, rot_r 1 0); (rot_v 1, rot_l 1 1, rot_r 1 1);
-      (rot_v 1, rot_l 1 2, rot_r 1 2); (rot_v 1, rot_l 1 3, rot_r 1 3);
-      (rot_v 1, rot_l 1 4, rot_r 1 4); (rot_v 1, rot_l 1 5, rot_r 1 5);
-      (rot_v 1, rot_l 1 6, rot_r 1 6)
-    |];
-    [|
-      (rot_v 2, rot_l 2 0, rot_r 2 0); (rot_v 2, rot_l 2 1, rot_r 2 1);
-      (rot_v 2, rot_l 2 2, rot_r 2 2); (rot_v 2, rot_l 2 3, rot_r 2 3);
-      (rot_v 2, rot_l 2 4, rot_r 2 4); (rot_v 2, rot_l 2 5, rot_r 2 5);
-      (rot_v 2, rot_l 2 6, rot_r 2 6)
-    |];
-    [|
-      (rot_v 3, rot_l 3 0, rot_r 3 0); (rot_v 3, rot_l 3 1, rot_r 3 1);
-      (rot_v 3, rot_l 3 2, rot_r 3 2); (rot_v 3, rot_l 3 3, rot_r 3 3);
-      (rot_v 3, rot_l 3 4, rot_r 3 4); (rot_v 3, rot_l 3 5 ,rot_r 3 5);
-      (rot_v 3, rot_l 3 6, rot_r 3 6)
-    |];
-    [|
-      (rot_v 4, rot_l 4 0, rot_r 4 0); (rot_v 4, rot_l 4 1, rot_r 4 1);
-      (rot_v 4, rot_l 4 2, rot_r 4 2); (rot_v 4, rot_l 4 3, rot_r 4 3);
-      (rot_v 4, rot_l 4 4, rot_r 4 4); (rot_v 4, rot_l 4 5 ,rot_r 4 5);
-      (rot_v 4, rot_l 4 6, rot_r 4 6)
-    |];
-    [|
-      (rot_v 5, rot_l 5 0, rot_r 5 0); (rot_v 5, rot_l 5 1, rot_r 5 1);
-      (rot_v 5, rot_l 5 2, rot_r 5 2); (rot_v 5, rot_l 5 3, rot_r 5 3);
-      (rot_v 5, rot_l 5 4, rot_r 5 4); (rot_v 5, rot_l 5 5 ,rot_r 5 5);
-      (rot_v 5, rot_l 5 6, rot_r 5 6)
-    |]
-  |]
 
 module Run(C: sig val conn : Mindstorm.bluetooth Mindstorm.conn end) =
 struct
@@ -213,13 +176,13 @@ struct
   let wait_r_l_down_end angle_down diff_col deg_new_pos f _ =
     let st = {speed = 0; motor_on = true; brake = true;
               regulation = `Idle; turn_ratio = 100;
-              run_state = `Ramp_down; tach_limit = 30} in
+              run_state = `Ramp_down; tach_limit = 35} in
     Motor.set C.conn motor_captor_r st;
     Motor.set C.conn motor_captor_l st;
 
     Robot.event meas_right (function
                             |None -> false
-                            |Some d -> d <= angle_down+18)
+                            |Some d -> d <= angle_down+25)
       (trans_hor diff_col deg_new_pos f)
 
 
@@ -230,21 +193,9 @@ struct
     Motor.set C.conn motor_captor_vert (Motor.speed 0);
     Robot.event meas_right (function
                         |None -> false
-                        |Some d -> d <= angle_down+18 + 20)
+                        |Some d -> d <= angle_down+25 + 30)
      (wait_r_l_down_end angle_down diff_col deg_new_pos f)
 
-
-(*
-  let wait_vert_down_end  angle_down angle_up diff_col deg_new_pos f _ =
-    let st = {speed = 0; motor_on = true; brake = true;
-              regulation = `Idle; turn_ratio = 100;
-              run_state = `Ramp_down; tach_limit = 40} in
-    Motor.set C.conn motor_captor_vert st;
-    Robot.event meas_vert (function
-                           |None -> false
-                           |Some d -> d <= angle_up+10)
-      (wait_r_l_down angle_down diff_col deg_new_pos f)
-*)
 
   let wait_vert_down angle_down angle_up diff_col deg_new_pos f =
     Robot.event meas_vert (function
@@ -295,8 +246,12 @@ struct
        (
          let diff_line = new_pos_line - !current_line and
              diff_col = new_pos_col - !current_col and
-             deg_new_line = tab_scan.(new_pos_line).(!current_col) and
-             deg_new_pos = tab_scan.(new_pos_line).(new_pos_col) in
+             deg_new_line = (rot_v new_pos_line,
+                             rot_l new_pos_line !current_col,
+                             rot_r new_pos_line !current_col) and
+             deg_new_pos = (rot_v new_pos_line,
+                            rot_l new_pos_line new_pos_col,
+                            rot_r new_pos_line new_pos_col) in
 
          current_line := new_pos_line;
          current_col := new_pos_col;
@@ -330,8 +285,7 @@ struct
 
 
   let run () =
-     scan_game init_game;
-    (* scan_case 0 0 (stop )(); *)
+    scan_game current_game;
     Robot.run r
 
 end
