@@ -14,6 +14,7 @@ let next_line = ref 0
 let next_col = ref (-1)
 let light = ref true (*mettre à faux lorsqu'on veut juste remettre le capteur
  à droite*)
+let go_to_next = ref false
 let current_game = ref 1635421 (*representation du jeu par un entier*)
 (*num du jeu: de 0 a 6 de gauche à droit du cote du joueur*)
 let expo_10 = [| 1; 10; 100; 1000; 10000; 100000; 1000000|]
@@ -132,7 +133,11 @@ struct
             f ()
           )
       )
-    else stop ()
+    else
+      (
+        light := true;
+        f ()
+      )
 
 
 
@@ -142,23 +147,22 @@ struct
     Robot.event meas_left (function
                            |None -> false
                            |Some d -> d <= angle_l)
-      (* (scan_light f) *) (*ça doit etre ça mais prob!!!*)
-      stop
+      (scan_light f)
 
   and adj_l_r angle_l f =
     Motor.set C.conn motor_captor_l (Motor.speed (5));
     Robot.event meas_left (function
                            |None -> false
                            |Some d -> d >= angle_l)
-      (* scan_light f) *)
-      stop
+      (scan_light f)
+
 
   and adj_l angle_l f _ =
     Motor.set C.conn motor_captor_l (Motor.speed 0);
     Motor.set C.conn motor_captor_r (Motor.speed 0);
     match (Robot.read meas_left) with
-     |Some m ->
-        (
+    |Some m ->
+       (
           if m <= angle_l then
             adj_l_r angle_l f
           else adj_l_l angle_l f
@@ -307,7 +311,8 @@ struct
             wait_trans_right_l deg_new_pos f
           )
       )
-    else (scan_light f ())
+    else (scan_light f (Some 0))  (*nous dit que () est un unit et nous on veut)
+                                   un int option*)
 
 
 
@@ -413,31 +418,44 @@ struct
 
 
 
-  let rec scan_game (*alpha_beta*) _ =
-    if (!next_col < 6) then
+  let rec scan_game  next _ =
+    if (!go_to_next) then
       (
-        next_col := !next_col + 1;
-        next_line := piece_in_col !next_col !current_game;
-        if (!next_line = 6) then
-          (
-            scan_game ()
-          )
-        else
-          (
-            printf"%i\n%!" !next_line ;
-            printf "%i\n%!" !next_col ;
-            scan_case !next_line !next_col scan_game
-          )
+        go_to_next := false;
+        next_col := -1;
+        printf"passe à next\n%!";
+        next ()
       )
     else
       (
-        next_col := 0;
-        next_line := piece_in_col !next_col !current_game;
-        scan_case !next_line !next_col scan_game
+        if(not !light) then go_to_next := true;
+
+        if (!next_col < 6) then
+          (
+            next_col := !next_col + 1;
+            next_line := piece_in_col !next_col !current_game;
+            if (!next_line = 6) then
+              (
+                scan_game next ()
+              )
+            else
+              (
+                printf"%i\n%!" !next_line ;
+                printf "%i\n%!" !next_col ;
+                scan_case !next_line !next_col (scan_game next)
+              )
+          )
+        else
+          (
+            next_col := 0;
+            next_line := piece_in_col !next_col !current_game;
+            scan_case !next_line !next_col (scan_game next)
+          )
       )
 
+
   let run () =
-    scan_game () ;
+    scan_game (scan_game stop) () ;(*petit test pr direct rescanner le nv jeu*)
     Robot.run r
 
 end
