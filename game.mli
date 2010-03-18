@@ -23,6 +23,10 @@ val get_row : t -> int -> int
   (** [get_raw g col] returns the row index of the [col]th column
       where there is a token *)
 
+val nbr_token_in_col : t -> int -> int
+  (** [nbr_token_in_col g col] returns the number of token in the
+      [col]th column. *)
+
 val nbr_token : t -> int
   (** [nbr_token g] returns the number of token of the current_game [g] *)
 
@@ -58,3 +62,11 @@ val is_winning : t -> int -> bool
 val next_win : t -> color -> int
   (** [next_win game color] return the column to play if the player
   can win the next move, or return 7 otherwise*)
+
+val horizontal : t -> color -> int -> int * int
+
+val vertical : t -> color -> int -> int * int
+
+val left_diagonal : t -> color -> int -> int * int
+
+val right_diagonal : t -> color -> int -> int * int
