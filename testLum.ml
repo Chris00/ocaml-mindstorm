@@ -37,7 +37,7 @@ let () =
       )
     else Sys.argv.(1) in
   let conn = Mindstorm.connect_bluetooth bt in
-  let module R = Run(struct let conn = conn end) in
+  let module R = Run(struct let conn = conn end) in                                                                                                                                                                                                                                                                                                      
   R.run()
 
 

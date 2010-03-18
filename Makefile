@@ -1,5 +1,6 @@
 # Compile in -custom mode so there is no problem with finding the
 # shared library dllmindstorm.so
+
 PACKAGES = -package mindstorm,bigarray,graphics
 DOC_DIR=doc
 
@@ -35,7 +36,6 @@ plateauJeu.com : game.cmx
 # General "event" library
 robot.cma: robot.cmo
 robot.cmxa: robot.cmx
-
 
 # Generate HTML documentation
 MAKE_DOC = $(OCAMLDOC) -colorize-code -stars -html $(PACKAGES)
