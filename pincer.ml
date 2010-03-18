@@ -1,5 +1,5 @@
 open Printf
-open  Mindstorm.Sensor
+open Mindstorm.Sensor
 open Mindstorm.Motor
 module Motor = Mindstorm.Motor
 
@@ -26,6 +26,8 @@ let rotation = [|230;368;499;630;763;905;1033|]
 
 (*ajuste l'angle à faire suivant la vitesse du moteur open pincer*)
 let adjust_speed = 20   (* 4 pr une vitesse 10; 9 pr une vitesse 12 *)
+
+
 
 module Run(C: sig(* val conn1 : Mindstorm.bluetooth Mindstorm.conn*)
              val conn2 : Mindstorm.bluetooth Mindstorm.conn end) =
@@ -77,9 +79,9 @@ struct
                            |Some d -> d <= 0)
       (wait_next next)
 
-  (*lorsque le distributeur de pieces a pris une piece, il la fait tomber dans
+  (*lorsque le distributeur de pièces a pris une pièce, il la fait tomber dans
     la pince*)
-  let wait_dist next = (*enlevé un _ ici*)
+  let wait_dist next =
     Robot.event meas_dist (function
                            |None -> false
                            |Some d -> d > rot_dist)
@@ -143,7 +145,7 @@ struct
     wait_open_pincer col next
 
   let run col =
-   put_piece col stop () ; (*changer la fct next en fct de se qu'on veut...*)
+   put_piece col stop () ; (*changer la fct next en fct de ce qu'on veut...*)
    Robot.run r
 
 end
