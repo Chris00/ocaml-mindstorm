@@ -375,7 +375,7 @@ struct
              |Some m  ->
                 Motor.set C.conn motor_captor_r (Motor.speed
                  ~tach_limit: (abs(angle_r - m))
-                 ((-1)*(lst speed_up.(diff_line).(diff_col))))
+                 ((-1)*(lst speed_up.(diff_line).(abs(diff_col)))))
              |None -> assert false);
 
 
@@ -383,7 +383,7 @@ struct
              |Some m  ->
                 Motor.set C.conn motor_captor_l (Motor.speed
                       ~tach_limit: (angle_l - m)
-                      ((-1)*(scd speed_up.(diff_line).(diff_col))))
+                      ((-1)*(scd speed_up.(diff_line).(abs(diff_col)))))
              |None -> assert false)
           );
         wait_up angle_v f

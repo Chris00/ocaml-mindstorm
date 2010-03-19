@@ -140,12 +140,12 @@ struct
 
 
   (*déplace la pince et attend d'être au dessus de la colonne [col]*)
-  let put_piece col next _ =
+  let put_piece col next =
     go_pincer (rotation.(col)) 1;
     wait_open_pincer col next
 
   let run col =
-   put_piece col stop () ; (*changer la fct next en fct de ce qu'on veut...*)
+   put_piece col stop; (*changer la fct next en fct de ce qu'on veut...*)
    Robot.run r
 
 end
