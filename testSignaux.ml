@@ -30,23 +30,20 @@ struct
 
   let rec stop _ =
     Motor.set C.conn motor (Motor.speed 0);
-     let pom = Robot.read ~retry:5 ultra in
-     let cara = match pom with
-    | Some v -> string_of_int v
-    | none -> "-1";
-     in printf "%s" (cara^"\n");
-     let niveauGris = Robot.read ~retry:5 light in
-     let vraiNiveau =
-       match niveauGris with
+     let cara = match Robot.read ~retry:5 ultra with
+       | Some v -> v
+       | none -> -1;
+     in printf "%i\n" cara;
+     let niveau_gris =
+       match Robot.read ~retry:5 light with
        | Some v -> v.raw
        | none -> -1;
-     in printf "%s" (string_of_int(vraiNiveau)^"\n");
-     let niveauSon = Robot.read ~retry:5 micro in
-     let vraiSon =
-       match niveauSon with
+     in printf "%i\n" niveau_gris;
+     let niveau_son =
+       match Robot.read ~retry:5 micro with
        | Some v -> v.raw
        | none -> -1;
-     in printf "%s" (string_of_int(vraiSon)^"\n");
+     in printf "%i\n" niveau_son;
      Mindstorm.Sensor.set C.conn port_light `Light_inactive `Pct_full_scale;
      raise Exit
 
@@ -79,3 +76,7 @@ let () =
   printf "Press the button on the robot to stop.\n%!";
   R.run();
   S.run()
+
+(* Local Variables: *)
+(* compile-command: "make TestSignaux.com" *)
+(* End: *)
