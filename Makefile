@@ -19,20 +19,11 @@ all: byte native
 #une autre qui prendra ceux a ne pas utiliser en .exe
 SOURCES = game.ml alphabeta.ml plateauJeu.ml  scanPiece.ml pincer.ml \
   run_connect4.ml
-byte: $(SOURCES:.ml=.cmo)
-native: $(SOURCES:.ml=.cmx)
+byte: run_connect4.exe
+native: run_connect4.com
 
-DeuxUnitesPush.exe : robot.cma
-scanPiece.exe : robot.cma
-pincer.exe : robot.cma
-run_connect4.exe : robot.cma game.cmo alphabeta.cmo scanPiece.cmo pincer.cmo
-plateauJeu.exe : game.cmo
-
-DeuxUnitesPush.com : robot.cmxa
-scanPiece.com : robot.cmxa
-pincer.com : robot.cmxa
-run_connect4.com : robot.cmxa game.cmx alphabeta.cmx pincer.cmx scanPiece.cmx
-plateauJeu.com : game.cmx
+run_connect4.exe: robot.cma $(SOURCES:.ml=.cmo)
+run_connect4.com: robot.cmxa $(SOURCES:.ml=.cmx)
 
 # General "event" library
 robot.cma: robot.cmo
