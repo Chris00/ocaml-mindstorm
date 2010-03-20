@@ -53,31 +53,24 @@ struct
   let go_to_next = ref false
   let current_game = ref 1635412 (*representation du jeu par un entier*)
 
-  let scd (a, b, c) = b
-
-  let lst (a, b, c) = c
-
-  let last (a, b, c, d) = d
-
   let r = Robot.make()
 
+  let get_angle motor = let _,_,_,a = Motor.get C.conn motor in a
+
  (*nous retourne l'angle courant du moteur droit*)
-  let meas_right =
-    Robot.meas r (fun _ -> last (Motor.get C.conn motor_captor_r))
+  let meas_right = Robot.meas r (fun () -> get_angle motor_captor_r)
 
   (*nous retourne l'angle courant du moteur gauche*)
-  let meas_left =
-    Robot.meas r (fun _ ->  last (Motor.get C.conn motor_captor_l))
+  let meas_left = Robot.meas r (fun () ->  get_angle motor_captor_l)
 
  (*nous retourne l'angle courant du moteur vertical*)
-  let meas_vert =
-    Robot.meas r (fun _ -> last (Motor.get C.conn motor_captor_vert))
+  let meas_vert = Robot.meas r (fun () -> get_angle motor_captor_vert)
 
 
-  let stop _ =
+  let stop () =
     Motor.set C.conn Motor.all (Motor.speed 0)
 
-  let stop_motor_l _ =
+  let stop_motor_l () =
     Motor.set C.conn motor_captor_l (Motor.speed 0)
 
 
@@ -89,13 +82,6 @@ struct
   (*methode ajoutant une piece au jeu [game] en colonne [col]*)
   let add_piece col game =
     current_game := game + expo_10.(col)
-
-
-
-
-
-
-
 
 
   (* retourne la couleur devant le capteur*)
@@ -144,8 +130,6 @@ struct
         light := true;
         f ()
       )
-
-
 
   (*ajuste la position du capteur couleur*)
   and adj_l_l angle_l f =
@@ -279,11 +263,11 @@ struct
                             |Some d -> d <= deg_new_pos_r)
      (scan_light f)
 
-  let wait_trans_right_l deg_new_pos f =
+  let wait_trans_right_l (_, deg_new_pos_l, deg_new_pos_r) f =
     Robot.event meas_left (function
                             |None -> false
-                            |Some d -> d >= scd(deg_new_pos))
-      (wait_trans_right_r (lst(deg_new_pos)) f)
+                            |Some d -> d >= deg_new_pos_l)
+      (wait_trans_right_r deg_new_pos_r f)
 
 
   (*attendre d'avoir fait le déplacement vers la gauche*)
@@ -294,11 +278,11 @@ struct
                             |Some d -> d <= deg_new_pos_l)
       (scan_light f)
 
-  let wait_trans_left_r deg_new_pos  f =
+  let wait_trans_left_r (_, deg_new_pos_l, deg_new_pos_r)  f =
     Robot.event meas_right (function
                             |None -> false
-                            |Some d -> d >= lst(deg_new_pos))
-      (wait_trans_left_l (scd(deg_new_pos)) f)
+                            |Some d -> d >= deg_new_pos_r)
+      (wait_trans_left_l deg_new_pos_l f)
 
 
   (*déplacement horizontal pr etre ds la bonne colonne*)
