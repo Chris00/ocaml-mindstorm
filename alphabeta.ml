@@ -143,7 +143,7 @@ let h game color mode =
           (
             (*if win_in_2moves game j color then*)
               let aline_horiz_max = Game.horizontal game color j
-              and aline_vert_max = Game.vertical game color j
+              (* and aline_vert_max = Game.vertical game color j *)
               and aline_diag_left_max = Game.left_diagonal game color j
               and aline_diag_right_max = Game.right_diagonal game color j in
 
@@ -171,8 +171,8 @@ let h game color mode =
 
               let aline_horiz_min =
                 Game.horizontal game (Game.color_invers color) j
-              and aline_vert_min =
-                Game.vertical game (Game.color_invers color) j
+              (* and aline_vert_min =
+                Game.vertical game (Game.color_invers color) j *)
               and aline_diag_left_min =
                 Game.left_diagonal game (Game.color_invers color) j
               and aline_diag_right_min =
