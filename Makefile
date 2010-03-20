@@ -17,7 +17,7 @@ all: byte native
 
 #changer sources et faire une autre variable, une qui prendra ceux a exectuer
 #une autre qui prendra ceux a ne pas utiliser en .exe
-SOURCES = game.ml alphabeta.ml useful.ml plateauJeu.ml DeuxUnitesPush.ml scanPiece.ml pincer.ml run_connect4.ml
+SOURCES = game.ml alphabeta.ml plateauJeu.ml DeuxUnitesPush.ml scanPiece.ml pincer.ml run_connect4.ml
 byte: $(SOURCES:.ml=.exe)
 native: $(SOURCES:.ml=.com)
 
