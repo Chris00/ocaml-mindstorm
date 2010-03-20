@@ -5,20 +5,11 @@ module Motor = Mindstorm.Motor
 module Sensor = Mindstorm.Sensor
 
 
-
 let color_port = `S4
 let motor_captor_l = Motor.a
 let motor_captor_r = Motor.b
 let motor_captor_vert = Motor.c
-let current_line = ref 0
-let current_col = ref 0
-let next_line = ref 0
-let next_col = ref (-1)
-let col_had_play = ref 0
-let light = ref true (*mettre à faux lorsqu'on veut juste remettre le capteur
- à droite*)
-let go_to_next = ref false
-let current_game = ref 1635412 (*representation du jeu par un entier*)
+
 (*num du jeu: de 0 a 6 de gauche à droit du cote du joueur*)
 let expo_10 = [| 1; 10; 100; 1000; 10000; 100000; 1000000|]
 
@@ -51,6 +42,16 @@ let rot_l l c =
 module Run(C: sig val conn : Mindstorm.bluetooth Mindstorm.conn end) =
 struct
 
+  (* État du jeu *)
+  let current_line = ref 0
+  let current_col = ref 0
+  let next_line = ref 0
+  let next_col = ref (-1)
+  let col_had_play = ref 0
+  let light = ref true (*mettre à faux lorsqu'on veut juste remettre le capteur
+                         à droite*)
+  let go_to_next = ref false
+  let current_game = ref 1635412 (*representation du jeu par un entier*)
 
   let scd (a, b, c) = b
 
