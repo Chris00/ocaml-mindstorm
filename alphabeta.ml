@@ -18,20 +18,6 @@ struct
       else if tab.(i) < min_current then min tab.(i) i (i+1)
       else min min_current i_min (i+1)
     in min 0. 0 0
-
-  let print game =
-    Printf.printf "\n";
-    for i = 5 downto 0 do
-      for j = 0 to 6 do
-        let couleur = match (Game.get_color game i j) with
-          | None -> "       "
-          | Some Game.Yellow -> " Yellow"
-          | Some Game.Red -> " Red   " in
-        Printf.printf "%s" couleur;
-      done;
-      Printf.printf"\n"
-    done;
-    Printf.printf"--------------------------------------------------\n"
 end
 
 type mode = Max | Min;;
@@ -287,7 +273,6 @@ let rec node_min game color alpha beta beta_p good_col j =
         Game.move game j color;
         let value, _ = (node_max game (Game.color_invers color) alpha
                           (min beta beta_p) 1. j 0) in
-
         Game.remove game j color;
         let (new_beta, new_col) =
           if beta_p > value then (value, j)
@@ -323,80 +308,3 @@ and node_max game color alpha beta alpha_p good_col j =
 
 let alphabetabis game color alpha beta =
   node_max game color alpha beta 1. 0 0;;
-
-
-let g = Game.make();;
-Game.move g 3 Game.Yellow;;
-Game.move g 3 Game.Red;;
-Game.move g 3 Game.Yellow;;
-
-
-(*let a = alphabeta g Game.Red (neg_infinity) infinity 2 h;;
-Printf.printf "%f" (fst a);;
-Printf.printf "\n";;
-Printf.printf "%i" (snd a);;*)
-
-(*let g = Game.make();;*)
-(*Game.move g 0 Game.Red;
-Game.move g 1 Game.Yellow;
-Game.move g 1 Game.Red;
-Game.move g 0 Game.Yellow;
-Game.move g 0 Game.Red;
-Game.move g 1 Game.Yellow;
-Game.move g 1 Game.Red;
-Game.move g 0 Game.Yellow;
-(*Game.move g 0 Game.Yellow;*)
-(*Game.move g 1 Game.Red;*)
-Game.move g 3 Game.Red;
-Game.move g 2 Game.Yellow;
-Game.move g 2 Game.Red;
-(*Game.move g 3 Game.Yellow;*)
-(*Game.move g 0 Game.Red;*)
-Game.move g 2 Game.Yellow;
-(*Game.move g 2 Game.Red;*)
-(*Game.move g 3 Game.Yellow;*)
-(*Game.move g 3 Game.Red;*)
-(*Game.move g 2 Game.Yellow;*)
-Game.move g 5 Game.Red;
-Game.move g 6 Game.Yellow;
-Game.move g 6 Game.Red;
-Game.move g 5 Game.Yellow;
-Game.move g 5 Game.Red;
-Game.move g 6 Game.Yellow;
-(*Game.move g 6 Game.Red;*)
-(*Game.move g 5 Game.Yellow;*)
-(*Game.move g 5 Game.Red;*)
-(*Game.move g 6 Game.Yellow;*)
-Game.move g 4 Game.Red;
-Game.move g 4 Game.Yellow;
-Game.move g 4 Game.Red;;
-(*Game.move g 4 Game.Red;;*)
-(*Game.move g 4 Game.Red;;*)
-(*Game.move g 3 Game.Yellow;;*)
-(*Game.move g 4 Game.Red;;*)
-*)
-
-
-Game.move g 2 Game.Red;;
-Game.move g 0 Game.Yellow;;
-Game.move g 0 Game.Red;;
-Game.move g 2 Game.Yellow;;
-Game.move g 2 Game.Red;;
-Game.move g 0 Game.Yellow;;
-Game.move g 0 Game.Red;;
-Game.move g 0 Game.Yellow;;
-Game.move g 2 Game.Red;;
-(*Game.move g 0 Game.Yellow;;
-Game.move g 0 Game.Red;;
-Game.move g 2 Game.Yellow;;
-Game.move g 0 Game.Red;;
-Game.move g 0 Game.Yellow;;*)
-
-Useful.print g;;
-
-Printf.printf "\n";;
-
-let a = alphabeta g Game.Yellow neg_infinity infinity 8 h;;
-Printf.printf "%f" (fst a);;
-Printf.printf "\n";;
-Printf.printf "%i" (snd a);;

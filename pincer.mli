@@ -11,4 +11,10 @@ sig
     (** [put_piece col next] put the piece in the column [col] starting from the
         initial position, return to the starting position, put a piece in
         the pincer and do [w] *)
+
+  val run : unit -> unit
+    (** Starts the event loop associated with the pincer. *)
+
+  val stop : unit -> unit
+    (** Stop all motors associated with the pincer. *)
 end

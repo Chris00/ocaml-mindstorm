@@ -1,6 +1,4 @@
 open Printf
-open Mindstorm.Sensor
-open Mindstorm.Motor
 module Motor = Mindstorm.Motor
 module Sensor = Mindstorm.Sensor
 
@@ -309,7 +307,7 @@ struct
 
   (*condition d'arret de l et r qd le mobile descend*)
   let wait_r_l_down_end angle_down diff_col deg_new_pos f _ =
-    let st = {speed = 0; motor_on = true; brake = true;
+    let st = {Motor.speed = 0; motor_on = true; brake = true;
               regulation = `Idle; turn_ratio = 100;
               run_state = `Ramp_down; tach_limit = 30} in
     Motor.set C.conn motor_captor_r st;
@@ -346,9 +344,9 @@ struct
 
   (*condition d'arret de vert qd le mobile monte*)
   let wait_vert_up_end angle_up diff_col deg_new_pos f _ =
-    let st = {speed = 0; motor_on = true; brake = true;
-                   regulation = `Idle; turn_ratio = 100;
-                   run_state = `Ramp_down; tach_limit = 40} in
+    let st = { Motor.speed = 0; motor_on = true; brake = true;
+               regulation = `Idle; turn_ratio = 100;
+               run_state = `Ramp_down; tach_limit = 40 } in
     Motor.set C.conn motor_captor_vert st;
     Robot.event meas_vert (function
                            |None -> false
@@ -455,15 +453,3 @@ struct
     Robot.run r
 
 end
-
-let () =
-  let (bt)=
-    if Array.length Sys.argv < 2 then (
-      printf "%s <bluetooth addr>\n" Sys.argv.(0);
-      exit 1;
-    )
-    else (Sys.argv.(1)) in
-  let conn = Mindstorm.connect_bluetooth bt in
-  let module R = Run(struct let conn = conn end) in
-  printf "Press the button on the robot to stop.\n%!";
-  R.run()
