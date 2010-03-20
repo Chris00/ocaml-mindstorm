@@ -20,5 +20,7 @@ auto
 *.pdf
 *.snm
 *.toc
-# Tarballs
+# Tarballs & misc
 *.tar.gz
+biblio/
+photo robot/

@@ -423,38 +423,35 @@ struct
 
 
 
-  let rec scan_game next _ =
-    if (!go_to_next) then
+  let rec scan_game next =
+    if !go_to_next then
       (
         go_to_next := false;
         next_col := -1;
         printf"passe à next\n%!";
-        next !col_had_play ()
+        next !col_had_play
       )
     else
       (
-        if(not !light) then go_to_next := true;
+        go_to_next := not !light;
 
-        if (!next_col < 6) then
+        if !next_col < 6 then
           (
             next_col := !next_col + 1;
             next_line := piece_in_col !next_col !current_game;
-            if (!next_line = 6) then
-              (
-                scan_game next ()
-              )
+            if !next_line = 6 then
+                scan_game next
             else
               (
-                printf"%i\n%!" !next_line ;
-                printf "%i\n%!" !next_col ;
-                scan_case !next_line !next_col (scan_game next)
+                printf"%i\n%i\n%!" !next_line !next_col;
+                scan_case !next_line !next_col (fun () -> scan_game next)
               )
           )
         else
           (
             next_col := 0;
             next_line := piece_in_col !next_col !current_game;
-            scan_case !next_line !next_col (scan_game next)
+            scan_case !next_line !next_col (fun () -> scan_game next)
           )
       )
 
@@ -464,13 +461,12 @@ struct
         add_piece col_new_piece !current_game;
         printf "%i\n%!" !current_game;
       );
-    scan_game next ()
+    scan_game next
 
-  let afficher c _ =
-    printf "%i\n%!" c
 
   let run () =
-    scan 0 (afficher); (*qd il a fini, il affiche où l'autre a joué*)
+    scan 0 (fun c -> printf "%i\n%!" c); (* qd il a fini, il affiche où l'autre
+                                         a joué*)
     Robot.run r
 
 end
