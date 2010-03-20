@@ -1,9 +1,8 @@
 # .bzrignore						-*-conf-unix-*-
 *.annot
-*.cmi
-*.cmo
-*.cma
-*.cmx
+*.cm[ioax]
+*.obj
+*.lib
 *.cmxa
 *.exe
 *.com
