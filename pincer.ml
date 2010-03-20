@@ -32,23 +32,18 @@ let adjust_speed = 20   (* 4 pr une vitesse 10; 9 pr une vitesse 12 *)
 module Run(C: sig(* val conn1 : Mindstorm.bluetooth Mindstorm.conn*)
              val conn2 : Mindstorm.bluetooth Mindstorm.conn end) =
 struct
-
-
-  let last (a, b, c, d) = d
-
   let r = Robot.make()
 
+  let get_angle motor = let _,_,_,a = Motor.get C.conn2 motor in a
+
   (*nous retourne l'angle courant du moteur distribuant les pièces*)
-  let meas_dist =
-    Robot.meas r (fun _ -> last (Motor.get C.conn2 motor_dist))
+  let meas_dist = Robot.meas r (fun () -> get_angle motor_dist)
 
   (*nous retourne l'angle courant du moteur déplaçant la pince*)
-  let meas_translation_pincer =
-    Robot.meas r (fun _ ->  last (Motor.get C.conn2 motor_pincer))
+  let meas_translation_pincer = Robot.meas r (fun () ->  get_angle motor_pincer)
 
   (*nous retourne l'angle courant du moteur ouvrant la pince*)
-  let meas_open_pincer =
-    Robot.meas r (fun _ -> last (Motor.get C.conn2 motor_open_pincer))
+  let meas_open_pincer = Robot.meas r (fun _ -> get_angle motor_open_pincer)
 
 
   let run () = Robot.run r
