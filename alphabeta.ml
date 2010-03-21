@@ -260,51 +260,56 @@ let alphabeta game color alpha beta level heuristic=
       )
   in ab n 0 game alpha beta Max level color
 
-(*probleme avec good_col qui quand il revient retourne forcement 0*)
-let rec node_min game color alpha beta beta_p good_col j =
-  if Game.is_winning game good_col then (1., good_col)
-  else if Game.is_draw game then (0., good_col)
-  else
-    let col_win = Game.next_win game color in
-    if col_win < 7 then (-1., col_win)
-    else if j > 6 then (beta_p, good_col)
-    else (
-      try
-        Game.move game j color;
-        let value, _ = (node_max game (Game.color_invers color) alpha
-                          (min beta beta_p) 1. j 0) in
-        Game.remove game j color;
-        let (new_beta, new_col) =
-          if beta_p > value then (value, j)
-          else (beta_p, good_col) in
-        if alpha >= new_beta then (new_beta, new_col)
-        else node_min game color alpha beta new_beta new_col (j+1)
-      with Game.Column_full ->
-        node_min game color alpha beta beta_p good_col (j+1)
-    )
 
-and node_max game color alpha beta alpha_p good_col j =
-  if Game.is_winning game good_col then (-1., good_col)
-  else if Game.is_draw game then (0., good_col)
-  else
-    let col_win = Game.next_win game color in
-    if col_win < 7 then (1., col_win)
-    else if j > 6 then (alpha_p, good_col)
-    else (
-      try
-        Game.move game j color;
-        let value,_ = (node_min game (Game.color_invers color)
-                         (max alpha alpha_p) beta (-1.) j 0) in
+(* Return [(beta', col)] where [beta'] is the "cost" of this node and
+   [col] is a column to play to achieve that cost. *)
+let rec node_min game color alpha beta =
+  (* Check whether a winning (⇒ extremal) position can be achieved in
+     one move. *)
+  let col_win = Game.next_win game color in
+  if col_win < 7 then (neg_infinity, col_win)
+  else node_min_iter game color alpha beta 0 0
 
-        Game.remove game j color;
-        let (new_alpha, new_col) =
-          if alpha_p < value then (value, j)
-          else (alpha_p, good_col) in
-        if new_alpha >= beta then (new_alpha, new_col)
-        else node_max game color alpha beta new_alpha new_col (j+1)
-      with Game.Column_full ->
-        node_max game color alpha beta alpha_p good_col (j+1)
-    )
+and node_min_iter game color alpha beta_cur good_col j =
+  if j > 6 then (beta_cur, good_col)
+  else if Game.is_winning game j then (infinity, j)
+  else if Game.is_draw game then (0., j)
+  else (
+    try
+      Game.move game j color;
+      let beta, _ = node_max game (Game.color_invers color) alpha beta_cur in
+      Game.remove game j color;
+      if beta < beta_cur then (* new min playing [j] *)
+        if beta <= alpha then (beta, j)
+        else node_min_iter game color alpha beta j (j+1)
+      else node_min_iter game color alpha beta_cur good_col (j+1)
+    with Game.Column_full ->
+      node_min_iter game color alpha beta_cur good_col (j+1)
+  )
+
+(* Return [(alpha', col)] where [alpha'] is the "cost" of this node
+   and [col] is a column to play to achive that cost. *)
+and node_max game color alpha beta =
+  let col_win = Game.next_win game color in
+  if col_win < 7 then (infinity, col_win)
+  else node_max_iter game color alpha beta 0 0
+
+and node_max_iter game color alpha_cur beta good_col j =
+  if  j > 6 then (alpha_cur, good_col)
+  else if Game.is_winning game j then (neg_infinity, j)
+  else if Game.is_draw game then (0., j)
+  else (
+    try
+      Game.move game j color;
+      let alpha,_ = node_min game (Game.color_invers color) alpha_cur beta in
+      Game.remove game j color;
+      if alpha > alpha_cur then (* new max playing [j] *)
+        if alpha >= beta then (alpha, j)
+        else node_max_iter game color alpha beta j (j+1)
+      else node_max_iter game color alpha_cur beta good_col (j+1)
+    with Game.Column_full ->
+      node_max_iter game color alpha_cur beta good_col (j+1)
+  )
 
 let alphabetabis game color alpha beta =
-  node_max game color alpha beta 1. 0 0;;
+  node_max game color neg_infinity infinity
