@@ -1468,68 +1468,6 @@ let evaluation_function board =
   else evaluate_white board
 
 
-let make_board() =
-  let solv = Array.make_matrix 64 16 0
-  and intg =
-    {
-      tgroups = Array.make groups true;
-      j = 0;
-      k = 0;
-      mygroups = Array.make groups true
-    }
-  and sol =
-    {
-      valid = true;
-      solname = CLAIMEVEN;  (* any will do *)
-      solpoint = Array.make 2 0;
-      sqinv = Array.make (2*tiles) 0;
-      sqinvnumb = 0;
-      solgroups = Array.make groups 0;
-      solgroupsnumb = 0
-    } in
-  {
-      wins = Array.make 2 0;
-      draws = 0;
-      lastguess = 0;
-      bestguess = maxmen;
-      lastwin = 0;
-      white_lev = 0;
-      black_lev = 0;
-      autotest = 0;
-      rules = Array.make 3 0;
-      oracle_guesses = 0;
-      instances = Rule.vec 10 0;
-      turn = 1;
-      filled = 0;
-      cpu = 1;
-      bbposit =0;
-      groups = Array.init 69 (fun i -> (Array.init 4 (fun j -> ref 0)));
-      xplace = Array.make_matrix 69 4 0;
-      yplace = Array.make_matrix 69 4 0;
-      square = Array.init ((boardX+1)*(boardY+2)) (fun i -> ref 0);
-      wipesq = Array.make ((boardX+1)*(boardY+2)) 0;
-      usablegroup = Array.make groups true;
-      sqused = Array.make ((boardX+1)*(boardY+2)) false;
-      stack = Array.make (boardX+1) 0;
-      moves = Array.make maxmen 0;
-      solvable_groups = solv;
-      choices = Array.make maxmen 0;
-      mlist = Array.make maxmen 0;
-      intgp = intg;
-      solution = Array.init alloc_solutions (fun i -> sol);
-      sp = -1;
-      problem_solved = 0;
-      solused = -1;
-      oracle = Array.make 2 0;
-      nodes_visited = 0;
-      maxtreedepth = 0;
-      white_book = Array.make 1 0;
-      black_book = Array.make 1 0;
-      wbposit = 0;
-      lastob = 0
-  }
-
-
 let init_board board =
   let i = ref 0 in
   (* Step one. Horizontal lines. *)
@@ -1607,6 +1545,70 @@ let init_board board =
       board.square.(elm x y) := 0
     done
   done
+
+(* Return a fully initialized board *)
+let make_board() =
+  let solv = Array.make_matrix 64 16 0
+  and intg =
+    {
+      tgroups = Array.make groups true;
+      j = 0;
+      k = 0;
+      mygroups = Array.make groups true
+    }
+  and sol =
+    {
+      valid = true;
+      solname = CLAIMEVEN;  (* any will do *)
+      solpoint = Array.make 2 0;
+      sqinv = Array.make (2*tiles) 0;
+      sqinvnumb = 0;
+      solgroups = Array.make groups 0;
+      solgroupsnumb = 0
+    } in
+  let board = {
+      wins = Array.make 2 0;
+      draws = 0;
+      lastguess = 0;
+      bestguess = maxmen;
+      lastwin = 0;
+      white_lev = 0;
+      black_lev = 0;
+      autotest = 0;
+      rules = Array.make 3 0;
+      oracle_guesses = 0;
+      instances = Rule.vec 10 0;
+      turn = 1;
+      filled = 0;
+      cpu = 1;
+      bbposit =0;
+      groups = Array.init 69 (fun i -> (Array.init 4 (fun j -> ref 0)));
+      xplace = Array.make_matrix 69 4 0;
+      yplace = Array.make_matrix 69 4 0;
+      square = Array.init ((boardX+1)*(boardY+2)) (fun i -> ref 0);
+      wipesq = Array.make ((boardX+1)*(boardY+2)) 0;
+      usablegroup = Array.make groups true;
+      sqused = Array.make ((boardX+1)*(boardY+2)) false;
+      stack = Array.make (boardX+1) 0;
+      moves = Array.make maxmen 0;
+      solvable_groups = solv;
+      choices = Array.make maxmen 0;
+      mlist = Array.make maxmen 0;
+      intgp = intg;
+      solution = Array.init alloc_solutions (fun i -> sol);
+      sp = -1;
+      problem_solved = 0;
+      solused = -1;
+      oracle = Array.make 2 0;
+      nodes_visited = 0;
+      maxtreedepth = 0;
+      white_book = Array.make 1 0;
+      black_book = Array.make 1 0;
+      wbposit = 0;
+      lastob = 0
+  } in
+  init_board board;
+  board
 
 
 (*IA*)
