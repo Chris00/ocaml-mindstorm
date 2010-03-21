@@ -24,7 +24,7 @@ let rec step game color col =
   (*on verifie que le jeu n'est pas gagné ou match nul*)
   if not (Game.is_winning game col) && not (Game.is_draw game) then
     (*on cherche la colonne a jouer*)
-    let _, col_to_play = alphabeta game color neg_infinity infinity 8 h in
+    let _, col_to_play = alphabeta game color 8 heuristic in
     Game.move game col_to_play color;
     (*la pince va mettre la piece dans la colonne a jouer
       et on va scanner pour voir si le joueur a joue*)

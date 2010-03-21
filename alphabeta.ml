@@ -113,7 +113,7 @@ let win_in_2moves game j color =
       )
   with Game.Column_full -> false
 
-let h game color mode =
+let heuristic game color mode =
   let col_win_max = Game.next_win game color
   and col_win_min = Game.next_win game (Game.color_invers color) in
 
@@ -259,6 +259,9 @@ let alphabeta game color alpha beta level heuristic=
             )
       )
   in ab n 0 game alpha beta Max level color
+
+let alphabeta game color level heuristic =
+   alphabeta game color neg_infinity infinity level heuristic
 
 
 (* Return [(beta', col)] where [beta'] is the "cost" of this node and
