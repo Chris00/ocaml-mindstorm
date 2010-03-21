@@ -28,7 +28,7 @@ let rec step game color col =
     Game.move game col_to_play color;
     (*la pince va mettre la piece dans la colonne a jouer
       et on va scanner pour voir si le joueur a joue*)
-    if not(Game.is_winning game col_to_play) || not(Game.is_draw game) then
+    if not(Game.is_winning game col_to_play) && not(Game.is_draw game) then
       P.put_piece col_to_play
         (fun () -> S.scan col_to_play (fun c -> step game color c))
     else P.put_piece col_to_play P.stop
@@ -36,6 +36,6 @@ let rec step game color col =
 let () =
   let game = Game.make() in
   if Conn.fst_computer then step game Game.Yellow 0
-  else S.scan (-1) (fun c -> step game Game.Yellow c)
-
+  else S.scan (-1) (fun c -> step game Game.Yellow c);
+  Robot.run Conn.r
 
