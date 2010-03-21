@@ -266,53 +266,61 @@ let alphabeta game color level heuristic =
 
 (* Return [(beta', col)] where [beta'] is the "cost" of this node and
    [col] is a column to play to achieve that cost. *)
-let rec node_min game color alpha beta =
-  (* Check whether a winning (⇒ extremal) position can be achieved in
-     one move. *)
-  let col_win = Game.next_win game color in
-  if col_win < 7 then (neg_infinity, col_win)
-  else node_min_iter game color alpha beta 0 0
+let rec node_min game color alpha beta depth heuristic =
+  if depth = 0 then heuristic game color Min
+  else
+    (* Check whether a winning (⇒ extremal) position can be achieved in
+       one move. *)
+    let col_win = Game.next_win game color in
+    if col_win < 7 then (neg_infinity, col_win)
+    else node_min_iter game color alpha beta depth heuristic 0 0
 
-and node_min_iter game color alpha beta_cur good_col j =
+and node_min_iter game color alpha beta_cur depth heuristic good_col j =
   if j > 6 then (beta_cur, good_col)
   else if Game.is_winning game j then (infinity, j)
   else if Game.is_draw game then (0., j)
   else (
     try
       Game.move game j color;
-      let beta, _ = node_max game (Game.color_invers color) alpha beta_cur in
+      let beta, _ = (node_max game (Game.color_invers color) alpha beta_cur
+                       (depth-1) heuristic) in
       Game.remove game j color;
       if beta < beta_cur then (* new min playing [j] *)
         if beta <= alpha then (beta, j)
-        else node_min_iter game color alpha beta j (j+1)
-      else node_min_iter game color alpha beta_cur good_col (j+1)
+        else node_min_iter game color alpha beta depth heuristic j (j+1)
+      else
+        node_min_iter game color alpha beta_cur depth heuristic good_col (j+1)
     with Game.Column_full ->
-      node_min_iter game color alpha beta_cur good_col (j+1)
+      node_min_iter game color alpha beta_cur depth heuristic good_col (j+1)
   )
 
 (* Return [(alpha', col)] where [alpha'] is the "cost" of this node
    and [col] is a column to play to achive that cost. *)
-and node_max game color alpha beta =
-  let col_win = Game.next_win game color in
-  if col_win < 7 then (infinity, col_win)
-  else node_max_iter game color alpha beta 0 0
+and node_max game color alpha beta depth heuristic =
+  if depth = 0 then heuristic game color Max
+  else
+    let col_win = Game.next_win game color in
+    if col_win < 7 then (infinity, col_win)
+    else node_max_iter game color alpha beta depth heuristic 0 0
 
-and node_max_iter game color alpha_cur beta good_col j =
+and node_max_iter game color alpha_cur beta depth heuristic good_col j =
   if  j > 6 then (alpha_cur, good_col)
   else if Game.is_winning game j then (neg_infinity, j)
   else if Game.is_draw game then (0., j)
   else (
     try
       Game.move game j color;
-      let alpha,_ = node_min game (Game.color_invers color) alpha_cur beta in
+      let alpha,_ = (node_min game (Game.color_invers color) alpha_cur beta
+                       (depth-1) heuristic) in
       Game.remove game j color;
       if alpha > alpha_cur then (* new max playing [j] *)
         if alpha >= beta then (alpha, j)
-        else node_max_iter game color alpha beta j (j+1)
-      else node_max_iter game color alpha_cur beta good_col (j+1)
+        else node_max_iter game color alpha beta depth heuristic j (j+1)
+      else
+        node_max_iter game color alpha_cur beta depth heuristic good_col (j+1)
     with Game.Column_full ->
-      node_max_iter game color alpha_cur beta good_col (j+1)
+      node_max_iter game color alpha_cur beta depth heuristic good_col (j+1)
   )
 
-let alphabetabis game color alpha beta =
-  node_max game color neg_infinity infinity
+let alphabetabis game color depth heuristic =
+  node_max game color neg_infinity infinity depth heuristic

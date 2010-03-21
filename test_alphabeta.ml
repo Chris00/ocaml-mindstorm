@@ -83,5 +83,5 @@ Game.move g 0 Game.Yellow;;*)
 let () =
   print g;
   printf "%!";
-  let cost, col = Alphabeta.alphabetabis g Game.Yellow 8 Alphabeta.heuristic in
+  let cost, col = Alphabeta.alphabetabis g Game.Yellow 9 Alphabeta.heuristic in
   printf "cost = %f   colum, = %i\n" cost col
