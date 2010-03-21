@@ -17,8 +17,7 @@ all: byte native
 
 #changer sources et faire une autre variable, une qui prendra ceux a exectuer
 #une autre qui prendra ceux a ne pas utiliser en .exe
-SOURCES = game.ml alphabeta.ml plateauJeu.ml  scanPiece.ml pincer.ml \
-  run_connect4.ml
+SOURCES = game.ml alphabeta.ml plateauJeu.ml  scanPiece.ml  scanPiece2.ml \ 	pincer.ml run_connect4.ml
 byte: run_connect4.exe
 native: run_connect4.com
 
@@ -37,6 +36,7 @@ $(TESTS:.ml=.com): robot.cmxa
 test_alphabeta.com: game.cmx alphabeta.cmx
 test_pincer.com: pincer.cmx
 test_scanPiece.com: scanPiece.cmx
+scanPiece2.com:scanPiece.cmx
 
 # Generate HTML documentation
 MAKE_DOC = $(OCAMLDOC) -colorize-code -stars -html $(PACKAGES)

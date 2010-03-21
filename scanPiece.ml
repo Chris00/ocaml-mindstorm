@@ -37,7 +37,8 @@ let rot_l l c =
 
 
 
-module Run(C: sig val conn : Mindstorm.bluetooth Mindstorm.conn end) =
+module Run(C: sig val conn_scan : Mindstorm.bluetooth Mindstorm.conn
+                  val r : Robot.t end) =
 struct
 
   (* État du jeu *)
@@ -49,27 +50,27 @@ struct
   let light = ref true (*mettre à faux lorsqu'on veut juste remettre le capteur
                          à droite*)
   let go_to_next = ref false
-  let current_game = ref 1635412 (*representation du jeu par un entier*)
+  let current_game = ref 0 (*representation du jeu par un entier*)
 
-  let r = Robot.make()
+  (* let r = Robot.make() *)
 
-  let get_angle motor = let _,_,_,a = Motor.get C.conn motor in a
+  let get_angle motor = let _,_,_,a = Motor.get C.conn_scan motor in a
 
  (*nous retourne l'angle courant du moteur droit*)
-  let meas_right = Robot.meas r (fun () -> get_angle motor_captor_r)
+  let meas_right = Robot.meas C.r (fun () -> get_angle motor_captor_r)
 
   (*nous retourne l'angle courant du moteur gauche*)
-  let meas_left = Robot.meas r (fun () ->  get_angle motor_captor_l)
+  let meas_left = Robot.meas C.r (fun () ->  get_angle motor_captor_l)
 
  (*nous retourne l'angle courant du moteur vertical*)
-  let meas_vert = Robot.meas r (fun () -> get_angle motor_captor_vert)
+  let meas_vert = Robot.meas C.r (fun () -> get_angle motor_captor_vert)
 
 
   let stop () =
-    Motor.set C.conn Motor.all (Motor.speed 0)
+    Motor.set C.conn_scan Motor.all (Motor.speed 0)
 
   let stop_motor_l () =
-    Motor.set C.conn motor_captor_l (Motor.speed 0)
+    Motor.set C.conn_scan motor_captor_l (Motor.speed 0)
 
 
   (*methode retournant le nbre de pions ds la col [col] du jeu [game]*)
@@ -84,19 +85,19 @@ struct
 
   (* retourne la couleur devant le capteur*)
   let rec scan_light f _ =
-    Motor.set C.conn Motor.all (Motor.speed 0);
+    Motor.set C.conn_scan Motor.all (Motor.speed 0);
     if !light then
       (
-        Mindstorm.Sensor.set C.conn color_port `Color_full `Pct_full_scale;
+        Mindstorm.Sensor.set C.conn_scan color_port `Color_full `Pct_full_scale;
         usleep 0.25;
-        let data  = Mindstorm.Sensor.get C.conn color_port in
+        let data  = Mindstorm.Sensor.get C.conn_scan color_port in
         let color_of_data data = match Sensor.color_of_data data with
           | `Black  -> -1 | `Blue -> 2 | `Green -> -1
           | `Yellow -> 1 | `Red  -> 0 | `White -> -1 in
 
         let color = color_of_data data in
         printf "%i\n%!" color;
-        Mindstorm.Sensor.set C.conn color_port `No_sensor `Raw;
+        Mindstorm.Sensor.set C.conn_scan color_port `No_sensor `Raw;
         usleep 0.25;
 
         if (color = (-1)) then
@@ -131,14 +132,14 @@ struct
 
   (*ajuste la position du capteur couleur*)
   and adj_l_l angle_l f =
-    Motor.set C.conn motor_captor_l (Motor.speed (-5));
+    Motor.set C.conn_scan motor_captor_l (Motor.speed (-5));
     Robot.event meas_left (function
                            |None -> false
                            |Some d -> d <= angle_l)
       (scan_light f)
 
   and adj_l_r angle_l f =
-    Motor.set C.conn motor_captor_l (Motor.speed (5));
+    Motor.set C.conn_scan motor_captor_l (Motor.speed (5));
     Robot.event meas_left (function
                            |None -> false
                            |Some d -> d >= angle_l)
@@ -146,8 +147,8 @@ struct
 
 
   and adj_l angle_l f _ =
-    Motor.set C.conn motor_captor_l (Motor.speed 0);
-    Motor.set C.conn motor_captor_r (Motor.speed 0);
+    Motor.set C.conn_scan motor_captor_l (Motor.speed 0);
+    Motor.set C.conn_scan motor_captor_r (Motor.speed 0);
     match (Robot.read meas_left) with
     |Some m ->
        (
@@ -158,23 +159,23 @@ struct
      |None -> assert false
 
   and adj_r_r angle_r angle_l f =
-    Motor.set C.conn motor_captor_l (Motor.speed (5));
-    Motor.set C.conn motor_captor_r (Motor.speed (-5));
+    Motor.set C.conn_scan motor_captor_l (Motor.speed (5));
+    Motor.set C.conn_scan motor_captor_r (Motor.speed (-5));
     Robot.event meas_right (function
                            |None -> false
                            |Some d -> d <= angle_r)
       (adj_l angle_l f)
 
   and adj_r_l angle_r angle_l f =
-    Motor.set C.conn motor_captor_l (Motor.speed (-5));
-    Motor.set C.conn motor_captor_r (Motor.speed (5));
+    Motor.set C.conn_scan motor_captor_l (Motor.speed (-5));
+    Motor.set C.conn_scan motor_captor_r (Motor.speed (5));
     Robot.event meas_right (function
                            |None -> false
                            |Some d -> d >= angle_r)
       (adj_l angle_l f)
 
   and adj_r angle_r angle_l f _ =
-    Motor.set C.conn Motor.all (Motor.speed 0);
+    Motor.set C.conn_scan Motor.all (Motor.speed 0);
     match (Robot.read meas_right) with
      |Some m  ->
         (
@@ -186,9 +187,9 @@ struct
 
 
   and adj_vert_down angle_v angle_r angle_l f =
-    Motor.set C.conn motor_captor_vert (Motor.speed (-5));
-    Motor.set C.conn motor_captor_l (Motor.speed (-7));
-    Motor.set C.conn motor_captor_r (Motor.speed (-7));
+    Motor.set C.conn_scan motor_captor_vert (Motor.speed (-5));
+    Motor.set C.conn_scan motor_captor_l (Motor.speed (-7));
+    Motor.set C.conn_scan motor_captor_r (Motor.speed (-7));
     Robot.event meas_vert (function
                            |None -> false
                            |Some d -> d <= angle_v)
@@ -197,9 +198,9 @@ struct
 
 
   and adj_vert_up angle_v angle_r angle_l f =
-    Motor.set C.conn motor_captor_vert (Motor.speed 5);
-    Motor.set C.conn motor_captor_l (Motor.speed 7);
-    Motor.set C.conn motor_captor_r (Motor.speed 7);
+    Motor.set C.conn_scan motor_captor_vert (Motor.speed 5);
+    Motor.set C.conn_scan motor_captor_l (Motor.speed 7);
+    Motor.set C.conn_scan motor_captor_r (Motor.speed 7);
     Robot.event meas_vert (function
                            |None -> false
                            |Some d -> d >= angle_v)
@@ -232,30 +233,30 @@ struct
 
   (*méthode pour descendre le capteur; vitesse neg pour descendre*)
   let go_down _ =
-    Motor.set C.conn motor_captor_vert (Motor.speed (-10));
-    Motor.set C.conn motor_captor_l (Motor.speed (-13));
-    Motor.set C.conn motor_captor_r (Motor.speed (-13))
+    Motor.set C.conn_scan motor_captor_vert (Motor.speed (-10));
+    Motor.set C.conn_scan motor_captor_l (Motor.speed (-13));
+    Motor.set C.conn_scan motor_captor_r (Motor.speed (-13))
 
   (*méthode pour monter le capteur; vitesse pos pour monter*)
   let go_up _ =
-    Motor.set C.conn motor_captor_vert (Motor.speed 10);
-    Motor.set C.conn motor_captor_l (Motor.speed 20);
-    Motor.set C.conn motor_captor_r (Motor.speed 20)
+    Motor.set C.conn_scan motor_captor_vert (Motor.speed 10);
+    Motor.set C.conn_scan motor_captor_l (Motor.speed 20);
+    Motor.set C.conn_scan motor_captor_r (Motor.speed 20)
 
  (*méthode pour déplacer le capteur vers la droite*)
   let go_right _ =
-    Motor.set C.conn motor_captor_l (Motor.speed (13));
-    Motor.set C.conn motor_captor_r (Motor.speed (-12))
+    Motor.set C.conn_scan motor_captor_l (Motor.speed (13));
+    Motor.set C.conn_scan motor_captor_r (Motor.speed (-12))
 
   (*méthode pour déplacer le capteur vers la gauche*)
   let go_left _ =
-    Motor.set C.conn motor_captor_l (Motor.speed (-13));
-    Motor.set C.conn motor_captor_r (Motor.speed 12)
+    Motor.set C.conn_scan motor_captor_l (Motor.speed (-13));
+    Motor.set C.conn_scan motor_captor_r (Motor.speed 12)
 
   (*attendre d'avoir fait le déplacement vers la droite : c'est d'abord le
     moteur gauche qui a fini sa rotation puis le droit*)
   let wait_trans_right_r deg_new_pos_r f _ =
-    Motor.set C.conn motor_captor_l (Motor.speed 0);
+    Motor.set C.conn_scan motor_captor_l (Motor.speed 0);
     Robot.event meas_right (function
                             |None -> false
                             |Some d -> d <= deg_new_pos_r)
@@ -270,7 +271,7 @@ struct
 
   (*attendre d'avoir fait le déplacement vers la gauche*)
   let wait_trans_left_l deg_new_pos_l f _ =
-    Motor.set C.conn motor_captor_r (Motor.speed 0);
+    Motor.set C.conn_scan motor_captor_r (Motor.speed 0);
     Robot.event meas_left (function
                             |None -> false
                             |Some d -> d <= deg_new_pos_l)
@@ -285,7 +286,7 @@ struct
 
   (*déplacement horizontal pr etre ds la bonne colonne*)
   let trans_hor diff_col deg_new_pos f _ =
-    Motor.set C.conn Motor.all (Motor.speed 0);
+    Motor.set C.conn_scan Motor.all (Motor.speed 0);
     if (diff_col <> 0) then
       (
         if (diff_col > 0) then
@@ -310,8 +311,8 @@ struct
     let st = {Motor.speed = 0; motor_on = true; brake = true;
               regulation = `Idle; turn_ratio = 100;
               run_state = `Ramp_down; tach_limit = 30} in
-    Motor.set C.conn motor_captor_r st;
-    Motor.set C.conn motor_captor_l st;
+    Motor.set C.conn_scan motor_captor_r st;
+    Motor.set C.conn_scan motor_captor_l st;
 
     Robot.event meas_right (function
                             |None -> false
@@ -323,7 +324,7 @@ struct
   (*les moteurs l et r font presque tout à grande vitesse puis décélère sur
     les 30 derniers degrés*)
   let wait_r_l_down angle_down diff_col deg_new_pos f _ =
-    Motor.set C.conn motor_captor_vert (Motor.speed 0);
+    Motor.set C.conn_scan motor_captor_vert (Motor.speed 0);
     Robot.event meas_right (function
                         |None -> false
                         |Some d -> d <= angle_down+ adjust_r + 20)
@@ -347,7 +348,7 @@ struct
     let st = { Motor.speed = 0; motor_on = true; brake = true;
                regulation = `Idle; turn_ratio = 100;
                run_state = `Ramp_down; tach_limit = 40 } in
-    Motor.set C.conn motor_captor_vert st;
+    Motor.set C.conn_scan motor_captor_vert st;
     Robot.event meas_vert (function
                            |None -> false
                            |Some d -> d >= angle_up)
@@ -356,8 +357,8 @@ struct
 
   (* le moteur vert monte vite d'abord et décélère pdt les 30 derniers degrés *)
   let wait_vert_up angle_up diff_col deg_new_pos f _ =
-    Motor.set C.conn motor_captor_l (Motor.speed 0);
-    Motor.set C.conn motor_captor_r (Motor.speed 0);
+    Motor.set C.conn_scan motor_captor_l (Motor.speed 0);
+    Motor.set C.conn_scan motor_captor_r (Motor.speed 0);
     Robot.event meas_vert (function
                            |None -> false
                            |Some d -> d >= angle_up-30)
@@ -450,6 +451,6 @@ struct
   let run () =
     scan 0 (fun c -> printf "%i\n%!" c); (* qd il a fini, il affiche où l'autre
                                          a joué*)
-    Robot.run r
+    Robot.run C.r
 
 end

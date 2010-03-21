@@ -29,46 +29,45 @@ let adjust_speed = 20   (* 4 pr une vitesse 10; 9 pr une vitesse 12 *)
 
 
 
-module Run(C: sig(* val conn1 : Mindstorm.bluetooth Mindstorm.conn*)
-             val conn2 : Mindstorm.bluetooth Mindstorm.conn end) =
+module Run(C: sig val conn_pincer : Mindstorm.bluetooth Mindstorm.conn
+                  val r : Robot.t end) =
 struct
-  let r = Robot.make()
 
-  let get_angle motor = let _,_,_,a = Motor.get C.conn2 motor in a
+  let get_angle motor = let _,_,_,a = Motor.get C.conn_pincer motor in a
 
   (*nous retourne l'angle courant du moteur distribuant les pièces*)
-  let meas_dist = Robot.meas r (fun () -> get_angle motor_dist)
+  let meas_dist = Robot.meas C.r (fun () -> get_angle motor_dist)
 
   (*nous retourne l'angle courant du moteur déplaçant la pince*)
-  let meas_translation_pincer = Robot.meas r (fun () ->  get_angle motor_pincer)
+  let meas_translation_pincer = Robot.meas C.r (fun () ->  get_angle motor_pincer)
 
   (*nous retourne l'angle courant du moteur ouvrant la pince*)
-  let meas_open_pincer = Robot.meas r (fun _ -> get_angle motor_open_pincer)
+  let meas_open_pincer = Robot.meas C.r (fun _ -> get_angle motor_open_pincer)
 
 
-  let run () = Robot.run r
+  let run () = Robot.run C.r
 
   let stop () =
-    Motor.set C.conn2 Motor.all (Motor.speed 0)
+    Motor.set C.conn_pincer Motor.all (Motor.speed 0)
 
 
   (*déplace la pince dans la direction [dir] ac une tach_limit [r]*)
   let go_pincer r dir =
     (* dir négatif vers la réserve de pièces *)
-    Motor.set C.conn2 motor_pincer (Motor.speed  ~tach_limit:r
+    Motor.set C.conn_pincer motor_pincer (Motor.speed  ~tach_limit:r
                                       (dir*move_speed));
-    Motor.set C.conn2 motor_open_pincer(Motor.speed ~tach_limit:r
+    Motor.set C.conn_pincer motor_open_pincer(Motor.speed ~tach_limit:r
                                           (dir*move_speed))
 
 
 
   let wait_next next _ =
-    Motor.set C.conn2 motor_dist (Motor.speed 0);
+    Motor.set C.conn_pincer motor_dist (Motor.speed 0);
     next ()
 
   (*fait tomber la pièce dans la pince et attend pour lancer next*)
   let put_in_pincer next _ =
-    Motor.set C.conn2 motor_dist (Motor.speed (-10));
+    Motor.set C.conn_pincer motor_dist (Motor.speed (-10));
     Robot.event meas_dist (function
                            |None -> false
                            |Some d -> d <= 0)
@@ -84,8 +83,8 @@ struct
 
   (*tourne le distributeur pr prendre une pièce*)
   let put_piece_in_pincer next _ =
-    Motor.set C.conn2 motor_open_pincer(Motor.speed 0);
-    Motor.set C.conn2 motor_dist (Motor.speed  10);
+    Motor.set C.conn_pincer motor_open_pincer(Motor.speed 0);
+    Motor.set C.conn_pincer motor_dist (Motor.speed  10);
     wait_dist next
 
 
@@ -111,7 +110,7 @@ struct
 
   (*referme la pince et attend qu'elle soit fermée*)
   let close_pincer col next _ =
-    Motor.set C.conn2 motor_open_pincer (Motor.speed close_speed);
+    Motor.set C.conn_pincer motor_open_pincer (Motor.speed close_speed);
     wait_pincer_closed col next
 
   (*lorsque la pince est assez ouverte, elle se referme*)
@@ -123,7 +122,7 @@ struct
 
   (*ouvre la pince et attend qu'elle soit assez ouverte*)
   let open_pincer col next _ =
-    Motor.set C.conn2 motor_open_pincer (Motor.speed (open_speed));
+    Motor.set C.conn_pincer motor_open_pincer (Motor.speed (open_speed));
     wait_pincer_opened col next
 
   (*lorsque la pince est au dessus de col, la pince s'ouvre*)

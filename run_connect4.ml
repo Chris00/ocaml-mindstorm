@@ -1,17 +1,22 @@
 open Alphabeta
 
-let conn1, conn2, fst_computer =
-  if Array.length Sys.argv < 4 then (
-    Printf.printf "%s <bluetooth addr><bluetooth addr><if_computer>\n"
-      Sys.argv.(0);
-    exit 1;
-  );
-  Mindstorm.connect_bluetooth Sys.argv.(1),
-  Mindstorm.connect_bluetooth Sys.argv.(2),
-  bool_of_string Sys.argv.(3)
+module Conn =
+struct
+  let r = Robot.make()
 
-module P = Pincer.Run(struct let conn2 = conn2 end)
-module S = ScanPiece.Run(struct let conn = conn1 end)
+  let conn_pincer, conn_scan, fst_computer =
+    if Array.length Sys.argv < 4 then (
+      Printf.printf "%s <bluetooth addr><bluetooth addr><if_computer>\n"
+        Sys.argv.(0);
+      exit 1;
+    );
+    Mindstorm.connect_bluetooth Sys.argv.(1),
+    Mindstorm.connect_bluetooth Sys.argv.(2),
+    bool_of_string Sys.argv.(3)
+
+end
+module P = Pincer.Run(Conn)
+module S = ScanPiece.Run(Conn)
 
 (*si fst_player est vrai, ca veut dire que c'est a l'ordi de commencer,
   on lance donc alphabeta puis la pince et enfin le scan*)
@@ -30,7 +35,7 @@ let rec step game color col =
 
 let () =
   let game = Game.make() in
-  if fst_computer then step game Game.Yellow 0
+  if Conn.fst_computer then step game Game.Yellow 0
   else S.scan (-1) (fun c -> step game Game.Yellow c)
 
 
