@@ -1530,79 +1530,83 @@ let make_board() =
   }
 
 
-let initboard board =
-    let i = ref 0 in
-      for y=0 to boardY-1 do
-	for x=0 to boardX-4 do
-	  for k=0 to 3 do
-	    board.groups.(!i).(k) <- board.square.(elm (x+k) y);
-	    board.xplace.(!i).(k) <- x+k;
-	    board.yplace.(!i).(k) <- y
-	  done;
-	    i:=!i+1
-	done
+let init_board board =
+  let i = ref 0 in
+  (* Step one. Horizontal lines. *)
+  for y=0 to boardY - 1 do
+    for x=0 to boardX - 4 do
+      for k = 0 to 3 do
+        board.groups.(!i).(k) <- board.square.(elm (x+k) y);
+        board.xplace.(!i).(k) <- x+k;
+        board.yplace.(!i).(k) <- y
       done;
+      incr i
+    done
+  done;
+  (* Step two. Vertical lines *)
+  for y=0 to boardY - 4 do
+    for x=0 to boardX - 1 do
+      for k = 0 to 3 do
+        board.groups.(!i).(k) <- board.square.(elm x (y+k));
+        board.xplace.(!i).(k) <- x;
+        board.yplace.(!i).(k) <- y+k
+      done;
+      incr i
+    done
+  done;
+  (* Step three. Diagonal (north east) lines *)
+  for y=0 to boardY - 4 do
+    for x=0 to boardX - 4 do
+      for k = 0 to 3 do
+        board.groups.(!i).(k) <- board.square.(elm (x+k) (y+k));
+        board.xplace.(!i).(k) <- x+k;
+        board.yplace.(!i).(k) <- y+k
+      done;
+      incr i
+    done
+  done;
+  (* Step four. Diagonal (south east) lines *)
+  for y=3 to boardY - 1 do
+    for x=0 to boardX - 4 do
+      for k = 0 to 3 do
+        board.groups.(!i).(k) <- (board.square.(elm (x+k) (y-k)));
+        board.xplace.(!i).(k) <- x+k;
+        board.yplace.(!i).(k) <- y-k
+      done;
+      incr i
+    done
+  done;
+  assert(!i = groups);
 
-      for y=0 to boardY-4 do
-	for x=0 to boardX-1 do
-	  for k=0 to 3 do
-	    board.groups.(!i).(k) <- (board.square.(elm x (y+k)));
-	    board.xplace.(!i).(k) <- x;
-	    board.yplace.(!i).(k) <- y+k
-	  done;
-	    i:=!i+1
-	done
-      done;
+  for x=0 to boardX - 1 do
+    for y=0 to boardY - 1 do
+      board.square.(elm x y) := elm x y
+    done
+  done;
 
-      for y=0 to boardY-4 do
-	for x=0 to boardX-4 do
-	  for k=0 to 3 do
-	    board.groups.(!i).(k) <- (board.square.(elm (x+k) (y+k)));
-	    board.xplace.(!i).(k) <- x+k;
-	    board.yplace.(!i).(k) <- y+k
-	  done;
-	    i:=!i+1
-	done
-      done;
+  let sqpnt = Array.make 64 0 in
+  let solv = board.solvable_groups in
+  for i=0 to groups - 1 do
+    for j=0 to tiles - 1 do
+      let p = !(board.groups.(i).(j)) in
+      solv.(p).(sqpnt.(p)) <- i;
+      sqpnt.(p) <- sqpnt.(p) + 1
+    done
+  done;
+  (* Resize the solvable groups to their max number of elements: *)
+  for p = 0 to 64 do solv.(p) <- Array.sub solv.(p) 0 sqpnt.(p) done;
 
-      for y=3 to boardY-1 do
-	for x=0 to boardX-4 do
-	  for k=0 to 3 do
-	    board.groups.(!i).(k) <- (board.square.(elm (x+k) (y-k)));
-	    board.xplace.(!i).(k) <- x+k;
-	    board.yplace.(!i).(k) <- y-k
-	  done;
-	  i:=!i+1
-	done
-      done;
-	
-      for x=0 to boardX-1 do
-	for y=0 to boardY-1 do
-	  board.square.(elm x y) := elm x y
-	done
-      done;
-      let sqpnt = Array.make 64 0 in
-      let solv = board.solvable_groups in
-	for i=0 to groups-1 do
-	  for j=0 to tiles-1 do
-	    let p = !(board.groups.(i).(j)) in
-            solv.(p).(sqpnt.(p)) <- i;
-            sqpnt.(p) <- sqpnt.(p) + 1
-	  done
-	done;
-      (* Resize the solvable groups to their max number of elements: *)
-      for p = 0 to 64 do solv.(p) <- Array.sub solv.(p) 0 sqpnt.(p) done;
-
-      for i=0 to 7 do
-	board.square.(elm 7 i) := -1;
-	board.square.(elm i 6) := -1
-      done;
-      board.stack.(7) <- -1;
-      for y=0 to boardY-1 do
-	for x=0 to boardX-1 do
-	  board.square.(elm x y) := 0
-	done
-      done
+  (* Here we set all out squares to a default value to detect problems *)
+  for i=0 to 7 do
+    board.square.(elm 7 i) := -1;
+    board.square.(elm i 6) := -1
+  done;
+  board.stack.(7) <- -1;
+  for y=0 to boardY - 1 do
+    for x=0 to boardX - 1 do
+      board.square.(elm x y) := 0
+    done
+  done
 
 
 (*IA*)
