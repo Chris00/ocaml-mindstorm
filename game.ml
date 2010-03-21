@@ -203,8 +203,7 @@ let is_winning game j =
                   pos := !pos * 10 + 2
                 else pos := !pos * 10 + get game (i+j-k) k
               done;
-              if win 0 0 0 !pos then true
-              else false
+              win 0 0 0 !pos
             )
         )
     )
