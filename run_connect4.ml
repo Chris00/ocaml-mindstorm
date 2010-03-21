@@ -1,6 +1,6 @@
 open Alphabeta
 
-module Conn =
+(*module Conn =
 struct
   let r = Robot.make()
 
@@ -14,7 +14,32 @@ struct
     Mindstorm.connect_bluetooth Sys.argv.(2),
     bool_of_string Sys.argv.(3)
 
+end*)
+
+let bt_pincer = ref "COM7"
+and bt_scan = ref "COM5"
+and if_computer = ref true
+
+let spec = Arg.align ["--pince", Arg.Set_string bt_pincer,
+                      "<bt_address>set the bluetooth address of the brick
+which uses the pincer";
+                      "--scan", Arg.Set_string bt_scan,
+                      "<bt_address>set the bluetooth address of the brick
+which uses the scan";
+                      "--computer_first", Arg.Set if_computer,
+                      " set first player"]
+let () = Arg.parse spec (fun _ -> raise (Arg.Bad "no anonymous arg"))
+  "run_connect4 <option>"
+
+module Conn =
+struct
+  let r = Robot.make()
+  let conn_pincer, conn_scan, fst_computer =
+    Mindstorm.connect_bluetooth !bt_pincer,
+    Mindstorm.connect_bluetooth !bt_scan,
+    !if_computer
 end
+
 module P = Pincer.Run(Conn)
 module S = ScanPiece.Run(Conn)
 
@@ -24,11 +49,11 @@ let rec step game color col =
   (*on verifie que le jeu n'est pas gagné ou match nul*)
   if not (Game.is_winning game col) && not (Game.is_draw game) then
     (*on cherche la colonne a jouer*)
-    let _, col_to_play = alphabeta game color neg_infinity infinity 8 h in
+    let _, col_to_play = alphabeta game color 8 h in
     Game.move game col_to_play color;
     (*la pince va mettre la piece dans la colonne a jouer
       et on va scanner pour voir si le joueur a joue*)
-    if not(Game.is_winning game col_to_play) || not(Game.is_draw game) then
+    if not(Game.is_winning game col_to_play) && not(Game.is_draw game) then
       P.put_piece col_to_play
         (fun () -> S.scan col_to_play (fun c -> step game color c))
     else P.put_piece col_to_play S.stop
@@ -36,6 +61,6 @@ let rec step game color col =
 let () =
   let game = Game.make() in
   if Conn.fst_computer then step game Game.Yellow 0
-  else S.scan (-1) (fun c -> step game Game.Yellow c)
-
+  else S.scan (-1) (fun c -> step game Game.Yellow c);
+  Robot.run Conn.r
 

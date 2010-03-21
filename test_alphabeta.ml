@@ -14,10 +14,40 @@ let print game =
   done;
   printf "--------------------------------------------------\n"
 
-let g = Game.make();;
-Game.move g 3 Game.Yellow;;
-Game.move g 3 Game.Red;;
-Game.move g 3 Game.Yellow;;
+let jeu = Game.make();;
+Game.move jeu 3 Game.Red;;
+Game.move jeu 3 Game.Yellow;;
+Game.move jeu 3 Game.Red;;
+Game.move jeu 2 Game.Yellow;;
+Game.move jeu 4 Game.Red;;
+Game.move jeu 4 Game.Yellow;;
+Game.move jeu 3 Game.Red;;
+Game.move jeu 2 Game.Yellow;;
+Game.move jeu 2 Game.Red;;
+Game.move jeu 0 Game.Yellow;;
+Game.move jeu 2 Game.Red;;
+Game.move jeu 1 Game.Yellow;;
+Game.move jeu 1 Game.Red;;
+Game.move jeu 0 Game.Yellow;;
+Game.move jeu 0 Game.Red;;
+Game.move jeu 1 Game.Yellow;;
+Game.move jeu 1 Game.Red;;
+Game.move jeu 0 Game.Yellow;;
+Game.move jeu 0 Game.Red;;
+Game.move jeu 5 Game.Yellow;;
+Game.move jeu 5 Game.Red;;
+Game.move jeu 0 Game.Yellow;;
+Game.move jeu 1 Game.Red;;
+Game.move jeu 2 Game.Yellow;;
+Game.move jeu 1 Game.Red;;
+Game.move jeu 3 Game.Yellow;;
+
+(*print jeu;;
+
+let a = alphabeta jeu Game.Red 8 h;;
+Printf.printf "%f" (fst a);;
+Printf.printf "\n";;
+Printf.printf "%i" (snd a);;*)
 
 
 (*let a = alphabeta g Game.Red (neg_infinity) infinity 2 h;;
@@ -65,24 +95,3 @@ Game.move g 4 Game.Red;;
 (*Game.move g 4 Game.Red;;*)
 *)
 
-
-Game.move g 2 Game.Red;;
-Game.move g 0 Game.Yellow;;
-Game.move g 0 Game.Red;;
-Game.move g 2 Game.Yellow;;
-Game.move g 2 Game.Red;;
-Game.move g 0 Game.Yellow;;
-Game.move g 0 Game.Red;;
-Game.move g 0 Game.Yellow;;
-Game.move g 2 Game.Red;;
-(*Game.move g 0 Game.Yellow;;
-Game.move g 0 Game.Red;;
-Game.move g 2 Game.Yellow;;
-Game.move g 0 Game.Red;;
-Game.move g 0 Game.Yellow;;*)
-
-print g;;
-printf "\n";;
-
-let cost, col = Alphabeta.alphabeta g Game.Yellow neg_infinity infinity 8 Alphabeta.h;;
-printf "%f\n%i" cost, col
