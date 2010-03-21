@@ -4,7 +4,7 @@
 PACKAGES = -package mindstorm,bigarray,graphics
 DOC_DIR=doc
 
-OCAMLC_FLAGS = -g -dtypes -custom $(PACKAGES)
+OCAMLC_FLAGS = -g -dtypes $(PACKAGES)
 OCAMLOPT_FLAGS = -dtypes $(PACKAGES)
 
 TESTS=$(wildcard *-*.ml)

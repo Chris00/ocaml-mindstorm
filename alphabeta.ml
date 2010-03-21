@@ -75,37 +75,44 @@ let fst_moves game nbr_moves =
   |_ -> raise (Failure "methode can be used only if the number of moves is
                          minder than 2")
 
+(*fonction qui doit retourner vrai si on peut jouer dans une colonne (on verifie
+  que l'autre joueur ne gagne pas en jouant au dessus ou si on peut gagner si
+  l'autre joueur joue dans cette colonne)
+  retourne faux sinon*)
 let win_in_2moves game j color =
-  try
-    Game.move game j color;
-    Game.move game j (Game.color_invers color);
-
-    if Game.is_winning game j then
-      (
-        Game.remove game j (Game.color_invers color);
-        Game.remove game j color;
-        false
-      )
-    else
-      (
-        Game.remove game j (Game.color_invers color);
-        Game.remove game j color;
-        Game.move game j (Game.color_invers color);
-        Game.move game j color;
-        if Game.is_winning game j then
-          (
-            Game.remove game j color;
-            Game.remove game j (Game.color_invers color);
-            false
-          )
-        else
-          (
-            Game.remove game j color;
-            Game.remove game j (Game.color_invers color);
-            true
-          )
-      )
-  with Game.Column_full -> false
+  let n = Game.nbr_token_in_col game j in
+  if n < 5 then
+    (
+      Game.move game j color;
+      Game.move game j (Game.color_invers color);
+      if Game.is_winning game j then
+        (
+          Game.remove game j (Game.color_invers color);
+          Game.remove game j color;
+          false
+        )
+      else
+        (
+          Game.remove game j (Game.color_invers color);
+          Game.remove game j color;
+          Game.move game j (Game.color_invers color);
+          Game.move game j color;
+          if Game.is_winning game j then
+            (
+              Game.remove game j color;
+              Game.remove game j (Game.color_invers color);
+              false
+            )
+          else
+            (
+              Game.remove game j color;
+              Game.remove game j (Game.color_invers color);
+              true
+            )
+        )
+    )
+  else if n = 5 then true
+  else false
 
 let h game color mode =
   let col_win_max = Game.next_win game color
@@ -121,66 +128,66 @@ let h game color mode =
         if row = 6 then tab_value.(j) <- 0.
         else
           (
-            (*if win_in_2moves game j color then*)
-            let aline_horiz_max = Game.horizontal game color j
-            and aline_vert_max = Game.vertical game color j
-            and aline_diag_left_max = Game.left_diagonal game color j
-            and aline_diag_right_max = Game.right_diagonal game color j in
+            if win_in_2moves game j color then
+              let aline_horiz_max = Game.horizontal game color j
+              and aline_vert_max = Game.vertical game color j
+              and aline_diag_left_max = Game.left_diagonal game color j
+              and aline_diag_right_max = Game.right_diagonal game color j in
 
-            if fst aline_horiz_max >= 4 && snd aline_horiz_max >= 2 then
-              tab_value.(j) <- tab_value.(j) +. 4.;
-            if fst aline_vert_max >= 4 && snd aline_vert_max >= 2 then
-              tab_value.(j) <- tab_value.(j) +. 4.;
-            if fst aline_diag_left_max >= 4 && snd aline_diag_left_max >= 2
-            then
-              tab_value.(j) <- tab_value.(j) +. 6.;
-            if fst aline_diag_left_max >= 4 && snd aline_diag_left_max >= 2
-            then
-              tab_value.(j) <- tab_value.(j) +. 6.;
-
-            if fst aline_horiz_max >= 4 && snd aline_horiz_max >= 1 then
-              tab_value.(j) <- tab_value.(j) +. 2.;
-            if fst aline_vert_max >= 4 && snd aline_vert_max >= 1 then
-              tab_value.(j) <- tab_value.(j) +. 2.;
-            if fst aline_diag_left_max >= 4 && snd aline_diag_left_max >= 1
-            then
-              tab_value.(j) <- tab_value.(j) +. 3.;
-            if fst aline_diag_right_max >= 4 && snd aline_diag_right_max >= 1
-            then
-              tab_value.(j) <- tab_value.(j) +. 3.;
-
-            let aline_horiz_min =
-              Game.horizontal game (Game.color_invers color) j
-            and aline_vert_min =
-              Game.vertical game (Game.color_invers color) j
-            and aline_diag_left_min =
-              Game.left_diagonal game (Game.color_invers color) j
-            and aline_diag_right_min =
-              Game.right_diagonal game (Game.color_invers color) j in
-
-            if fst aline_horiz_min >= 4 && snd aline_horiz_min >= 2 then
+              if fst aline_horiz_max >= 4 && snd aline_horiz_max >= 2 then
                 tab_value.(j) <- tab_value.(j) +. 4.;
-            if fst aline_vert_min >= 4 && snd aline_vert_min >= 2 then
-              tab_value.(j) <- tab_value.(j) +. 4.;
-            if fst aline_diag_left_min >= 4 && snd aline_diag_left_min >= 2
-            then
-              tab_value.(j) <- tab_value.(j) +. 6.;
-            if fst aline_diag_right_min >= 4 && snd aline_diag_left_min >= 2
-            then
-              tab_value.(j) <- tab_value.(j) +. 6.;
+              if fst aline_vert_max >= 4 && snd aline_vert_max >= 2 then
+                tab_value.(j) <- tab_value.(j) +. 4.;
+              if fst aline_diag_left_max >= 4 && snd aline_diag_left_max >= 2
+              then
+                tab_value.(j) <- tab_value.(j) +. 6.;
+              if fst aline_diag_left_max >= 4 && snd aline_diag_left_max >= 2
+              then
+                tab_value.(j) <- tab_value.(j) +. 6.;
 
-            if fst aline_horiz_min >= 4 && snd aline_horiz_min >= 1 then
-              tab_value.(j) <- tab_value.(j) +. 2.;
-            if fst aline_vert_min >= 4 && snd aline_vert_min >= 1 then
-              tab_value.(j) <- tab_value.(j) +. 2.;
-            if fst aline_diag_left_min >= 4 && snd aline_diag_left_min >= 1
-            then
-              tab_value.(j) <- tab_value.(j) +. 3.;
-            if fst aline_diag_right_min >= 4 && snd aline_diag_right_min >= 1
-            then
-              tab_value.(j) <- tab_value.(j) +. 3.;
+              if fst aline_horiz_max >= 4 && snd aline_horiz_max >= 1 then
+                tab_value.(j) <- tab_value.(j) +. 2.;
+              if fst aline_vert_max >= 4 && snd aline_vert_max >= 1 then
+                tab_value.(j) <- tab_value.(j) +. 2.;
+              if fst aline_diag_left_max >= 4 && snd aline_diag_left_max >= 1
+              then
+                tab_value.(j) <- tab_value.(j) +. 3.;
+              if fst aline_diag_right_max >= 4 && snd aline_diag_right_max >= 1
+              then
+                tab_value.(j) <- tab_value.(j) +. 3.;
 
-           (* else tab_value.(j) <- tab_value.(j) -. 16.;*)
+              let aline_horiz_min =
+                Game.horizontal game (Game.color_invers color) j
+              and aline_vert_min =
+                Game.vertical game (Game.color_invers color) j
+              and aline_diag_left_min =
+                Game.left_diagonal game (Game.color_invers color) j
+              and aline_diag_right_min =
+                Game.right_diagonal game (Game.color_invers color) j in
+
+              if fst aline_horiz_min >= 4 && snd aline_horiz_min >= 2 then
+                tab_value.(j) <- tab_value.(j) +. 4.;
+              if fst aline_vert_min >= 4 && snd aline_vert_min >= 2 then
+                tab_value.(j) <- tab_value.(j) +. 4.;
+              if fst aline_diag_left_min >= 4 && snd aline_diag_left_min >= 2
+              then
+                tab_value.(j) <- tab_value.(j) +. 6.;
+              if fst aline_diag_right_min >= 4 && snd aline_diag_left_min >= 2
+              then
+                tab_value.(j) <- tab_value.(j) +. 6.;
+
+              if fst aline_horiz_min >= 4 && snd aline_horiz_min >= 1 then
+                tab_value.(j) <- tab_value.(j) +. 2.;
+              if fst aline_vert_min >= 4 && snd aline_vert_min >= 1 then
+                tab_value.(j) <- tab_value.(j) +. 2.;
+              if fst aline_diag_left_min >= 4 && snd aline_diag_left_min >= 1
+              then
+                tab_value.(j) <- tab_value.(j) +. 3.;
+              if fst aline_diag_right_min >= 4 && snd aline_diag_right_min >= 1
+              then
+                tab_value.(j) <- tab_value.(j) +. 3.;
+
+            else tab_value.(j) <- tab_value.(j) -. 16.
           )
       done;
       if mode = Max then max_tab tab_value
@@ -191,20 +198,18 @@ let h game color mode =
         )
     )
 
-let alphabeta game color alpha beta level heuristic=
-  let n = Game.nbr_token game in
-  let rec ab nbr_token col g a b mode l colo =
-    if Game.is_winning g col then
+let rec ab nbr_token col game alpha beta mode depth color heuristic =
+    if Game.is_winning game col then
       if (mode = Min) then (infinity, col)
       else (neg_infinity, col)
 
-    else if Game.is_draw g then (0., col)
+    else if Game.is_draw game then (0., col)
     else if nbr_token < 3 then fst_moves game nbr_token
-    else if l = 0 then heuristic game color mode
+    else if depth = 0 then heuristic game color mode
     else
       (
         if mode = Min then
-          let col_win = Game.next_win g colo in
+          let col_win = Game.next_win game color in
           if col_win < 7 then (neg_infinity, col_win)
           else
             (
@@ -212,23 +217,23 @@ let alphabeta game color alpha beta level heuristic=
                 if j > 6 then (beta_p, good_col)
                 else
                   try
-                    Game.move g j colo;
-                    let value =
-                      fst (ab (nbr_token+1) j g a (min b beta_p) Max (l-1)
-                                       (Game.color_invers colo)) in
-                    Game.remove g j colo;
+                    Game.move game j color;
+                    let value, _ =
+                       ab (nbr_token+1) j game alpha (min beta beta_p) Max
+                             (depth-1) (Game.color_invers color) heuristic in
+                    Game.remove game j color;
 
                     let (new_beta, new_col) =
                       if beta_p > value then (value, j)
                       else (beta_p, good_col) in
 
-                    if a >= new_beta then (new_beta, new_col)
+                    if alpha >= new_beta then (new_beta, new_col)
                     else cut_beta new_beta new_col (j+1)
                   with Game.Column_full -> cut_beta beta_p good_col (j+1)
               in cut_beta infinity col 0
             )
         else
-          let col_win = Game.next_win g colo in
+          let col_win = Game.next_win game color in
           if col_win < 7 then (infinity, col_win)
           else
             (
@@ -236,11 +241,11 @@ let alphabeta game color alpha beta level heuristic=
                 if j > 6 then (alpha_p, good_col)
                 else
                   try
-                    Game.move g j colo;
-                    let value =
-                      fst (ab (nbr_token+1) j g (max a alpha_p) b Min (l-1)
-                                       (Game.color_invers colo)) in
-                    Game.remove g j colo;
+                    Game.move game j color;
+                    let value, _ =
+                      ab (nbr_token+1) j game (max alpha alpha_p) beta Min
+                             (depth-1) (Game.color_invers color) heuristic in
+                    Game.remove game j color;
 
                     let (new_alpha, new_col) =
                       if alpha_p < value then (value, j)
@@ -252,7 +257,10 @@ let alphabeta game color alpha beta level heuristic=
               in cut_alpha neg_infinity col 0
             )
       )
-  in ab n 0 game alpha beta Max level color
+
+let alphabeta game color level heuristic=
+  let n = Game.nbr_token game in
+  ab n 0 game neg_infinity infinity Max level color heuristic
 
 (*probleme avec good_col qui quand il revient retourne forcement 0*)
 let rec node_min game color alpha beta beta_p good_col j =
@@ -368,7 +376,7 @@ Game.move jeu 3 Game.Yellow;;
 
 print jeu;;
 
-let a = alphabeta jeu Game.Red neg_infinity infinity 8 h;;
+let a = alphabeta jeu Game.Red 8 h;;
 Printf.printf "%f" (fst a);;
 Printf.printf "\n";;
 Printf.printf "%i" (snd a);;
