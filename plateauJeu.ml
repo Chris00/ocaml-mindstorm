@@ -464,5 +464,5 @@ let rec gameboard current_game =
 
 
 (*let st = wait_next_event [Button_down] in ();;*)
-let jeu = Game.make() in
-gameboard jeu;;
+(* let jeu = Game.make() in *)
+(* gameboard jeu;; *)

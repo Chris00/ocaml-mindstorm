@@ -1,5 +1,5 @@
-type mode = Max | Min;;
-
+module Useful =
+struct
 let max_tab tab =
   let n = Array.length tab in
   let rec max max_current i_max i =
@@ -15,6 +15,10 @@ let min_tab tab =
     else if tab.(i) < min_current then min tab.(i) i (i+1)
     else min min_current i_min (i+1)
   in min 0. 0 0
+end
+
+type mode = Max | Min;;
+
 
 let tab_game_1token =
   let tab = Array.init 14 (fun i -> Game.make()) in
@@ -190,11 +194,11 @@ let h game color mode =
             else tab_value.(j) <- tab_value.(j) -. 16.
           )
       done;
-      if mode = Max then max_tab tab_value
+      if mode = Max then Useful.max_tab tab_value
       else
         (
           let tab = Array.map (fun x -> (-.x)) tab_value in
-          min_tab tab
+          Useful.min_tab tab
         )
     )
 

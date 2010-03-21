@@ -17,11 +17,6 @@ MKDIR	?= mkdir
 # The location of OCaml's library files.
 OCAMLLIBDIR ?= $(shell $(OCAMLC) -where)
 
-# Librairie Gnuplot (used by many programs)
-GNUPLOT_INC ?= -I $(HOME)/software/OCaml/ocaml-gnuplot/
-GNUPLOT_CMA ?= unix.cma bigarray.cma gnuplot.cma
-GNUPLOT_CMXA ?= $(GNUPLOT_CMA:.cma=.cmxa)
-
 PP_FLAGS = $(if $(PP), -pp "$(PP)")
 
 # Caml general dependencies
