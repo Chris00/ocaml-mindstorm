@@ -66,7 +66,7 @@ struct
   let meas_vert = Robot.meas C.r (fun () -> get_angle motor_captor_vert)
 
 
-  let stop () =
+  let stop i =
     Motor.set C.conn_scan Motor.all (Motor.speed 0)
 
   let stop_motor_l () =
@@ -84,7 +84,7 @@ struct
 
 
   (* retourne la couleur devant le capteur*)
-  let rec scan_light f _ =
+  let rec scan_light f =
     Motor.set C.conn_scan Motor.all (Motor.speed 0);
     if !light then
       (
@@ -136,14 +136,14 @@ struct
     Robot.event meas_left (function
                            |None -> false
                            |Some d -> d <= angle_l)
-      (scan_light f)
+      (fun _ -> scan_light f)
 
   and adj_l_r angle_l f =
     Motor.set C.conn_scan motor_captor_l (Motor.speed (5));
     Robot.event meas_left (function
                            |None -> false
                            |Some d -> d >= angle_l)
-      (scan_light f)
+      (fun _ -> scan_light f)
 
 
   and adj_l angle_l f _ =
@@ -260,7 +260,7 @@ struct
     Robot.event meas_right (function
                             |None -> false
                             |Some d -> d <= deg_new_pos_r)
-     (scan_light f)
+     (fun _ -> scan_light f)
 
   let wait_trans_right_l (_, deg_new_pos_l, deg_new_pos_r) f =
     Robot.event meas_left (function
@@ -275,7 +275,7 @@ struct
     Robot.event meas_left (function
                             |None -> false
                             |Some d -> d <= deg_new_pos_l)
-      (scan_light f)
+      (fun _ -> scan_light f)
 
   let wait_trans_left_r (_, deg_new_pos_l, deg_new_pos_r)  f =
     Robot.event meas_right (function
@@ -300,10 +300,7 @@ struct
             wait_trans_right_l deg_new_pos f
           )
       )
-    else (scan_light f (Some 0))  (*nous dit que () est un unit et nous on veut)
-                                   un int option*)
-
-
+    else scan_light f
 
 
   (*condition d'arret de l et r qd le mobile descend*)

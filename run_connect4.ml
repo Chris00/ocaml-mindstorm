@@ -56,7 +56,7 @@ let rec step game color col =
     if not(Game.is_winning game col_to_play) && not(Game.is_draw game) then
       P.put_piece col_to_play
         (fun () -> S.scan col_to_play (fun c -> step game color c))
-    else P.put_piece col_to_play S.stop
+    else P.put_piece col_to_play P.stop
 
 let () =
   let game = Game.make() in

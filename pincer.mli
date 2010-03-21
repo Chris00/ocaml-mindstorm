@@ -10,6 +10,7 @@ sig
     (** [put_piece col next] put the piece in the column [col] starting from the
         initial position, return to the starting position, put a piece in
         the pincer and do [w] *)
+    (**rem : la colonne 6 est celle près du distributeur*)
 
   val run : unit -> unit
     (** Starts the event loop associated with the pincer. *)
