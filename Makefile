@@ -15,11 +15,12 @@ LIBS_CMXA=$(LIBS_CMA:.cma=.cmxa)
 
 all: byte native
 
-SOURCES = game.ml alphabeta.ml plateauJeu.ml scanPiece.ml scanPiece2.ml pincer.ml run_connect4.ml
+SOURCES = game.ml alphabeta.ml plateauJeu.ml scanPiece.ml pincer.ml run_connect4.ml scanPiece2.ml
 byte: run_connect4.exe
 native: run_connect4.com
 
 run_connect4.exe : robot.cma $(SOURCES:.ml=.cmo)
+scanPiece2.com: robot.cmxa
 run_connect4.com : robot.cmxa $(SOURCES:.ml=.cmx)
 
 # General "event" library
@@ -34,7 +35,8 @@ $(TESTS:.ml=.com): robot.cmxa
 test_alphabeta.com: game.cmx alphabeta.cmx
 test_pincer.com: pincer.cmx
 test_scanPiece.com: scanPiece.cmx
-scanPiece2.com:scanPiece.cmx
+test_scanPiece2.com: scanPiece2.cmx
+
 
 # Generate HTML documentation
 MAKE_DOC = $(OCAMLDOC) -colorize-code -stars -html $(PACKAGES)
@@ -57,9 +59,9 @@ MAKE_DOC = $(OCAMLDOC) -colorize-code -stars -html $(PACKAGES)
 #	cd rubik/ && $(MAKE) $(@F)
 
 #Define the OS type for the Camlp4 preprocessor, RM,...
-.os_type: make_os_type.exe
-	"./$<" > $@
-include .os_type
+#.os_type: make_os_type.exe
+#	"./$<" > $@
+#include .os_type
 
 include Makefile.ocaml
 

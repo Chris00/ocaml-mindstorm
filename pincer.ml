@@ -110,13 +110,11 @@ struct
 
   (*referme la pince et attend qu'elle soit fermée*)
   let close_pincer col next _ =
-    printf "ferme la pince\n%!";
     Motor.set C.conn_pincer motor_open_pincer (Motor.speed close_speed);
     wait_pincer_closed col next
 
   (*lorsque la pince est assez ouverte, elle se referme*)
   let wait_pincer_opened col next =
-    printf "attend qu'elle soit ouverte\n%!";
     Robot.event meas_open_pincer (function
                                   | None -> false
                                   | Some d -> d <=(rotation.(col)-open_rot))
@@ -124,13 +122,11 @@ struct
 
   (*ouvre la pince et attend qu'elle soit assez ouverte*)
   let open_pincer col next _ =
-    printf "ouvre la pince\n%!";
     Motor.set C.conn_pincer motor_open_pincer (Motor.speed (open_speed));
     wait_pincer_opened col next
 
   (*lorsque la pince est au dessus de col, la pince s'ouvre*)
   let wait_open_pincer col next =
-    printf "attend d'etre au dessus de la bonne col\n%!";
     Robot.event meas_translation_pincer (function
                                          |None -> false
                                          |Some d -> d >= (rotation.(col)))
@@ -139,7 +135,6 @@ struct
 
   (*déplace la pince et attend d'être au dessus de la colonne [col]*)
   let put_piece col next =
-    printf "lance la pince\n%!";
     go_pincer (rotation.(col)) 1;
     wait_open_pincer col next
 

@@ -132,66 +132,63 @@ let h game color mode =
         if row = 6 then tab_value.(j) <- 0.
         else
           (
-            if win_in_2moves game j color then
-              let aline_horiz_max = Game.horizontal game color j
-              and aline_vert_max = Game.vertical game color j
-              and aline_diag_left_max = Game.left_diagonal game color j
-              and aline_diag_right_max = Game.right_diagonal game color j in
+            let aline_horiz_max = Game.horizontal game color j
+            and aline_vert_max = Game.vertical game color j
+            and aline_diag_left_max = Game.left_diagonal game color j
+            and aline_diag_right_max = Game.right_diagonal game color j in
+            if fst aline_horiz_max >= 4 && snd aline_horiz_max >= 2 then
+              tab_value.(j) <- tab_value.(j) +. 4.;
+            if fst aline_vert_max >= 4 && snd aline_vert_max >= 2 then
+              tab_value.(j) <- tab_value.(j) +. 4.;
+            if fst aline_diag_left_max >= 4 && snd aline_diag_left_max >= 2
+            then
+              tab_value.(j) <- tab_value.(j) +. 6.;
+            if fst aline_diag_left_max >= 4 && snd aline_diag_left_max >= 2
+            then
+              tab_value.(j) <- tab_value.(j) +. 6.;
 
-              if fst aline_horiz_max >= 4 && snd aline_horiz_max >= 2 then
-                tab_value.(j) <- tab_value.(j) +. 4.;
-              if fst aline_vert_max >= 4 && snd aline_vert_max >= 2 then
-                tab_value.(j) <- tab_value.(j) +. 4.;
-              if fst aline_diag_left_max >= 4 && snd aline_diag_left_max >= 2
-              then
-                tab_value.(j) <- tab_value.(j) +. 6.;
-              if fst aline_diag_left_max >= 4 && snd aline_diag_left_max >= 2
-              then
-                tab_value.(j) <- tab_value.(j) +. 6.;
+            if fst aline_horiz_max >= 4 && snd aline_horiz_max >= 1 then
+              tab_value.(j) <- tab_value.(j) +. 2.;
+            if fst aline_vert_max >= 4 && snd aline_vert_max >= 1 then
+              tab_value.(j) <- tab_value.(j) +. 2.;
+            if fst aline_diag_left_max >= 4 && snd aline_diag_left_max >= 1
+            then
+              tab_value.(j) <- tab_value.(j) +. 3.;
+            if fst aline_diag_right_max >= 4 && snd aline_diag_right_max >= 1
+            then
+              tab_value.(j) <- tab_value.(j) +. 3.;
 
-              if fst aline_horiz_max >= 4 && snd aline_horiz_max >= 1 then
-                tab_value.(j) <- tab_value.(j) +. 2.;
-              if fst aline_vert_max >= 4 && snd aline_vert_max >= 1 then
-                tab_value.(j) <- tab_value.(j) +. 2.;
-              if fst aline_diag_left_max >= 4 && snd aline_diag_left_max >= 1
-              then
-                tab_value.(j) <- tab_value.(j) +. 3.;
-              if fst aline_diag_right_max >= 4 && snd aline_diag_right_max >= 1
-              then
-                tab_value.(j) <- tab_value.(j) +. 3.;
+            let aline_horiz_min =
+              Game.horizontal game (Game.color_invers color) j
+            and aline_vert_min =
+              Game.vertical game (Game.color_invers color) j
+            and aline_diag_left_min =
+              Game.left_diagonal game (Game.color_invers color) j
+            and aline_diag_right_min =
+              Game.right_diagonal game (Game.color_invers color) j in
 
-              let aline_horiz_min =
-                Game.horizontal game (Game.color_invers color) j
-              and aline_vert_min =
-                Game.vertical game (Game.color_invers color) j
-              and aline_diag_left_min =
-                Game.left_diagonal game (Game.color_invers color) j
-              and aline_diag_right_min =
-                Game.right_diagonal game (Game.color_invers color) j in
+            if fst aline_horiz_min >= 4 && snd aline_horiz_min >= 2 then
+              tab_value.(j) <- tab_value.(j) +. 4.;
+            if fst aline_vert_min >= 4 && snd aline_vert_min >= 2 then
+              tab_value.(j) <- tab_value.(j) +. 4.;
+            if fst aline_diag_left_min >= 4 && snd aline_diag_left_min >= 2
+            then
+              tab_value.(j) <- tab_value.(j) +. 6.;
+            if fst aline_diag_right_min >= 4 && snd aline_diag_left_min >= 2
+            then
+              tab_value.(j) <- tab_value.(j) +. 6.;
 
-              if fst aline_horiz_min >= 4 && snd aline_horiz_min >= 2 then
-                tab_value.(j) <- tab_value.(j) +. 4.;
-              if fst aline_vert_min >= 4 && snd aline_vert_min >= 2 then
-                tab_value.(j) <- tab_value.(j) +. 4.;
-              if fst aline_diag_left_min >= 4 && snd aline_diag_left_min >= 2
-              then
-                tab_value.(j) <- tab_value.(j) +. 6.;
-              if fst aline_diag_right_min >= 4 && snd aline_diag_left_min >= 2
-              then
-                tab_value.(j) <- tab_value.(j) +. 6.;
+            if fst aline_horiz_min >= 4 && snd aline_horiz_min >= 1 then
+              tab_value.(j) <- tab_value.(j) +. 2.;
+            if fst aline_vert_min >= 4 && snd aline_vert_min >= 1 then
+              tab_value.(j) <- tab_value.(j) +. 2.;
+            if fst aline_diag_left_min >= 4 && snd aline_diag_left_min >= 1
+            then
+              tab_value.(j) <- tab_value.(j) +. 3.;
+            if fst aline_diag_right_min >= 4 && snd aline_diag_right_min >= 1
+            then
+              tab_value.(j) <- tab_value.(j) +. 3.;
 
-              if fst aline_horiz_min >= 4 && snd aline_horiz_min >= 1 then
-                tab_value.(j) <- tab_value.(j) +. 2.;
-              if fst aline_vert_min >= 4 && snd aline_vert_min >= 1 then
-                tab_value.(j) <- tab_value.(j) +. 2.;
-              if fst aline_diag_left_min >= 4 && snd aline_diag_left_min >= 1
-              then
-                tab_value.(j) <- tab_value.(j) +. 3.;
-              if fst aline_diag_right_min >= 4 && snd aline_diag_right_min >= 1
-              then
-                tab_value.(j) <- tab_value.(j) +. 3.;
-
-            else tab_value.(j) <- tab_value.(j) -. 16.
           )
       done;
       if mode = Max then Useful.max_tab tab_value

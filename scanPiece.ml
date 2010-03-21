@@ -69,14 +69,10 @@ struct
   let stop i =
     Motor.set C.conn_scan Motor.all (Motor.speed 0)
 
-  let stop_motor_l () =
-    Motor.set C.conn_scan motor_captor_l (Motor.speed 0)
-
 
   (*methode retournant le nbre de pions ds la col [col] du jeu [game]*)
   let piece_in_col col game =
     (game/expo_10.(col)) mod 10
-
 
   (*methode ajoutant une piece au jeu [game] en colonne [col]*)
   let add_piece col game =
@@ -96,7 +92,6 @@ struct
           | `Yellow -> 1 | `Red  -> 0 | `White -> -1 in
 
         let color = color_of_data data in
-        printf "%i\n%!" color;
         Mindstorm.Sensor.set C.conn_scan color_port `No_sensor `Raw;
         usleep 0.25;
 
@@ -114,9 +109,10 @@ struct
         else (*il a trouvé une piece*)
           (
             add_piece !current_col !current_game;
-            col_had_play := !current_col;
-            (*retourner la colonne au prog de jésus et sab*)
+            col_had_play := !current_col; (*sera placé en param de la fct next*)
+            printf "l'autre a joué dans la colonne : ";
             printf "%i\n%!" !col_had_play;
+            printf "le jeu courant est : ";
             printf "%i\n%!" !current_game;
             light := false; (*pr ne pas rescanner*)
             next_col := -1; (*pr que scan_game renvoie le capteur à droite du
@@ -126,6 +122,7 @@ struct
       )
     else
       (
+        next_col := -1;
         light := true;
         f ()
       )
@@ -245,13 +242,13 @@ struct
 
  (*méthode pour déplacer le capteur vers la droite*)
   let go_right _ =
-    Motor.set C.conn_scan motor_captor_l (Motor.speed (13));
-    Motor.set C.conn_scan motor_captor_r (Motor.speed (-12))
+    Motor.set C.conn_scan motor_captor_l (Motor.speed (15));
+    Motor.set C.conn_scan motor_captor_r (Motor.speed (-14))
 
   (*méthode pour déplacer le capteur vers la gauche*)
   let go_left _ =
-    Motor.set C.conn_scan motor_captor_l (Motor.speed (-13));
-    Motor.set C.conn_scan motor_captor_r (Motor.speed 12)
+    Motor.set C.conn_scan motor_captor_l (Motor.speed (-14));
+    Motor.set C.conn_scan motor_captor_r (Motor.speed 15)
 
   (*attendre d'avoir fait le déplacement vers la droite : c'est d'abord le
     moteur gauche qui a fini sa rotation puis le droit*)
@@ -337,9 +334,6 @@ struct
 
 
 
-
-
-
   (*condition d'arret de vert qd le mobile monte*)
   let wait_vert_up_end angle_up diff_col deg_new_pos f _ =
     let st = { Motor.speed = 0; motor_on = true; brake = true;
@@ -372,6 +366,7 @@ struct
 
 
   let scan_case new_pos_line new_pos_col f =
+    printf"coucouscancase!!\n%!";
     let diff_line = new_pos_line - !current_line and
         diff_col = new_pos_col - !current_col and
         deg_new_line = (rot_v new_pos_line,
@@ -404,7 +399,7 @@ struct
 
 
 
-  let rec scan_game next =
+ let rec scan_game next =
     if !go_to_next then
       (
         go_to_next := false;
@@ -425,7 +420,8 @@ struct
             else
               (
                 printf"%i\n%i\n%!" !next_line !next_col;
-                scan_case !next_line !next_col (fun () -> scan_game next)
+                scan_case !next_line !next_col (fun () -> scan_game next);
+                printf"coucou!!\n%!"
               )
           )
         else
@@ -436,18 +432,17 @@ struct
           )
       )
 
-  let scan col_new_piece next =
-    if col_new_piece <> -1 then
-      (
-        add_piece col_new_piece !current_game;
-        printf "%i\n%!" !current_game;
-      );
-    scan_game next
+ let scan col_new_piece next =
+   if col_new_piece <> -1 then
+     (
+       add_piece col_new_piece !current_game;
+       printf "%i\n%!" !current_game;
+     );
+   scan_game next
 
-
-  let run () =
-    scan 0 (fun c -> printf "%i\n%!" c);
-    (* qd il a fini, il affiche où l'autre a joué *)
-    Robot.run C.r
+ let run () =
+   scan 0 (fun c -> printf "%i\n%!" c);
+   (* qd il a fini, il affiche où l'autre a joué *)
+   Robot.run C.r
 
 end
