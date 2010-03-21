@@ -213,8 +213,7 @@ let check_threat board px i side =
       let j = board.solvable_groups.squar.(elm px i).(y) in
 	if board.xplace.(j).(0) = board.xplace.(j).(3) then
 	  helper (y+1)
-	else
-	  (
+	else (
 	  let rec help_intern x a b =
 	    if x < tiles then
 	      let fx = board.xplace.(j).(x)
@@ -223,10 +222,10 @@ let check_threat board px i side =
 		if !(board.square.(elm fx fy)) = side then (a+1,b)
 		else if !(board.square.(elm fx fy)) = 0 then (a,b+1)
 		else (a,b) in
-		help_intern (x+1) p1 p2
+	      help_intern (x+1) p1 p2
 	    else a+b = tiles
-	  in let bool = help_intern 0 0 0 in
-	    if bool then true else helper (y+1)
+	  in
+          help_intern 0 0 0 || helper (y+1)
 	  )
     else false
   in helper 0
@@ -258,9 +257,8 @@ let count_odd_threats board threats =
   let rec helper x oddpnt =
     if x < groups then
       let y = odd_threat board x in
-	if y = (-1) then helper (x+1) oddpnt
-	else 
-	  (
+	if y = -1 then helper (x+1) oddpnt
+	else (
 	    threats.(oddpnt) <- y;
 	    helper (x+1) (oddpnt + 1)
 	  )
@@ -1179,26 +1177,21 @@ let column_wdoe board p1 p2 =
 
 let comp_rules board p1 p2 =
   let c1 = board.solution.(p1).solname - 1
-  and c2 = board.solution.(p2).solname - 1 
-  and bol = ref true in
+  and c2 = board.solution.(p2).solname - 1 in
   let way = rulecombo.(c1).(c2) in
-    if way land 9 <> 0 then
-      (
-	board.rules.(0) <- board.rules.(0) + 1;
-	if overlap board p1 p2 then bol := false
-      )
-    else if way land 2 <> 0 then
-      (
-	board.rules.(1) <- board.rules.(1) + 1;
-	if overlap board p1 p2 then bol := false
-      )
-    else if way land 4 <> 0 then
-      (
-	board.rules.(2) <- board.rules.(2) + 1;
-	if not (column_wdoe board p1 p2) then bol := false
-      );
-    !bol
-	
+  if way land 9 <> 0 then (
+    board.rules.(0) <- board.rules.(0) + 1;
+    not(overlap board p1 p2)
+  )
+  else if way land 2 <> 0 then (
+    board.rules.(1) <- board.rules.(1) + 1;
+    not(overlap board p1 p2)
+  )
+  else if way land 4 <> 0 then (
+    board.rules.(2) <- board.rules.(2) + 1;
+    column_wdoe board p1 p2
+  )
+  else true
 
 
 let build_adjacency_matrix board =
