@@ -300,16 +300,17 @@ let both_many_groups board cols cl =
     let rec helper i =
       if i < len_q then
         let g1 = q.(i) in
-	  if (not board.intgp.tgroups.(g1)) then helper (i+1)
-	  else if cols=1 || recurse_groups board (cols-1)
-	    (int_to_tab cl.(1)) g1 then (
-              sol.solgroups.(sol.solgroupsnumb) <- g1;
-              sol.solgroupsnumb <- sol.solgroupsnumb + 1
-	    )
-	  else helper (i+1)
+        if not board.intgp.tgroups.(g1) then helper (i+1)
+        else if cols=1 || recurse_groups board (cols-1) (int_to_tab cl.(1)) g1
+        then (
+          sol.solgroups.(sol.solgroupsnumb) <- g1;
+          sol.solgroupsnumb <- sol.solgroupsnumb + 1
+        )
+        else helper (i+1)
     in helper 0
 
 let solve_columns board cl cols =
+  let sol = board.solution.(board.sp) in
   let rec helper i =
     if (not board.intgp.tgroups.(i)) then helper (i+1)
     else
@@ -327,65 +328,59 @@ let solve_columns board cl cols =
 	      j := !j+1
 	  done;
 	  if !j = cl && !answer then
-	    if board.solution.(board.sp).solgroupsnumb = 0 then
-	      (
-		board.solution.(board.sp).sqinvnumb <- 2*cl;
+            if sol.solgroupsnumb = 0 then (
+              sol.sqinvnumb <- 2 * cl;
 		for t=0 to cl-1 do
 		  let tx = elx cols.(t) and ty = ely cols.(t) in
-		    board.solution.(board.sp).sqinv.(t) <- elm tx (ty-1);
-		    board.solution.(board.sp).sqinv.(t+cl) <- elm tx ty;
+                  sol.sqinv.(t) <- elm tx (ty-1);
+                  sol.sqinv.(t+cl) <- elm tx ty;
 		done;
-		board.solution.(board.sp).solgroups.
-		  (board.solution.(board.sp).solgroupsnumb) <- i;
-		board.solution.(board.sp).solgroupsnumb <-
-		  board.solution.(board.sp).solgroupsnumb +1
+                sol.solgroups.(sol.solgroupsnumb) <- i;
+                sol.solgroupsnumb <- sol.solgroupsnumb +1
 	      )
       )
   in helper 0
 
 let check_claim board cl = 
   let px = elx cl.(1) and py = elx cl.(1) in
-    if py<boardY && (py land 1 = 1) then
-	 (
-	   board.solution.(board.sp).solgroupsnumb <- 0;
-	   board.solution.(board.sp).solname <- baseinverse_;
-	   board.solution.(board.sp).sqinv.(0) <- cl.(0);
-	   board.solution.(board.sp).sqinv.(1) <- cl.(1);
-	   board.solution.(board.sp).sqinv.(2) <- cl.(2);
-	   board.solution.(board.sp).sqinv.(3) <- elm px py;
-	   board.solution.(board.sp).sqinvnumb <- 4;
-	   board.solution.(board.sp).solpoint.(0) <- cl.(0);
-	   board.solution.(board.sp).solpoint.(1) <- elm px py;
-	   both_groups board cl.(0) (elm px py);
-	   board.instances.(baseclaim_) <-
-	     board.instances.(baseclaim_) + 1;
-	   if board.solution.(board.sp).solgroupsnumb > 0 then
-	       (
+  if py < boardY && (py land 1 = 1) then (
+    let sol = board.solution.(board.sp) in
+    sol.solgroupsnumb <- 0;
+    sol.solname <- baseinverse_;
+    sol.sqinv.(0) <- cl.(0);
+    sol.sqinv.(1) <- cl.(1);
+    sol.sqinv.(2) <- cl.(2);
+    sol.sqinv.(3) <- elm px py;
+    sol.sqinvnumb <- 4;
+    sol.solpoint.(0) <- cl.(0);
+    sol.solpoint.(1) <- elm px py;
+    both_groups board cl.(0) (elm px py);
+    board.instances.(baseclaim_) <- board.instances.(baseclaim_) + 1;
+    if sol.solgroupsnumb > 0 then (
 		 both_groups board cl.(1) cl.(2);
 		 board.sp <- board.sp + 1
-	       );
-	   board.solution.(board.sp).solgroupsnumb <- 0;
-	   board.solution.(board.sp).solname <- baseinverse_;
-	   board.solution.(board.sp).sqinv.(0) <- cl.(0);
-	   board.solution.(board.sp).sqinv.(1) <- cl.(1);
-	   board.solution.(board.sp).sqinv.(2) <- cl.(2);
-	   board.solution.(board.sp).sqinv.(3) <- elm px py;
-	   board.solution.(board.sp).sqinvnumb <- 4;
-	   board.solution.(board.sp).solpoint.(0) <- elm px py;
-	   board.solution.(board.sp).solpoint.(1) <- cl.(2);
-	   both_groups board (elm px py) cl.(2);
-	   board.instances.(baseclaim_) <-
-	     board.instances.(baseclaim_) + 1;
-	   if board.solution.(board.sp).solgroupsnumb > 0 then
-	     (
+    );
+    let sol = board.solution.(board.sp) in
+    sol.solgroupsnumb <- 0;
+    sol.solname <- baseinverse_;
+    sol.sqinv.(0) <- cl.(0);
+    sol.sqinv.(1) <- cl.(1);
+    sol.sqinv.(2) <- cl.(2);
+    sol.sqinv.(3) <- elm px py;
+    sol.sqinvnumb <- 4;
+    sol.solpoint.(0) <- elm px py;
+    sol.solpoint.(1) <- cl.(2);
+    both_groups board (elm px py) cl.(2);
+    board.instances.(baseclaim_) <- board.instances.(baseclaim_) + 1;
+    if sol.solgroupsnumb > 0 then (
 	       both_groups board cl.(0) cl.(1);
 	       board.sp <- board.sp + 1
-	     )
-	 )
+    )
+  )
 
 let generate_all_other_before_instances board cols cl j =
   let step = 128 lsr cols
-  and gc = Array.init 4 (fun j -> (Array.init 3 (fun i -> 0))) in
+  and gc = Array.make_matrix 4 3  0 in
     for x=0 to cols - 1 do
       let px = elx cl.(x)
       and py = ely cl.(x) in
@@ -394,7 +389,7 @@ let generate_all_other_before_instances board cols cl j =
 	if board.stack.(px)<py-2 then gc.(x).(0) <- elm px (py-2)
 	else gc.(x).(0) <- -1
     done;
-    let rec helper cnt =
+  let rec helper cnt =
       if cnt < 128 then
 	(
 	  let pn = Array.init 4 (fun i -> (cnt lsr 6) land 1)
@@ -416,19 +411,18 @@ let generate_all_other_before_instances board cols cl j =
 	      done;
 	      j := !j+1
 	    done;
-	    if !flag then
-	      (
-		board.solution.(board.sp).solgroupsnumb <- 0;
-		board.solution.(board.sp).solname <- before_;
-		board.solution.(board.sp).solpoint.(0) <-
-		  elm board.xplace.(!j).(0) board.yplace.(!j).(0);
-		board.solution.(board.sp).solpoint.(1) <-
-		  elm board.xplace.(!j).(3) board.yplace.(!j).(3);
-		board.solution.(board.sp).sqinvnumb <- 2*cols;
-		for x=0 to (2*cols)-1 do
- 		  board.solution.(board.sp).sqinv.(x)<-
-		    sl.(x lsr 1).(x land 1)
-		done;
+            if !flag then (
+              let sol = board.solution.(board.sp) in
+              sol.solgroupsnumb <- 0;
+              sol.solname <- before_;
+              sol.solpoint.(0) <-
+                elm board.xplace.(!j).(0) board.yplace.(!j).(0);
+              sol.solpoint.(1) <-
+                elm board.xplace.(!j).(3) board.yplace.(!j).(3);
+              sol.sqinvnumb <- 2 * cols;
+              for x=0 to 2 * cols -1 do
+                sol.sqinv.(x) <- sl.(x lsr 1).(x land 1)
+              done;
 		for x = 0 to cols-1 do
 		  let py2 = ely sl.(x).(1) in
 		    if py2 land 1 = 1 then
@@ -437,7 +431,7 @@ let generate_all_other_before_instances board cols cl j =
 		done;
 		both_many_groups board cols cl;
 		board.instances.(before_) <- board.instances.(before_)+1;
-		if board.solution.(board.sp).solgroupsnumb>0 then
+                if sol.solgroupsnumb > 0 then
 		  board.sp <- board.sp + 1
 	      );
 	    helper (cnt+step)
@@ -604,7 +598,6 @@ let handle_odd_before_even board tc =
 
 (*Regles de la these*)
 let claimeven board =
-  let sol = board.solution.(board.sp) in
   let rec helper y1 =
     if y1<boardY then
       (
@@ -618,21 +611,18 @@ let claimeven board =
 		    (
                       let grp = board.solvable_groups.(q1) in
                       for j=0 to Array.length grp - 1 do
-			  if board.intgp.tgroups.(grp.(j)) then
-			    (
-			      if board.solution.(board.sp).
-				solgroupsnumb=0
-			      then
-				(
-                                  sol.solname <- claimeven_;
-                                  sol.solpoint.(0) <- q1;
-                                  sol.solpoint.(1) <- q2;
-                                  sol.sqinv.(0) <- q1;
-                                  sol.sqinv.(1) <- q2;
-                                  sol.sqinvnumb <- 2;
-				  board.instances.(claimeven_)
-				  <- board.instances.(claimeven_) + 1
-				);
+                        if board.intgp.tgroups.(grp.(j)) then (
+                              let sol = board.solution.(board.sp) in
+                              if sol.solgroupsnumb = 0 then (
+                                sol.solname <- claimeven_;
+                                sol.solpoint.(0) <- q1;
+                                sol.solpoint.(1) <- q2;
+                                sol.sqinv.(0) <- q1;
+                                sol.sqinv.(1) <- q2;
+                                sol.sqinvnumb <- 2;
+                                board.instances.(claimeven_)
+                                <- board.instances.(claimeven_) + 1
+                              );
                               sol.solgroups.(sol.solgroupsnumb) <- grp.(j);
                               sol.solgroupsnumb <- sol.solgroupsnumb + 1
 			    );
@@ -650,7 +640,6 @@ let claimeven board =
 
 let baseinverse board =
   let set = Array.make 64 true in
-  let sol = board.solution.(board.sp) in
     for y1=0 to boardY-1 do
       for x1=0 to boardX-1 do
 	let q1 = elm x1 y1 in
@@ -668,6 +657,7 @@ let baseinverse board =
 			    set.(elm wx wy) && board.sqused.(elm wx wy)
 			  then (
 			    set.(elm wx wy) <- false;
+                            let sol = board.solution.(board.sp) in
                             sol.solgroupsnumb <- 0;
                             sol.solname <- baseinverse_;
                             sol.solpoint.(0) <- q1;
@@ -691,7 +681,6 @@ let baseinverse board =
 
 let vertical board =
   let set = Array.make 64 true in
-  let sol = board.solution.(board.sp) in
   for y1 = 0 to boardY - 1 do
       for x1=0 to boardX-1 do
 	let q1=elm x1 y1 in
@@ -711,6 +700,7 @@ let vertical board =
 			      && board.sqused.(elm x1 wy)
 			    then (
 			      set.(elm x1 wy)<-false;
+                              let sol = board.solution.(board.sp) in
                               sol.solgroupsnumb <- 0;
                               sol.solname <- vertical_;
                               sol.solpoint.(0) <- q1;
@@ -734,10 +724,8 @@ let vertical board =
 
 let aftereven board =
   let cl = Array.make 4 0 in
-  let sol = board.solution.(board.sp) in
   let rec helper y1 =
-    if y1<boardY then
-      (
+    if y1<boardY then (
 	for x1=0 to boardX-1 do
 	  let q1=elm x1 y1 in
 	    if board.sqused.(q1) then
@@ -766,24 +754,24 @@ let aftereven board =
 				else after := false;
 			      x := !x+1
 			  done;
-			  if !after && !cols>0 then
-			    (
-                              sol.solgroupsnumb <- 0;
-                              sol.solname <- aftereven_;
-                              sol.solpoint.(0) <- q1;
-                              sol.solpoint.(1) <-
-                                elm (board.xplace.(grp.(j)).(3))
-                                (board.yplace.(grp.(j)).(3));
-                              board.instances.(aftereven_)
+                          if !after && !cols>0 then (
+                            let sol = board.solution.(board.sp) in
+                            sol.solgroupsnumb <- 0;
+                            sol.solname <- aftereven_;
+                            sol.solpoint.(0) <- q1;
+                            sol.solpoint.(1) <-
+                              elm (board.xplace.(grp.(j)).(3))
+                              (board.yplace.(grp.(j)).(3));
+                            board.instances.(aftereven_)
                               <- board.instances.(aftereven_)+1;
-                              sol.sqinvnumb <- !cols;
-			      for pj=0 to !cols-1 do
-                                sol.sqinv.(pj) <-cl.(pj)
-			      done;
-			      solve_columns board !cols cl;
-                              if sol.solgroupsnumb > 0 then
-                                board.sp <- board.sp+1
-			    )
+                            sol.sqinvnumb <- !cols;
+                            for pj=0 to !cols-1 do
+                              sol.sqinv.(pj) <-cl.(pj)
+                            done;
+                            solve_columns board !cols cl;
+                            if sol.solgroupsnumb > 0 then
+                              board.sp <- board.sp+1
+                          )
 		  done
 	      )
 	done;
@@ -795,7 +783,6 @@ let aftereven board =
 
 let lowinverse board =
   let set = Array.make 64 true in
-  let sol = board.solution.(board.sp) in
   let rec helper y1 =
     if y1<boardY then
       (
@@ -818,6 +805,7 @@ let lowinverse board =
 				board.sqused.(elm wx wy) then
 				  (
 				    set.(elm wx wy)<-false;
+                                    let sol = board.solution.(board.sp) in
                                     sol.solgroupsnumb <- 0;
                                     sol.solname <- lowinverse_;
                                     sol.solpoint.(0) <- q1;
@@ -847,7 +835,6 @@ let lowinverse board =
 
 let highinverse board =
   let set = Array.make 64 true in
-  let sol = board.solution.(board.sp) in
   let rec helper y1 =
     if y1<boardY then
       (
@@ -870,6 +857,7 @@ let highinverse board =
 			      board.sqused.(elm wx wy) then
 				(
 				  set.(elm wx wy)<-false;
+                                  let sol = board.solution.(board.sp) in
                                   sol.solgroupsnumb<-0;
                                   sol.solname <- highinverse_;
                                   sol.solpoint.(0) <- q1;
@@ -1140,20 +1128,20 @@ let comp_rules board p1 p2 =
 
 
 let build_adjacency_matrix board =
-  let matrix = Array.init board.sp
-    (fun i -> Array.init board.sp (fun j -> false)) in
-    for x=0 to board.sp-1 do
-      for y=x to board.sp-1 do
-	if comp_rules board x y then matrix.(y).(x) <- true
-      done
-    done;
-    matrix
+  let matrix = Array.make_matrix board.sp board.sp false in
+  for x = 0 to board.sp - 1 do
+    for y = x to board.sp - 1 do
+      if comp_rules board x y then matrix.(y).(x) <- true
+    done
+  done;
+  matrix
 
 
 (*Problem Solver*)
 
 let wside = [|"none";"yellow";"red"|]
-and rules_name = [|"CLAIMEVEN";"BASEINVERSE";"VERTICAL";"LOWINVERSE";"HIGHINVERSE";"BASECLAIM";"BEFORE";"SPECIALBEFORE"|]
+and rules_name = [|"CLAIMEVEN";"BASEINVERSE";"VERTICAL";"LOWINVERSE";
+                   "HIGHINVERSE";"BASECLAIM";"BEFORE";"SPECIALBEFORE"|]
 and tempsolused = ref 0
 exception No_problem_found
 
@@ -1178,16 +1166,16 @@ type up_solution = {
   mutable wprobs : int array
 }
 
-let make_problem group_ solved_ solnumb_ = 
+let make_problem group solved solnumb =
   {
-    group = group_;
-    solved = solved_;
+    group = group;
+    solved = solved;
     solutions = Array.make 621 0;
-    solnumb = solnumb_
+    solnumb = solnumb
   }
 
-    
-  
+
+
 let find_most_difficult_problem pblist board =
   let minsol = ref 32767
   and solpnt = ref (-1) in
@@ -1373,7 +1361,7 @@ let evaluate_black board =
     (
       let matrix = build_adjacency_matrix board in
       let oracle = problem_solver board matrix in
-	oracle
+      oracle
     )
 
 
