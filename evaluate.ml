@@ -1008,130 +1008,139 @@ let anypentas board =
 
 
 
+(* Adjacency Matrix *)
+module Adjacency =
+struct
+
+  let rulecombo = [|[|1; 1; 1; 1; 3; 3; 1; 1; 1|];
+                    [|1; 1; 1; 1; 1; 1; 1; 1; 1|];
+                    [|1; 1; 1; 1; 1; 1; 1; 1; 1|];
+                    [|1; 1; 1; 4; 3; 3; 1; 4;12|];
+                    [|3; 1; 1; 3; 8; 8; 3; 6; 6|];
+                    [|3; 1; 1; 3; 8; 8; 3; 3; 3|];
+                    [|1; 1; 1; 1; 3; 3; 1; 1; 1|];
+                    [|1; 1; 1; 4; 6; 3; 1; 4; 4|];
+                    [|1; 1; 1;12; 6; 3; 1; 4; 4|]|]
+
+  exception Combinaison_error
 
 
-
-(*Adjacent Matrix*)
-
-let rulecombo = [|[|1;1;1;1;3;3;1;1;1|];
-		     [|1;1;1;1;1;1;1;1;1|];
-		     [|1;1;1;1;1;1;1;1;1|];
-		     [|1;1;1;4;3;3;1;4;12|];
-		     [|3;1;1;3;8;8;3;6;6|];
-		     [|3;1;1;3;8;8;3;3;3|];
-		     [|1;1;1;1;3;3;1;1;1|];
-		     [|1;1;1;4;6;3;1;4;4|];
-		     [|1;1;1;12;6;3;1;4;4|]|]
-
-exception Combinaison_error
-
-
-let overlap board p1 p2 =
-  let temp = Array.make ((boardX+1)*(boardY+2)) false
-  and bol = ref false in
-    for x=0 to board.solution.(p2).sqinvnumb - 1 do
+  let overlap board p1 p2 =
+    let temp = Array.make ((boardX+1)*(boardY+2)) false in
+    for x = 0 to board.solution.(p2).sqinvnumb - 1 do
       temp.(board.solution.(p2).sqinv.(x)) <- true
     done;
+    let bol = ref false in
     for x=0 to board.solution.(p1).sqinvnumb - 1 do
       if temp.(board.solution.(p1).sqinv.(x)) then bol := true ;
     done;
     !bol
 
 
-let claimeven_below board p1 p2 =
-  let name = board.solution.(p1).solname
-  and bol = ref true in
-  let (q1,q2) = if name <> highinverse_ && name <> lowinverse_ then (p2,p1)
-  else (p1,p2) in
+  let claimeven_below board p1 p2 =
+    let name = board.solution.(p1).solname in
+    let (q1,q2) = (if name <> highinverse_ && name <> lowinverse_ then (p2,p1)
+                   else (p1,p2)) in
+    assert(let name = board.solution.(q1).solname in
+           name = highinverse_ || name = lowinverse_);
+    let bol = ref true in
     if board.solution.(q2).solname = aftereven_ then
       let solcheck = board.solution.(q2).sqinvnumb / 2 in
-	for x=0 to 1 do
-	  let q1x = elx board.solution.(q1).sqinv.(x+2)
-	  and q1y = ely board.solution.(q1).sqinv.(x+2) in
-	    for y=0 to solcheck-1 do
-	      let q2x = elx board.solution.(q2).sqinv.(solcheck+y)
-	      and q2y = ely board.solution.(q2).sqinv.(solcheck+y) in
-		if q1x=q2x && q1y>q2y && (q2y land 1 = 1) then bol:=true
-	    done
-	done;
-    else if board.solution.(q2).solname = before_ &&
+      for x = 0 to 1 do
+        let q1x = elx board.solution.(q1).sqinv.(x+2)
+        and q1y = ely board.solution.(q1).sqinv.(x+2) in
+        for y=0 to solcheck-1 do
+          let q2x = elx board.solution.(q2).sqinv.(solcheck+y)
+          and q2y = ely board.solution.(q2).sqinv.(solcheck+y) in
+          if q1x=q2x && q1y>q2y && (q2y land 1 = 1) then bol:=true
+        done
+      done
+    else if board.solution.(q2).solname = before_ ||
       board.solution.(q2).solname = specialbefore_ then
-	let solcheck = board.solution.(q2).sqinvnumb/2 in
-	  for x=0 to 1 do
-	    let q1x = elx board.solution.(q1).sqinv.(x+2)
-	    and q1y = ely board.solution.(q1).sqinv.(x+2) in
-	      for y=0 to solcheck do
-		let q2x = elx board.solution.(q2).sqinv.(1+(y lsl 1))
-		and q2y = ely board.solution.(q2).sqinv.(1+(y lsl 1)) in
-		  if q1x=q2x && q1y>q2y && (q2y land 1=1) then bol:=true
-	      done
-	  done;
+        let solcheck = board.solution.(q2).sqinvnumb / 2 in
+        for x=0 to 1 do
+          let q1x = elx board.solution.(q1).sqinv.(x+2)
+          and q1y = ely board.solution.(q1).sqinv.(x+2) in
+          for y=0 to solcheck - 1 do
+            let q2x = elx board.solution.(q2).sqinv.(1+(y lsl 1))
+            and q2y = ely board.solution.(q2).sqinv.(1+(y lsl 1)) in
+            if q1x=q2x && q1y>q2y && (q2y land 1=1) then bol:=true
+          done
+        done
     else if board.solution.(q2).solname = claimeven_ then
       for x=0 to 1 do
-	let q1x = elx board.solution.(q1).sqinv.(x+2)
-	and q1y = elx board.solution.(q1).sqinv.(x+2)
-	and q2x = elx board.solution.(q2).sqinv.(0)
-	and q2y = ely board.solution.(q2).sqinv.(0) in
-	  if (q1x=q2x &&q1y>q2y) then bol := true
+        let q1x = elx board.solution.(q1).sqinv.(x+2)
+        and q1y = elx board.solution.(q1).sqinv.(x+2)
+        and q2x = elx board.solution.(q2).sqinv.(0)
+        and q2y = ely board.solution.(q2).sqinv.(0) in
+        if q1x=q2x && q1y>q2y then bol := true
       done
     else if board.solution.(q2).solname = baseclaim_ then
       for x=0 to 1 do
-	let q1x = elx board.solution.(q1).sqinv.(x+2)
-	and q1y = elx board.solution.(q1).sqinv.(x+2)
-	and q2x = elx board.solution.(q2).sqinv.(0)
-	and q2y = ely board.solution.(q2).sqinv.(0) in
-	  if (q1x=q2x &&q1y>q2y) then bol := true
+        let q1x = elx board.solution.(q1).sqinv.(x+2)
+        and q1y = elx board.solution.(q1).sqinv.(x+2)
+        and q2x = elx board.solution.(q2).sqinv.(3)
+        and q2y = ely board.solution.(q2).sqinv.(3) in
+        if q1x=q2x && q1y>q2y then bol := true
       done
-    else raise Combinaison_error
+    else raise Combinaison_error;
+    !bol
 
 
-let column_wdoe board p1 p2 =
-  let joinmtrx = Array.make ((boardX+1)*(boardY+2)) false in
+  let column_wdoe board p1 p2 =
+    let joinmtrx = Array.make ((boardX+1)*(boardY+2)) false in
+    assert(let w1 = board.solution.(p1).solname in
+           w1 = specialbefore_ || w1 = before_ || w1 = aftereven_
+               || w1 = lowinverse_);
+    assert(let w2 = board.solution.(p2).solname in
+           w2 = specialbefore_ || w2 = before_ || w2 = aftereven_
+               || w2 = lowinverse_);
     for x=0 to board.solution.(p1).sqinvnumb - 1 do
       joinmtrx.(board.solution.(p1).sqinv.(x)) <- true
     done;
     for x=0 to board.solution.(p2).sqinvnumb - 1 do
       joinmtrx.(board.solution.(p2).sqinv.(x)) <- true
     done;
-    let x = ref 0 and answer = ref true and cnt = ref 0 in
-      while !x< boardX && !answer do
-	for y = 0 to boardY-1 do
-	if joinmtrx.(elm !x y) then cnt := !cnt + 1
-	done;
-	if !cnt land 1 = 1 then answer := false
+    let x = ref 0 and answer = ref true in
+    while !x < boardX && !answer do
+      let cnt = ref 0 in
+      for y = 0 to boardY - 1 do
+        if joinmtrx.(elm !x y) then incr cnt
       done;
-      !answer
-    
+      if !cnt land 1 = 1 then answer := false;
+      incr x
+    done;
+    !answer
 
 
-let comp_rules board p1 p2 =
-  let c1 = board.solution.(p1).solname - 1
-  and c2 = board.solution.(p2).solname - 1 in
-  let way = rulecombo.(c1).(c2) in
-  if way land 9 <> 0 then (
-    board.rules.(0) <- board.rules.(0) + 1;
-    not(overlap board p1 p2)
-  )
-  else if way land 2 <> 0 then (
-    board.rules.(1) <- board.rules.(1) + 1;
-    not(overlap board p1 p2)
-  )
-  else if way land 4 <> 0 then (
-    board.rules.(2) <- board.rules.(2) + 1;
-    column_wdoe board p1 p2
-  )
-  else true
+  let comp_rules board p1 p2 =
+    let c1 = board.solution.(p1).solname - 1
+    and c2 = board.solution.(p2).solname - 1 in
+    let way = rulecombo.(c1).(c2) in
+    if way land 9 <> 0 then (
+      board.rules.(0) <- board.rules.(0) + 1;
+      not(overlap board p1 p2)
+    )
+    else if way land 2 <> 0 then (
+      board.rules.(1) <- board.rules.(1) + 1;
+      not(claimeven_below board p1 p2)
+    )
+    else if way land 4 <> 0 then (
+      board.rules.(2) <- board.rules.(2) + 1;
+      column_wdoe board p1 p2
+    )
+    else true
 
 
-let build_adjacency_matrix board =
-  let matrix = Array.make_matrix board.sp board.sp false in
-  for x = 0 to board.sp - 1 do
-    for y = x to board.sp - 1 do
-      if comp_rules board x y then matrix.(y).(x) <- true
-    done
-  done;
-  matrix
-
+  let make_matrix board =
+    let matrix = Array.make_matrix board.sp board.sp false in
+    for x = 0 to board.sp - 1 do
+      for y = x to board.sp - 1 do
+        if comp_rules board x y then matrix.(y).(x) <- true
+      done
+    done;
+    matrix
+end
 
 (*Problem Solver*)
 
@@ -1355,7 +1364,7 @@ let evaluate_black board =
   else if board.sp = 0 then false
   else
     (
-      let matrix = build_adjacency_matrix board in
+      let matrix = Adjacency.make_matrix board in
       let oracle = problem_solver board matrix in
       oracle
     )
@@ -1434,7 +1443,7 @@ let evaluate_white board =
 	      if board.intgp.j = 0 then oracle := true
 	      else if board.sp = 0 then oracle := false
 	      else 
-		let matrix = build_adjacency_matrix board in
+		let matrix = Adjacency.make_matrix board in
 		  oracle := problem_solver board matrix
 	    done
 	  done
