@@ -86,10 +86,7 @@ type threat_combo = {
 }
 
 
-type solvable_groups = {
-  squar : int array array;
-  sqpnt : int array
-}
+type solvable_groups = int array array
 
 type solution = {
   mutable valid : bool;
@@ -208,9 +205,10 @@ let wiped_group board group =
   in helper 0 0
 
 let check_threat board px i side =
+  let sq = board.solvable_groups.(elm px i) in
   let rec helper y =
-    if y < board.solvable_groups.sqpnt.(elm px i) then
-      let j = board.solvable_groups.squar.(elm px i).(y) in
+    if y < Array.length sq then
+      let j = sq.(y) in
 	if board.xplace.(j).(0) = board.xplace.(j).(3) then
 	  helper (y+1)
 	else (
@@ -264,51 +262,49 @@ let count_odd_threats board threats =
 	  )
     else oddpnt
   in helper 0 0
-	  
-let both_groups board q1 q2 = 
-  let p1 = board.solvable_groups.sqpnt.(q1)
-  and p2 = board.solvable_groups.sqpnt.(q2) in
-  for x=0 to p1-1 do
-    for y=0 to p2-1 do
-      let g1=board.solvable_groups.squar.(q1).(x)
-      and g2=board.solvable_groups.squar.(q2).(y) in
-	if g1=g2 && board.intgp.tgroups.(g1) then
-	  (
-	    board.solution.(board.sp).solgroups.
-	      (board.solution.(board.sp).solgroupsnumb) <- g1;
-	    board.solution.(board.sp).solgroupsnumb <-
-	      board.solution.(board.sp).solgroupsnumb +1
-	  )
+
+let both_groups board q1 q2 =
+  let q1 = board.solvable_groups.(q1)
+  and q2 = board.solvable_groups.(q2) in
+  let sol = board.solution.(board.sp) in
+  for x=0 to Array.length q1 - 1 do
+    for y=0 to Array.length q2 - 1 do
+      let g1 = q1.(x)
+      and g2 = q2.(y) in
+      if g1 = g2 && board.intgp.tgroups.(g1) then (
+        sol.solgroups.(sol.solgroupsnumb) <- g1;
+        sol.solgroupsnumb <- sol.solgroupsnumb + 1
+      )
     done;
   done
 
 let rec recurse_groups board cols cl gp =
-  let p = board.solvable_groups.sqpnt.(cl.(0)) in
+  let q = board.solvable_groups.(cl.(0)) in
+  let len_q = Array.length q in
   let rec helper i =
-    if i<p then
-      let g1 = board.solvable_groups.squar.(cl.(0)).(i) in
-	if g1<>gp then helper (i+1)
+    if i < len_q then
+      let g1 = q.(i) in
+	if g1 <> gp then helper (i+1)
 	else if cols=1
 	  || recurse_groups board (cols-1) (int_to_tab cl.(1)) g1 then
 	    true
 	else helper (i+1)
     else false
   in helper 0
-       
+
 let both_many_groups board cols cl =
   if cols <> 0 then
-    let p = board.solvable_groups.sqpnt.(cl.(0)) in
+    let q = board.solvable_groups.(cl.(0)) in
+    let len_q = Array.length q in
+    let sol = board.solution.(board.sp) in
     let rec helper i =
-      if i<p then
-	let g1 = board.solvable_groups.squar.(cl.(0)).(i) in
+      if i < len_q then
+        let g1 = q.(i) in
 	  if (not board.intgp.tgroups.(g1)) then helper (i+1)
 	  else if cols=1 || recurse_groups board (cols-1)
-	    (int_to_tab cl.(1)) g1 then
-	    (
-	    board.solution.(board.sp).solgroups.
-	      (board.solution.(board.sp).solgroupsnumb) <- g1;
-	    board.solution.(board.sp).solgroupsnumb <-
-	      board.solution.(board.sp).solgroupsnumb +1
+	    (int_to_tab cl.(1)) g1 then (
+              sol.solgroups.(sol.solgroupsnumb) <- g1;
+              sol.solgroupsnumb <- sol.solgroupsnumb + 1
 	    )
 	  else helper (i+1)
     in helper 0
@@ -450,16 +446,16 @@ let generate_all_other_before_instances board cols cl j =
 
 let check_double_threat board x y tch pnt =
   let pq = elm x y in
-    for j=0 to board.solvable_groups.sqpnt.(pq)-2 do
-      for k=(j+1) to board.solvable_groups.sqpnt.(pq)-1 do
-	let jg = board.solvable_groups.squar.(pq).(j)
-	and kg = board.solvable_groups.squar.(pq).(k) in
-	let w1 = check_men board jg 1
-	and w2 = check_men board kg 1 
+  let g = board.solvable_groups.(pq) in
+  for j=0 to -2 do
+    for k = j+1 to Array.length g - 1 do
+        let jg = g.(j)
+        and kg = g.(k) in
+        let w1 = check_men board jg 1
+        and w2 = check_men board kg 1
 	and g1 = ref 0
 	and g2 = ref 0 in
-	  if (w1=2 && w2=2) then
-	    (
+        if w1=2 && w2=2 then (
 	      for wx=0 to tiles-1 do
 		let px = board.xplace.(jg).(wx)
 		and py = board.yplace.(jg).(wx) in
@@ -509,22 +505,19 @@ let threat_combo board tc =
 
 let wipe_many_groups board cols cl =
   if cols <> 0 then
-    let p=board.solvable_groups.sqpnt.(cl.(0)) in
-      for i=0 to p-1 do
-	let g1=board.solvable_groups.squar.(cl.(0)).(i) in
-	  if board.usablegroup.(g1) then
-	    if cols=1 || (recurse_groups board (cols-1)
-			    (int_to_tab cl.(1)) g1)
-	    then board.usablegroup.(g1) <- false
-      done
+    let g = board.solvable_groups.(cl.(0)) in
+    for i = 0 to Array.length g - 1 do
+      let gi = g.(i) in
+      if board.usablegroup.(gi) then
+        if cols = 1 || recurse_groups board (cols-1) (int_to_tab cl.(1)) gi
+        then board.usablegroup.(gi) <- false
+    done
 
 let handle_even_above_odd board tc =
   (*Rule one*)
-  
   wipe_odd board (tc.cross);
-  
-  (*Rule two*)
 
+  (*Rule two*)
   let cl = Array.make 2 0
   and px = elx (tc.cross)
   and py = (ely (tc.cross)) + 1
@@ -611,50 +604,41 @@ let handle_odd_before_even board tc =
 
 (*Regles de la these*)
 let claimeven board =
+  let sol = board.solution.(board.sp) in
   let rec helper y1 =
     if y1<boardY then
       (
 	for x1=0 to boardX-1 do
 	  if board.sqused.(elm x1 y1) then
 	    (
-	      board.solution.(board.sp).solgroupsnumb <- 0;
+	      sol.solgroupsnumb <- 0;
 	      let q1=elm x1 y1 and q2=elm x1 (y1-1) in
 		if !(board.square.(q1)) = 0 && !(board.square.(q2)) = 0
 		  && board.sqused.(q2) then
 		    (
-		      let sln = board.solvable_groups.sqpnt.(q1)
-		      and grp = board.solvable_groups.squar.(q1) in
-			for j=0 to sln-1 do
+                      let grp = board.solvable_groups.(q1) in
+                      for j=0 to Array.length grp - 1 do
 			  if board.intgp.tgroups.(grp.(j)) then
 			    (
 			      if board.solution.(board.sp).
 				solgroupsnumb=0
 			      then
 				(
-				  board.solution.(board.sp).
-				    solname <- claimeven_;
-				  board.solution.(board.sp).
-				    solpoint.(0) <- q1;
-				  board.solution.(board.sp).
-				    solpoint.(1) <- q2;
-				  board.solution.(board.sp).
-				    sqinv.(0) <- q1;
-				  board.solution.(board.sp).
-				    sqinv.(1) <- q2;
-				  board.solution.(board.sp).
-				    sqinvnumb <- 2;
+                                  sol.solname <- claimeven_;
+                                  sol.solpoint.(0) <- q1;
+                                  sol.solpoint.(1) <- q2;
+                                  sol.sqinv.(0) <- q1;
+                                  sol.sqinv.(1) <- q2;
+                                  sol.sqinvnumb <- 2;
 				  board.instances.(claimeven_)
 				  <- board.instances.(claimeven_) + 1
 				);
-			      board.solution.(board.sp).solgroups.
-				(board.solution.(board.sp).solgroupsnumb)
-			      <- grp.(j);
-			      board.solution.(board.sp).solgroupsnumb <-
-				board.solution.(board.sp).solgroupsnumb+1
+                              sol.solgroups.(sol.solgroupsnumb) <- grp.(j);
+                              sol.solgroupsnumb <- sol.solgroupsnumb + 1
 			    );
 			done;
 		    );
-		if board.solution.(board.sp).solgroupsnumb > 0 then
+              if sol.solgroupsnumb > 0 then
 		  board.sp <- board.sp + 1;
 	    );     
 	done;
@@ -666,6 +650,7 @@ let claimeven board =
 
 let baseinverse board =
   let set = Array.make 64 true in
+  let sol = board.solution.(board.sp) in
     for y1=0 to boardY-1 do
       for x1=0 to boardX-1 do
 	let q1 = elm x1 y1 in
@@ -673,9 +658,8 @@ let baseinverse board =
 	    if board.stack.(x1) = y1 then
 	      (
 		memset set true 64;
-		let sln = board.solvable_groups.sqpnt.(q1)
-		and grp = board.solvable_groups.squar.(q1) in
-		  for j=0 to sln-1 do
+                let grp = board.solvable_groups.(q1) in
+                for j=0 to Array.length grp - 1 do
 		    if board.intgp.tgroups.(grp.(j)) then
 		      for x=0 to tiles-1 do
 			let wx = board.xplace.(grp.(j)).(x)
@@ -684,21 +668,18 @@ let baseinverse board =
 			    set.(elm wx wy) && board.sqused.(elm wx wy)
 			  then (
 			    set.(elm wx wy) <- false;
-			    board.solution.(board.sp).solgroupsnumb <- 0;
-			    board.solution.(board.sp).solname
-			    <- baseinverse_;
-			    board.solution.(board.sp).solpoint.(0) <- q1;
-			    board.solution.(board.sp).solpoint.(1)
-			    <- elm wx wy;
-			    board.solution.(board.sp).sqinv.(0) <- q1;
-			    board.solution.(board.sp).sqinv.(1)
-			    <- elm wx wy;
-			    board.solution.(board.sp).sqinvnumb <- 2;
+                            sol.solgroupsnumb <- 0;
+                            sol.solname <- baseinverse_;
+                            sol.solpoint.(0) <- q1;
+                            sol.solpoint.(1) <- elm wx wy;
+                            sol.sqinv.(0) <- q1;
+                            sol.sqinv.(1) <- elm wx wy;
+                            sol.sqinvnumb <- 2;
 			    both_groups board q1 (elm wx wy);
 			    board.instances.(baseinverse_)
 			    <- board.instances.(baseinverse_) + 1;
-			    if board.solution.(board.sp).solgroupsnumb>0
-			    then board.sp <- board.sp + 1;
+                            if sol.solgroupsnumb > 0 then
+                              board.sp <- board.sp + 1;
 			  )
 		      done;
 		  done;
@@ -708,18 +689,18 @@ let baseinverse board =
 
 
 
-let vertical board = 
+let vertical board =
   let set = Array.make 64 true in
-    for y1=0 to boardY-1 do
+  let sol = board.solution.(board.sp) in
+  for y1 = 0 to boardY - 1 do
       for x1=0 to boardX-1 do
 	let q1=elm x1 y1 in
 	  if board.sqused.(q1) then
 	    if !(board.square.(q1)) = 0 then
 	      (
 		memset set true 64;
-		let sln=board.solvable_groups.sqpnt.(q1)
-		and grp=board.solvable_groups.squar.(q1) in
-		  for j=0 to sln-1 do
+                let grp = board.solvable_groups.(q1) in
+                for j=0 to Array.length grp - 1 do
 		    if board.intgp.tgroups.(grp.(j)) &&
 		      board.xplace.(grp.(j)).(0)=
 		      board.xplace.(grp.(j)).(3) then
@@ -730,25 +711,17 @@ let vertical board =
 			      && board.sqused.(elm x1 wy)
 			    then (
 			      set.(elm x1 wy)<-false;
-			      board.solution.(board.sp).solgroupsnumb
-			      <- 0;
-			      board.solution.(board.sp).solname
-			      <- vertical_;
-			      board.solution.(board.sp).solpoint.(0)
-			      <- q1;
-			      board.solution.(board.sp).solpoint.(1)
-			      <- elm x1 wy;
-			      board.solution.(board.sp).sqinv.(0)
-			      <- q1;
-			      board.solution.(board.sp).sqinv.(1)
-			      <- elm x1 wy;
-			      board.solution.(board.sp).sqinvnumb
-			      <- 2;
+                              sol.solgroupsnumb <- 0;
+                              sol.solname <- vertical_;
+                              sol.solpoint.(0) <- q1;
+                              sol.solpoint.(1) <- elm x1 wy;
+                              sol.sqinv.(0) <- q1;
+                              sol.sqinv.(1) <- elm x1 wy;
+                              sol.sqinvnumb <- 2;
 			      both_groups board q1 (elm x1 wy);
 			      board.instances.(vertical_)
 			      <- board.instances.(vertical_) + 1;
-			      if board.solution.(board.sp).
-				solgroupsnumb>0 then
+                              if sol.solgroupsnumb > 0 then
 				  board.sp <- board.sp+1
 			    )
 			done;
@@ -761,6 +734,7 @@ let vertical board =
 
 let aftereven board =
   let cl = Array.make 4 0 in
+  let sol = board.solution.(board.sp) in
   let rec helper y1 =
     if y1<boardY then
       (
@@ -768,9 +742,8 @@ let aftereven board =
 	  let q1=elm x1 y1 in
 	    if board.sqused.(q1) then
 	      (
-		let sln = board.solvable_groups.sqpnt.(q1)
-		and grp = board.solvable_groups.squar.(q1) in
-		  for j=0 to sln-1 do
+                let grp = board.solvable_groups.(q1) in
+                for j = 0 to Array.length grp - 1 do
 		    if board.intgp.mygroups.(grp.(j)) &&
 		      x1=board.xplace.(grp.(j)).(0) &&
 		      x1<board.xplace.(grp.(j)).(3) then
@@ -795,24 +768,21 @@ let aftereven board =
 			  done;
 			  if !after && !cols>0 then
 			    (
-			      board.solution.(board.sp).solgroupsnumb<-0;
-			      board.solution.(board.sp).solname
-			      <-aftereven_;
-			      board.solution.(board.sp).solpoint.(0)<-q1;
-			      board.solution.(board.sp).solpoint.(1)
-			      <-elm (board.xplace.(grp.(j)).(3))
-				       (board.yplace.(grp.(j)).(3));
-			      board.instances.(aftereven_)
-			      <- board.instances.(aftereven_)+1;
-			      board.solution.(board.sp).sqinvnumb
-			      <- !cols;
+                              sol.solgroupsnumb <- 0;
+                              sol.solname <- aftereven_;
+                              sol.solpoint.(0) <- q1;
+                              sol.solpoint.(1) <-
+                                elm (board.xplace.(grp.(j)).(3))
+                                (board.yplace.(grp.(j)).(3));
+                              board.instances.(aftereven_)
+                              <- board.instances.(aftereven_)+1;
+                              sol.sqinvnumb <- !cols;
 			      for pj=0 to !cols-1 do
-				board.solution.(board.sp).sqinv.(pj)
-				  <-cl.(pj)
+                                sol.sqinv.(pj) <-cl.(pj)
 			      done;
 			      solve_columns board !cols cl;
-			      if board.solution.(board.sp).solgroupsnumb
-				> 0 then board.sp <- board.sp+1
+                              if sol.solgroupsnumb > 0 then
+                                board.sp <- board.sp+1
 			    )
 		  done
 	      )
@@ -825,6 +795,7 @@ let aftereven board =
 
 let lowinverse board =
   let set = Array.make 64 true in
+  let sol = board.solution.(board.sp) in
   let rec helper y1 =
     if y1<boardY then
       (
@@ -834,9 +805,8 @@ let lowinverse board =
 	      if board.stack.(x1)<y1 then
 		(
 		  memset set true 64;
-		  let sln = board.solvable_groups.sqpnt.(q1)
-		  and grp = board.solvable_groups.squar.(q1) in
-		    for j=0 to sln-1 do
+                  let grp = board.solvable_groups.(q1) in
+                  for j = 0 to Array.length grp - 1 do
 		      if board.intgp.tgroups.(grp.(j)) &&
 			board.xplace.(grp.(j)).(0) <>
 			board.xplace.(grp.(j)).(3) then
@@ -848,33 +818,23 @@ let lowinverse board =
 				board.sqused.(elm wx wy) then
 				  (
 				    set.(elm wx wy)<-false;
-				    board.solution.(board.sp)
-				      .solgroupsnumb <- 0;
-				    board.solution.(board.sp).solname
-				    <- lowinverse_;
-				    board.solution.(board.sp)
-				      .solpoint.(0) <- q1;
-				    board.solution.(board.sp)
-				      .solpoint.(1) <- elm wx wy;
-				    board.solution.(board.sp).sqinv.(0)
-				    <- q1;
-				    board.solution.(board.sp).sqinv.(1)
-				    <- elm wx wy;
-				    board.solution.(board.sp).sqinv.(2)
-				    <- elm x1 (y1-1);
-				    board.solution.(board.sp).sqinv.(3)
-				    <- elm wx (wy-1);
-				    board.solution.(board.sp).sqinvnumb
-				    <- 4;
+                                    sol.solgroupsnumb <- 0;
+                                    sol.solname <- lowinverse_;
+                                    sol.solpoint.(0) <- q1;
+                                    sol.solpoint.(1) <- elm wx wy;
+                                    sol.sqinv.(0) <- q1;
+                                    sol.sqinv.(1) <- elm wx wy;
+                                    sol.sqinv.(2) <- elm x1 (y1-1);
+                                    sol.sqinv.(3) <- elm wx (wy-1);
+                                    sol.sqinvnumb <- 4;
 				    both_groups board q1 (elm wx wy);
 				    both_groups board q1 (elm x1 (y1-1));
 				    both_groups board (elm wx wy)
 				      (elm wx (wy-1));
 				    board.instances.(lowinverse_)
 				    <- board.instances.(lowinverse_)+1;
-				    if board.solution.(board.sp)
-				      .solgroupsnumb>0 then board.sp
-					<- board.sp + 1;
+                                    if sol.solgroupsnumb > 0 then
+                                      board.sp <- board.sp + 1;
 				  )
 			  done;
 		    done
@@ -887,6 +847,7 @@ let lowinverse board =
 
 let highinverse board =
   let set = Array.make 64 true in
+  let sol = board.solution.(board.sp) in
   let rec helper y1 =
     if y1<boardY then
       (
@@ -895,9 +856,8 @@ let highinverse board =
 	    if board.sqused.(q1) then
 	      (
 		memset set true 64;
-		let sln = board.solvable_groups.sqpnt.(q1)
-		and grp = board.solvable_groups.squar.(q1) in
-		  for j=0 to sln-1 do
+                let grp = board.solvable_groups.(q1) in
+                for j = 0 to Array.length grp - 1 do
 		    if board.intgp.tgroups.(grp.(j)) &&
 		      board.xplace.(grp.(j)).(0)
 		      <> board.yplace.(grp.(j)).(3) then
@@ -910,34 +870,22 @@ let highinverse board =
 			      board.sqused.(elm wx wy) then
 				(
 				  set.(elm wx wy)<-false;
-				  board.solution.(board.sp)
-				    .solgroupsnumb<-0;
-				  board.solution.(board.sp).solname
-				  <- highinverse_;
-				  board.solution.(board.sp)
-				    .solpoint.(0) <- q1;
-				  board.solution.(board.sp)
-				    .solpoint.(1) <- elm wx wy;
-				  board.solution.(board.sp).sqinv.(0)
-				  <- q1;
-				  board.solution.(board.sp).sqinv.(1)
-				  <- elm wx wy;
-				  board.solution.(board.sp).sqinv.(2)
-				  <- elm x1 (y1-1);
-				  board.solution.(board.sp).sqinv.(3)
-				  <- elm wx (wy-1);
-				  board.solution.(board.sp).sqinv.(4)
-				  <- elm x1 (y1+1);
-				  board.solution.(board.sp).sqinv.(5)
-				  <- elm wx (wy+1);
-				  board.solution.(board.sp)
-				    .sqinvnumb <- 6;
+                                  sol.solgroupsnumb<-0;
+                                  sol.solname <- highinverse_;
+                                  sol.solpoint.(0) <- q1;
+                                  sol.solpoint.(1) <- elm wx wy;
+                                  sol.sqinv.(0) <- q1;
+                                  sol.sqinv.(1) <- elm wx wy;
+                                  sol.sqinv.(2) <- elm x1 (y1-1);
+                                  sol.sqinv.(3) <- elm wx (wy-1);
+                                  sol.sqinv.(4) <- elm x1 (y1+1);
+                                  sol.sqinv.(5) <- elm wx (wy+1);
+                                  sol.sqinvnumb <- 6;
 				  board.instances.(highinverse_)
 				  <- board.instances.(highinverse_)+1;
-				  
 				  (*Upper and middle Squares*)
 				  both_groups board (elm x1 (y1+1))
-				    (elm wx (wy+1));
+                                    (elm wx (wy+1));
 				  both_groups board q1 (elm wx wy);
 				  
 				  (*Vertical groups*)
@@ -957,9 +905,7 @@ let highinverse board =
 				  if board.stack.(wx)=wy-1 then
 				    both_groups board (elm x1 (y1+1))
 				      (elm wx (wy-1));
-				  
-				  if board.solution.(board.sp)
-				    .solgroupsnumb > 0 then
+                                  if sol.solgroupsnumb > 0 then
 				      board.sp <- board.sp + 1
 				)
 			done;
@@ -980,11 +926,10 @@ let baseclaim board =
 	if board.sqused.(elm x1 y1) then
 	  (
 	    let q1 = elm x1 y1 in
-	    let sln = board.solvable_groups.sqpnt.(q1)
-	    and grp = board.solvable_groups.squar.(q1) in
-	      for j=0 to sln-1 do
+            let grp = board.solvable_groups.(q1) in
+            for j = 0 to Array.length grp - 1 do
 		if board.intgp.tgroups.(grp.(j)) &&
-		  board.xplace.(grp.(j)).(0)<>board.yplace.(grp.(j)).(3)
+                  board.xplace.(grp.(j)).(0) <> board.yplace.(grp.(j)).(3)
 		then
 		  (
 		    cols := 0;
@@ -1521,11 +1466,7 @@ let evaluation_function board =
 
 
 let make_board() =
-  let solv =
-    {
-      squar = Array.init 64 (fun i -> Array.init 16 (fun j -> 0));
-      sqpnt = Array.make 64 0
-    }
+  let solv = Array.make_matrix 64 16 0
   and intg =
     {
       tgroups = Array.make groups true;
@@ -1635,26 +1576,23 @@ let initboard board =
 	done
       done;
 	
-      for x=0 to 63 do
-	board.solvable_groups.sqpnt.(x) <- 0;
-	for y=0 to 15 do
-	  board.solvable_groups.squar.(x).(y) <- -1
-	done
-      done;
-	    
       for x=0 to boardX-1 do
 	for y=0 to boardY-1 do
 	  board.square.(elm x y) := elm x y
 	done
       done;
+      let sqpnt = Array.make 64 0 in
+      let solv = board.solvable_groups in
 	for i=0 to groups-1 do
 	  for j=0 to tiles-1 do
 	    let p = !(board.groups.(i).(j)) in
-	      board.solvable_groups.squar.(p).(board.solvable_groups.sqpnt.(p))<-i;
-	      board.solvable_groups.sqpnt.(p)
-	      <- board.solvable_groups.sqpnt.(p) + 1
+            solv.(p).(sqpnt.(p)) <- i;
+            sqpnt.(p) <- sqpnt.(p) + 1
 	  done
 	done;
+      (* Resize the solvable groups to their max number of elements: *)
+      for p = 0 to 64 do solv.(p) <- Array.sub solv.(p) 0 sqpnt.(p) done;
+
       for i=0 to 7 do
 	board.square.(elm 7 i) := -1;
 	board.square.(elm i 6) := -1
