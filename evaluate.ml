@@ -599,43 +599,39 @@ let handle_odd_before_even board tc =
 (*Regles de la these*)
 let claimeven board =
   let rec helper y1 =
-    if y1<boardY then
-      (
-	for x1=0 to boardX-1 do
-	  if board.sqused.(elm x1 y1) then
-	    (
-	      sol.solgroupsnumb <- 0;
-	      let q1=elm x1 y1 and q2=elm x1 (y1-1) in
-		if !(board.square.(q1)) = 0 && !(board.square.(q2)) = 0
-		  && board.sqused.(q2) then
-		    (
-                      let grp = board.solvable_groups.(q1) in
-                      for j=0 to Array.length grp - 1 do
-                        if board.intgp.tgroups.(grp.(j)) then (
-                              let sol = board.solution.(board.sp) in
-                              if sol.solgroupsnumb = 0 then (
-                                sol.solname <- claimeven_;
-                                sol.solpoint.(0) <- q1;
-                                sol.solpoint.(1) <- q2;
-                                sol.sqinv.(0) <- q1;
-                                sol.sqinv.(1) <- q2;
-                                sol.sqinvnumb <- 2;
-                                board.instances.(claimeven_)
-                                <- board.instances.(claimeven_) + 1
-                              );
-                              sol.solgroups.(sol.solgroupsnumb) <- grp.(j);
-                              sol.solgroupsnumb <- sol.solgroupsnumb + 1
-			    );
-			done;
-		    );
-              if sol.solgroupsnumb > 0 then
-		  board.sp <- board.sp + 1;
-	    );     
-	done;
-	helper (y1+2)
-      )
+    if y1<boardY then (
+      for x1=0 to boardX-1 do
+        if board.sqused.(elm x1 y1) then (
+          let sol = board.solution.(board.sp) in
+          sol.solgroupsnumb <- 0;
+          let q1 = elm x1 y1 and q2 = elm x1 (y1-1) in
+          if !(board.square.(q1)) = 0 && !(board.square.(q2)) = 0
+            && board.sqused.(q2) then (
+              let grp = board.solvable_groups.(q1) in
+              for j=0 to Array.length grp - 1 do
+                if board.intgp.tgroups.(grp.(j)) then (
+                  if sol.solgroupsnumb = 0 then (
+                    sol.solname <- claimeven_;
+                    sol.solpoint.(0) <- q1;
+                    sol.solpoint.(1) <- q2;
+                    sol.sqinv.(0) <- q1;
+                    sol.sqinv.(1) <- q2;
+                    sol.sqinvnumb <- 2;
+                    board.instances.(claimeven_)
+                    <- board.instances.(claimeven_) + 1
+                  );
+                  sol.solgroups.(sol.solgroupsnumb) <- grp.(j);
+                  sol.solgroupsnumb <- sol.solgroupsnumb + 1
+                );
+              done;
+            );
+          if sol.solgroupsnumb > 0 then
+            board.sp <- board.sp + 1;
+        );
+      done;
+      helper (y1+2)
+    )
   in helper 1
-       
 
 
 let baseinverse board =
