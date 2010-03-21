@@ -240,13 +240,13 @@ let horizontal game color j =
     if nbr_pieces.(col) > 0 then nbr_pieces.(col) - 1
     else 0 in
   let rec hor_right j acc n_token =
-    if j > 6 then (acc, n_token)
+    if j > 6 || acc = 4 then (acc, n_token)
     else if get_color game i j = Some color then
       hor_right (j+1) (acc+1) (n_token+1)
     else if get_color game i j = None then hor_right (j+1) (acc+1) n_token
     else (acc, n_token)
   and hor_left j acc n_token =
-    if j < 0 then (acc, n_token)
+    if j < 0 || acc = 4 then (acc, n_token)
     else if get_color game i j = Some color then
       hor_left (j-1) (acc+1) (n_token+1)
     else if get_color game i j = None then hor_left (j-1) (acc+1) n_token
@@ -259,10 +259,10 @@ let vertical game color j =
   let col = get_col game j in
   let n_col = nbr_pieces.(col) in
   let rec vert_up i acc n_token =
-    if i > 5 then (acc, n_token)
+    if i > 5 || acc = 4 then (acc, n_token)
     else vert_up (i+1) (acc+1) n_token
   and vert_down i acc n_token =
-    if i < 0 then (acc, n_token)
+    if i < 0 || acc = 4 then (acc, n_token)
     else if get_color game i j = Some color then
       vert_down (i-1) (acc+1) (n_token+1)
     else (acc, n_token)
@@ -272,7 +272,7 @@ let left_diagonal game color j =
   let col = get_col game j in
   let i = nbr_pieces.(col) - 1 in
   let rec diag k acc n_token =
-    if k > 6 || i-j+k > 5 then (acc, n_token)
+    if k > 6 || i-j+k > 5 || acc = 4 then (acc, n_token)
     else if i - j + k < 0 then diag (k+1) acc n_token
     else if get_color game (i+k-j) k = Some color then
       diag (k+1) (acc+1) (n_token+1)
@@ -285,7 +285,7 @@ let right_diagonal game color j =
   let col = get_col game j in
   let i = nbr_pieces.(col) - 1 in
   let rec diag k acc n_token =
-    if k > 6 || i + j - k < 0 then (acc, n_token)
+    if k > 6 || i + j - k < 0 || acc = 4 then (acc, n_token)
     else if i + j - k > 5 then diag (k+1) acc n_token
     else if get_color game (i+j-k) k = Some color then
       diag (k+1) (acc+1) (n_token+1)
@@ -294,77 +294,4 @@ let right_diagonal game color j =
     else (acc, n_token)
   in diag 0 0 0
 
-(*nbr_aline = le nombre d'alignement qui est encore possible de faire
-  weight le poids total de ces alignement, le poids d'un alignement est le
-  nombre de pieces qu'il y a déja dans cet alignement*)
-(*let aline game j color=
-  let (nbr_aline, weight) = (ref 0, ref 0) in
-  if j > 6 then (!nbr_aline, !weight)
-  else
-    let col = get_col game j in
-    let n_col = nbr_pieces.(col)  in
-    (*vertical*)
-    if n_col <> 0 then
-      (
-        let rec vertical i acc=
-          if i < 0 then acc
-          else if get game i j = color then vertical (i-1) (acc+1)
-          else acc
-        in
-        let nbr_pieces_aline = vertical (n_col-1) 0 in
-        if nbr_pieces_aline + (6-n_col) >= 4 then
-          (
-            nbr_aline := !nbr_aline+1;
-            weight := !weight + (nbr_pieces_aline)
-          )
-      );
-    (*horizontal*)
-    let rec horizontal j acc n_token =
-      if j > 6 then (acc, n_token)
-      else if get game n_col j = color then horizontal (j+1) (acc+1) (n_token+1)
-      else if get game n_col j = 2 then horizontal (j+1) (acc+1) n_token
-      else acc
-    in
-    let nbr_pieces_aline = horizontal 0 0 in
-    if fst nbr_pieces_aline >= 4 then
-      (
-        nbr_aline := !nbr_aline+1;
-        weight := !weight + (*qqch*)
-      );
 
-    let rec diagonal_droite k acc =
-      if i + j - k < 0 || i + j - k > 6 then acc
-      else if get game (i+j-k) k = color
-        || get game (i+j-k) k = 2 then diagonal_droite (k+1) (acc+1)
-      else acc
-    in
-    let nbr_pieces_aline = diagonal_droite 0 0 in
-    if nbr_pieces_aline >= 4 then
-      (
-        nbr_aline := !nbr_aline+1;
-        weight := !weight + (*qqch*)
-      );
-
-    let rec diagonal_gauche k acc =
-      if i - j + k < 0 || i - j + k > 6 then acc
-      else if get game (i+k-j) k = color
-        ||get game (i+k-j) k = 2 then diagonal_gauche (k+1) (acc+1)
-      else acc
-    in
-    let nbr_pieces_aline = diagonal_gauche 0 0 in
-    if nbr_pieces_aline >=4 then
-      (
-        nbr_aline := !nbr_aline+1;
-        weight := !weight + (*qqch*)
-      );*)
-
-(*let jeu = make();;
-move jeu 3 Red;;
-move jeu 4 Yellow;;
-move jeu 4 Red;;
-move jeu 3 Yellow;;
-Printf.printf "\n";;
-let a = right_diagonal jeu Yellow 3;;
-Printf.printf "%i" (fst a);;
-Printf.printf "\n";;
-Printf.printf "%i" (snd a);;*)
