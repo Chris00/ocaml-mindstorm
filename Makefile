@@ -17,29 +17,26 @@ all: byte native
 
 #changer sources et faire une autre variable, une qui prendra ceux a exectuer
 #une autre qui prendra ceux a ne pas utiliser en .exe
-SOURCES = game.ml alphabeta.ml plateauJeu.ml DeuxUnitesPush.ml scanPiece.ml pincer.ml run_connect4.ml scanPiece2.ml
-byte: $(SOURCES:.ml=.exe)
-native: $(SOURCES:.ml=.com)
+SOURCES = game.ml alphabeta.ml plateauJeu.ml  scanPiece.ml pincer.ml \
+  run_connect4.ml
+byte: run_connect4.exe
+native: run_connect4.com
 
-DeuxUnitesPush.exe : robot.cma
-alphabeta.exe : game.cmo 
-scanPiece.exe : robot.cma
-scanPiece2.exe : robot.cma
-pincer.exe : robot.cma
-run_connect4.exe : robot.cma game.cmo alphabeta.cmo scanPiece.cmo pincer.cmo
-plateauJeu.exe : game.cmo
-
-DeuxUnitesPush.com : robot.cmxa
-alphabeta.com : game.cmx
-scanPiece.com : robot.cmxa
-scanPiece2.com : robot.cmxa
-pincer.com : robot.cmxa
-run_connect4.com : robot.cmxa game.cmx alphabeta.cmx pincer.cmx scanPiece.cmx
-plateauJeu.com : game.cmx
+run_connect4.exe: robot.cma $(SOURCES:.ml=.cmo)
+run_connect4.com: robot.cmxa $(SOURCES:.ml=.cmx)
 
 # General "event" library
 robot.cma: robot.cmo
 robot.cmxa: robot.cmx
+
+# Various tests
+TESTS=$(wildcard test*.ml)
+tests: $(TESTS:.ml=.com)
+$(TESTS:.ml=.com): robot.cmxa
+
+test_alphabeta.com: game.cmx alphabeta.cmx
+test_pincer.com: pincer.cmx
+test_scanPiece.com: scanPiece.cmx
 
 # Generate HTML documentation
 MAKE_DOC = $(OCAMLDOC) -colorize-code -stars -html $(PACKAGES)

@@ -1,9 +1,8 @@
 # .bzrignore						-*-conf-unix-*-
 *.annot
-*.cmi
-*.cmo
-*.cma
-*.cmx
+*.cm[ioax]
+*.obj
+*.lib
 *.cmxa
 *.exe
 *.com
@@ -21,5 +20,7 @@ auto
 *.pdf
 *.snm
 *.toc
-# Tarballs
+# Tarballs & misc
 *.tar.gz
+biblio/
+photo robot/

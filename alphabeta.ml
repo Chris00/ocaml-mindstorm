@@ -1,20 +1,26 @@
+module Useful =
+struct
+  let plus couple1 couple2 =
+    (fst couple1+ fst couple2, snd couple1+ snd couple2)
+
+  let max_tab tab =
+    let n = Array.length tab in
+    let rec max max_current i_max i =
+      if i > n-1 then (max_current, i_max)
+      else if tab.(i) > max_current then max tab.(i) i (i+1)
+      else max max_current i_max (i+1)
+    in max 0. 0 0
+
+  let min_tab tab =
+    let n = Array.length tab in
+    let rec min min_current i_min i =
+      if i > n-1 then (min_current, i_min)
+      else if tab.(i) < min_current then min tab.(i) i (i+1)
+      else min min_current i_min (i+1)
+    in min 0. 0 0
+end
+
 type mode = Max | Min;;
-
-let max_tab tab =
-  let n = Array.length tab in
-  let rec max max_current i_max i =
-    if i > n-1 then (max_current, i_max)
-    else if tab.(i) > max_current then max tab.(i) i (i+1)
-    else max max_current i_max (i+1)
-  in max 0. 0 0
-
-let min_tab tab =
-  let n = Array.length tab in
-  let rec min min_current i_min i =
-    if i > n-1 then (min_current, i_min)
-    else if tab.(i) < min_current then min tab.(i) i (i+1)
-    else min min_current i_min (i+1)
-  in min 0. 0 0
 
 let tab_game_1token =
   let tab = Array.init 14 (fun i -> Game.make()) in
@@ -123,7 +129,7 @@ let h game color mode =
           (
             (*if win_in_2moves game j color then*)
               let aline_horiz_max = Game.horizontal game color j
-              and aline_vert_max = Game.vertical game color j
+              (* and aline_vert_max = Game.vertical game color j *)
               and aline_diag_left_max = Game.left_diagonal game color j
               and aline_diag_right_max = Game.right_diagonal game color j in
 
@@ -151,8 +157,8 @@ let h game color mode =
 
               let aline_horiz_min =
                 Game.horizontal game (Game.color_invers color) j
-              and aline_vert_min =
-                Game.vertical game (Game.color_invers color) j
+              (* and aline_vert_min =
+                Game.vertical game (Game.color_invers color) j *)
               and aline_diag_left_min =
                 Game.left_diagonal game (Game.color_invers color) j
               and aline_diag_right_min =
@@ -183,11 +189,11 @@ let h game color mode =
            (* else tab_value.(j) <- tab_value.(j) -. 16.;*)
           )
       done;
-      if mode = Max then max_tab tab_value
+      if mode = Max then Useful.max_tab tab_value
       else
         (
           let tab = Array.map (fun x -> (-.x)) tab_value in
-          min_tab tab
+          Useful.min_tab tab
         )
     )
 
@@ -256,73 +262,49 @@ let alphabeta game color alpha beta level heuristic=
 
 (*probleme avec good_col qui quand il revient retourne forcement 0*)
 let rec node_min game color alpha beta beta_p good_col j =
-  if Game.is_winning game good_col then
-    (1., good_col)
-
+  if Game.is_winning game good_col then (1., good_col)
   else if Game.is_draw game then (0., good_col)
-
   else
     let col_win = Game.next_win game color in
     if col_win < 7 then (-1., col_win)
-    else
-      (
-        if j > 6 then (beta_p, good_col)
-        else
-          (
-            try
-              (
-                Game.move game j color;
-                let value = fst (node_max game (Game.color_invers color) alpha
-                                   (min beta beta_p) 1. j 0) in
-
-                Game.remove game j color;
-                let (new_beta, new_col) =
-                  if beta_p > value then (value, j)
-                  else (beta_p, good_col) in
-                if alpha >= new_beta then (new_beta, new_col)
-                else node_min game color alpha beta new_beta new_col (j+1)
-              )
-            with Game.Column_full -> node_min game color alpha beta beta_p
-              good_col (j+1)
-          )
-      )
-
+    else if j > 6 then (beta_p, good_col)
+    else (
+      try
+        Game.move game j color;
+        let value, _ = (node_max game (Game.color_invers color) alpha
+                          (min beta beta_p) 1. j 0) in
+        Game.remove game j color;
+        let (new_beta, new_col) =
+          if beta_p > value then (value, j)
+          else (beta_p, good_col) in
+        if alpha >= new_beta then (new_beta, new_col)
+        else node_min game color alpha beta new_beta new_col (j+1)
+      with Game.Column_full ->
+        node_min game color alpha beta beta_p good_col (j+1)
+    )
 
 and node_max game color alpha beta alpha_p good_col j =
-  if Game.is_winning game good_col then
-    (-1., good_col)
-
+  if Game.is_winning game good_col then (-1., good_col)
   else if Game.is_draw game then (0., good_col)
-
   else
     let col_win = Game.next_win game color in
     if col_win < 7 then (1., col_win)
-    else
-      (
-        if j > 6 then (alpha_p, good_col)
-        else
-          (
-            try
-              (
-                Game.move game j color;
-                let value = fst (node_min game (Game.color_invers color)
-                                   (max alpha alpha_p) beta
-                                   (-1.) j 0) in
+    else if j > 6 then (alpha_p, good_col)
+    else (
+      try
+        Game.move game j color;
+        let value,_ = (node_min game (Game.color_invers color)
+                         (max alpha alpha_p) beta (-1.) j 0) in
 
-                Game.remove game j color;
-                let (new_alpha, new_col) =
-                  if alpha_p < value then (value, j)
-                  else (alpha_p, good_col) in
-                if new_alpha >= beta then (new_alpha, new_col)
-                else node_max game color alpha beta new_alpha new_col (j+1)
-              )
-            with Game.Column_full -> node_max game color alpha beta alpha_p
-              good_col (j+1)
-          )
-      )
+        Game.remove game j color;
+        let (new_alpha, new_col) =
+          if alpha_p < value then (value, j)
+          else (alpha_p, good_col) in
+        if new_alpha >= beta then (new_alpha, new_col)
+        else node_max game color alpha beta new_alpha new_col (j+1)
+      with Game.Column_full ->
+        node_max game color alpha beta alpha_p good_col (j+1)
+    )
 
 let alphabetabis game color alpha beta =
   node_max game color alpha beta 1. 0 0;;
-
-
-

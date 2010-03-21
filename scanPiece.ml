@@ -1,24 +1,13 @@
 open Printf
-open Mindstorm.Sensor
-open Mindstorm.Motor
 module Motor = Mindstorm.Motor
 module Sensor = Mindstorm.Sensor
-
 
 
 let color_port = `S4
 let motor_captor_l = Motor.a
 let motor_captor_r = Motor.b
 let motor_captor_vert = Motor.c
-let current_line = ref 0
-let current_col = ref 0
-let next_line = ref 0
-let next_col = ref (-1)
-let col_had_play = ref 0
-let light = ref true (*mettre à faux lorsqu'on veut juste remettre le capteur
- à droite*)
-let go_to_next = ref false
-let current_game = ref 0 (*representation du jeu par un entier*)
+
 (*num du jeu: de 0 a 6 de gauche à droit du cote du joueur*)
 let expo_10 = [| 1; 10; 100; 1000; 10000; 100000; 1000000|]
 
@@ -51,32 +40,35 @@ let rot_l l c =
 module Run(C: sig val conn : Mindstorm.bluetooth Mindstorm.conn end) =
 struct
 
-
-  let scd (a, b, c) = b
-
-  let lst (a, b, c) = c
-
-  let last (a, b, c, d) = d
+  (* État du jeu *)
+  let current_line = ref 0
+  let current_col = ref 0
+  let next_line = ref 0
+  let next_col = ref (-1)
+  let col_had_play = ref 0
+  let light = ref true (*mettre à faux lorsqu'on veut juste remettre le capteur
+                         à droite*)
+  let go_to_next = ref false
+  let current_game = ref 1635412 (*representation du jeu par un entier*)
 
   let r = Robot.make()
 
+  let get_angle motor = let _,_,_,a = Motor.get C.conn motor in a
+
  (*nous retourne l'angle courant du moteur droit*)
-  let meas_right =
-    Robot.meas r (fun _ -> last (Motor.get C.conn motor_captor_r))
+  let meas_right = Robot.meas r (fun () -> get_angle motor_captor_r)
 
   (*nous retourne l'angle courant du moteur gauche*)
-  let meas_left =
-    Robot.meas r (fun _ ->  last (Motor.get C.conn motor_captor_l))
+  let meas_left = Robot.meas r (fun () ->  get_angle motor_captor_l)
 
  (*nous retourne l'angle courant du moteur vertical*)
-  let meas_vert =
-    Robot.meas r (fun _ -> last (Motor.get C.conn motor_captor_vert))
+  let meas_vert = Robot.meas r (fun () -> get_angle motor_captor_vert)
 
 
-  let stop _ =
+  let stop () =
     Motor.set C.conn Motor.all (Motor.speed 0)
 
-  let stop_motor_l _ =
+  let stop_motor_l () =
     Motor.set C.conn motor_captor_l (Motor.speed 0)
 
 
@@ -88,13 +80,6 @@ struct
   (*methode ajoutant une piece au jeu [game] en colonne [col]*)
   let add_piece col game =
     current_game := game + expo_10.(col)
-
-
-
-
-
-
-
 
 
   (* retourne la couleur devant le capteur*)
@@ -143,8 +128,6 @@ struct
         light := true;
         f ()
       )
-
-
 
   (*ajuste la position du capteur couleur*)
   and adj_l_l angle_l f =
@@ -278,11 +261,11 @@ struct
                             |Some d -> d <= deg_new_pos_r)
      (scan_light f)
 
-  let wait_trans_right_l deg_new_pos f =
+  let wait_trans_right_l (_, deg_new_pos_l, deg_new_pos_r) f =
     Robot.event meas_left (function
                             |None -> false
-                            |Some d -> d >= scd(deg_new_pos))
-      (wait_trans_right_r (lst(deg_new_pos)) f)
+                            |Some d -> d >= deg_new_pos_l)
+      (wait_trans_right_r deg_new_pos_r f)
 
 
   (*attendre d'avoir fait le déplacement vers la gauche*)
@@ -293,11 +276,11 @@ struct
                             |Some d -> d <= deg_new_pos_l)
       (scan_light f)
 
-  let wait_trans_left_r deg_new_pos  f =
+  let wait_trans_left_r (_, deg_new_pos_l, deg_new_pos_r)  f =
     Robot.event meas_right (function
                             |None -> false
-                            |Some d -> d >= lst(deg_new_pos))
-      (wait_trans_left_l (scd(deg_new_pos)) f)
+                            |Some d -> d >= deg_new_pos_r)
+      (wait_trans_left_l deg_new_pos_l f)
 
 
   (*déplacement horizontal pr etre ds la bonne colonne*)
@@ -324,7 +307,7 @@ struct
 
   (*condition d'arret de l et r qd le mobile descend*)
   let wait_r_l_down_end angle_down diff_col deg_new_pos f _ =
-    let st = {speed = 0; motor_on = true; brake = true;
+    let st = {Motor.speed = 0; motor_on = true; brake = true;
               regulation = `Idle; turn_ratio = 100;
               run_state = `Ramp_down; tach_limit = 30} in
     Motor.set C.conn motor_captor_r st;
@@ -361,9 +344,9 @@ struct
 
   (*condition d'arret de vert qd le mobile monte*)
   let wait_vert_up_end angle_up diff_col deg_new_pos f _ =
-    let st = {speed = 0; motor_on = true; brake = true;
-                   regulation = `Idle; turn_ratio = 100;
-                   run_state = `Ramp_down; tach_limit = 40} in
+    let st = { Motor.speed = 0; motor_on = true; brake = true;
+               regulation = `Idle; turn_ratio = 100;
+               run_state = `Ramp_down; tach_limit = 40 } in
     Motor.set C.conn motor_captor_vert st;
     Robot.event meas_vert (function
                            |None -> false
@@ -423,8 +406,8 @@ struct
 
 
 
-  let rec scan_game next _ =
-    if (!go_to_next) then
+  let rec scan_game next =
+    if !go_to_next then
       (
         go_to_next := false;
         next_col := -1;
@@ -433,28 +416,25 @@ struct
       )
     else
       (
-        if(not !light) then go_to_next := true;
+        go_to_next := not !light;
 
-        if (!next_col < 6) then
+        if !next_col < 6 then
           (
             next_col := !next_col + 1;
             next_line := piece_in_col !next_col !current_game;
-            if (!next_line = 6) then
-              (
-                scan_game next ()
-              )
+            if !next_line = 6 then
+                scan_game next
             else
               (
-                printf"%i\n%!" !next_line ;
-                printf "%i\n%!" !next_col ;
-                scan_case !next_line !next_col (scan_game next)
+                printf"%i\n%i\n%!" !next_line !next_col;
+                scan_case !next_line !next_col (fun () -> scan_game next)
               )
           )
         else
           (
             next_col := 0;
             next_line := piece_in_col !next_col !current_game;
-            scan_case !next_line !next_col (scan_game next)
+            scan_case !next_line !next_col (fun () -> scan_game next)
           )
       )
 
@@ -464,26 +444,12 @@ struct
         add_piece col_new_piece !current_game;
         printf "%i\n%!" !current_game;
       );
-    scan_game next ()
+    scan_game next
 
-  let afficher c =
-    printf "%i\n%!" c
 
   let run () =
-    (* scan 0 (afficher); *)
-    (*qd il a fini, il affiche où l'autre a joué*)
+    scan 0 (fun c -> printf "%i\n%!" c); (* qd il a fini, il affiche où l'autre
+                                         a joué*)
     Robot.run r
 
 end
-
-(*let () =
-  let (bt)=
-    if Array.length Sys.argv < 2 then (
-      printf "%s <bluetooth addr>\n" Sys.argv.(0);
-      exit 1;
-    )
-    else (Sys.argv.(1)) in
-  let conn = Mindstorm.connect_bluetooth bt in
-  let module R = Run(struct let conn = conn end) in
-  printf "Press the button on the robot to stop.\n%!";
-  R.run()*)
