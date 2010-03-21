@@ -1,5 +1,21 @@
 type mode = Max | Min;;
 
+let max_tab tab =
+  let n = Array.length tab in
+  let rec max max_current i_max i =
+    if i > n-1 then (max_current, i_max)
+    else if tab.(i) > max_current then max tab.(i) i (i+1)
+    else max max_current i_max (i+1)
+  in max 0. 0 0
+
+let min_tab tab =
+  let n = Array.length tab in
+  let rec min min_current i_min i =
+    if i > n-1 then (min_current, i_min)
+    else if tab.(i) < min_current then min tab.(i) i (i+1)
+    else min min_current i_min (i+1)
+  in min 0. 0 0
+
 let tab_game_1token =
   let tab = Array.init 14 (fun i -> Game.make()) in
   for i = 0 to 6 do
@@ -96,7 +112,7 @@ let h game color mode =
   and col_win_min = Game.next_win game (Game.color_invers color) in
 
   if col_win_max < 7 then (infinity, col_win_max)
-  else if col_win_min < 7 then (8., col_win_min)
+  else if col_win_min < 7 then (17., col_win_min)
   else
     (
       let tab_value = [|0.; 0.; 0.; 0.; 0.; 0.; 0.|] in
@@ -106,72 +122,72 @@ let h game color mode =
         else
           (
             (*if win_in_2moves game j color then*)
-              let aline_horiz_max = Game.horizontal game color j
-              and aline_vert_max = Game.vertical game color j
-              and aline_diag_left_max = Game.left_diagonal game color j
-              and aline_diag_right_max = Game.right_diagonal game color j in
+            let aline_horiz_max = Game.horizontal game color j
+            and aline_vert_max = Game.vertical game color j
+            and aline_diag_left_max = Game.left_diagonal game color j
+            and aline_diag_right_max = Game.right_diagonal game color j in
 
-              if fst aline_horiz_max >= 4 && snd aline_horiz_max >= 2 then
-                tab_value.(j) <- tab_value.(j) +. 4.;
-              (*if fst aline_vert_max >= 4 && snd aline_vert_max >= 2 then
-                tab_value.(j) <- tab_value.(j) +. 4.;*)
-              if fst aline_diag_left_max >= 4 && snd aline_diag_left_max >= 2
-              then
-                tab_value.(j) <- tab_value.(j) +. 4.;
-              if fst aline_diag_left_max >= 4 && snd aline_diag_left_max >= 2
-              then
-                tab_value.(j) <- tab_value.(j) +. 4.;
+            if fst aline_horiz_max >= 4 && snd aline_horiz_max >= 2 then
+              tab_value.(j) <- tab_value.(j) +. 4.;
+            if fst aline_vert_max >= 4 && snd aline_vert_max >= 2 then
+              tab_value.(j) <- tab_value.(j) +. 4.;
+            if fst aline_diag_left_max >= 4 && snd aline_diag_left_max >= 2
+            then
+              tab_value.(j) <- tab_value.(j) +. 6.;
+            if fst aline_diag_left_max >= 4 && snd aline_diag_left_max >= 2
+            then
+              tab_value.(j) <- tab_value.(j) +. 6.;
 
-              if fst aline_horiz_max >= 4 && snd aline_horiz_max >= 1 then
-                tab_value.(j) <- tab_value.(j) +. 2.;
-              (*if fst aline_vert_max >= 4 && snd aline_vert_max >= 1 then
-                tab_value.(j) <- tab_value.(j) +. 2.;*)
-              if fst aline_diag_left_max >= 4 && snd aline_diag_left_max >= 1
-              then
-                tab_value.(j) <- tab_value.(j) +. 2.;
-              if fst aline_diag_right_max >= 4 && snd aline_diag_right_max >= 1
-              then
-                tab_value.(j) <- tab_value.(j) +. 2.;
+            if fst aline_horiz_max >= 4 && snd aline_horiz_max >= 1 then
+              tab_value.(j) <- tab_value.(j) +. 2.;
+            if fst aline_vert_max >= 4 && snd aline_vert_max >= 1 then
+              tab_value.(j) <- tab_value.(j) +. 2.;
+            if fst aline_diag_left_max >= 4 && snd aline_diag_left_max >= 1
+            then
+              tab_value.(j) <- tab_value.(j) +. 3.;
+            if fst aline_diag_right_max >= 4 && snd aline_diag_right_max >= 1
+            then
+              tab_value.(j) <- tab_value.(j) +. 3.;
 
-              let aline_horiz_min =
-                Game.horizontal game (Game.color_invers color) j
-              and aline_vert_min =
-                Game.vertical game (Game.color_invers color) j
-              and aline_diag_left_min =
-                Game.left_diagonal game (Game.color_invers color) j
-              and aline_diag_right_min =
-                Game.right_diagonal game (Game.color_invers color) j in
+            let aline_horiz_min =
+              Game.horizontal game (Game.color_invers color) j
+            and aline_vert_min =
+              Game.vertical game (Game.color_invers color) j
+            and aline_diag_left_min =
+              Game.left_diagonal game (Game.color_invers color) j
+            and aline_diag_right_min =
+              Game.right_diagonal game (Game.color_invers color) j in
 
-              if fst aline_horiz_min >= 4 && snd aline_horiz_min >= 2 then
+            if fst aline_horiz_min >= 4 && snd aline_horiz_min >= 2 then
                 tab_value.(j) <- tab_value.(j) +. 4.;
-              (*if fst aline_vert_min >= 4 && snd aline_vert_min >= 2 then
-                tab_value.(j) <- tab_value.(j) +. 4.;*)
-              if fst aline_diag_left_min >= 4 && snd aline_diag_left_min >= 2
-              then
-                tab_value.(j) <- tab_value.(j) +. 4.;
-              if fst aline_diag_left_min >= 4 && snd aline_diag_left_min >= 2
-              then
-                tab_value.(j) <- tab_value.(j) +. 4.;
+            if fst aline_vert_min >= 4 && snd aline_vert_min >= 2 then
+              tab_value.(j) <- tab_value.(j) +. 4.;
+            if fst aline_diag_left_min >= 4 && snd aline_diag_left_min >= 2
+            then
+              tab_value.(j) <- tab_value.(j) +. 6.;
+            if fst aline_diag_right_min >= 4 && snd aline_diag_left_min >= 2
+            then
+              tab_value.(j) <- tab_value.(j) +. 6.;
 
-              if fst aline_horiz_min >= 4 && snd aline_horiz_min >= 1 then
-                tab_value.(j) <- tab_value.(j) +. 2.;
-              (*if fst aline_vert_min >= 4 && snd aline_vert_min >= 1 then
-                tab_value.(j) <- tab_value.(j) +. 2.;*)
-              if fst aline_diag_left_min >= 4 && snd aline_diag_left_min >= 1
-              then
-                tab_value.(j) <- tab_value.(j) +. 2.;
-              if fst aline_diag_right_min >= 4 && snd aline_diag_right_min >= 1
-              then
-                tab_value.(j) <- tab_value.(j) +. 2.;
+            if fst aline_horiz_min >= 4 && snd aline_horiz_min >= 1 then
+              tab_value.(j) <- tab_value.(j) +. 2.;
+            if fst aline_vert_min >= 4 && snd aline_vert_min >= 1 then
+              tab_value.(j) <- tab_value.(j) +. 2.;
+            if fst aline_diag_left_min >= 4 && snd aline_diag_left_min >= 1
+            then
+              tab_value.(j) <- tab_value.(j) +. 3.;
+            if fst aline_diag_right_min >= 4 && snd aline_diag_right_min >= 1
+            then
+              tab_value.(j) <- tab_value.(j) +. 3.;
 
            (* else tab_value.(j) <- tab_value.(j) -. 16.;*)
           )
       done;
-      if mode = Max then Useful.max_tab tab_value
+      if mode = Max then max_tab tab_value
       else
         (
           let tab = Array.map (fun x -> (-.x)) tab_value in
-          Useful.min_tab tab
+          min_tab tab
         )
     )
 
@@ -308,79 +324,51 @@ and node_max game color alpha beta alpha_p good_col j =
 let alphabetabis game color alpha beta =
   node_max game color alpha beta 1. 0 0;;
 
+let print game =
+  Printf.printf "\n";
+  for i = 5 downto 0 do
+    for j = 0 to 6 do
+      let couleur = match (Game.get_color game i j) with
+        | None -> "       "
+        | Some Game.Yellow -> " Yellow"
+        | Some Game.Red -> " Red   " in
+      Printf.printf "%s" couleur;
+    done;
+    Printf.printf"\n"
+  done;
+  Printf.printf"--------------------------------------------------\n"
 
-let g = Game.make();;
-Game.move g 3 Game.Yellow;;
-Game.move g 3 Game.Red;;
-Game.move g 3 Game.Yellow;;
+let jeu = Game.make();;
+Game.move jeu 3 Game.Red;;
+Game.move jeu 3 Game.Yellow;;
+Game.move jeu 3 Game.Red;;
+Game.move jeu 2 Game.Yellow;;
+Game.move jeu 4 Game.Red;;
+Game.move jeu 4 Game.Yellow;;
+Game.move jeu 3 Game.Red;;
+Game.move jeu 2 Game.Yellow;;
+Game.move jeu 2 Game.Red;;
+Game.move jeu 0 Game.Yellow;;
+Game.move jeu 2 Game.Red;;
+Game.move jeu 1 Game.Yellow;;
+Game.move jeu 1 Game.Red;;
+Game.move jeu 0 Game.Yellow;;
+Game.move jeu 0 Game.Red;;
+Game.move jeu 1 Game.Yellow;;
+Game.move jeu 1 Game.Red;;
+Game.move jeu 0 Game.Yellow;;
+Game.move jeu 0 Game.Red;;
+Game.move jeu 5 Game.Yellow;;
+Game.move jeu 5 Game.Red;;
+Game.move jeu 0 Game.Yellow;;
+Game.move jeu 1 Game.Red;;
+Game.move jeu 2 Game.Yellow;;
+Game.move jeu 1 Game.Red;;
+Game.move jeu 3 Game.Yellow;;
 
+print jeu;;
 
-(*let a = alphabeta g Game.Red (neg_infinity) infinity 2 h;;
-Printf.printf "%f" (fst a);;
-Printf.printf "\n";;
-Printf.printf "%i" (snd a);;*)
-
-(*let g = Game.make();;*)
-(*Game.move g 0 Game.Red;
-Game.move g 1 Game.Yellow;
-Game.move g 1 Game.Red;
-Game.move g 0 Game.Yellow;
-Game.move g 0 Game.Red;
-Game.move g 1 Game.Yellow;
-Game.move g 1 Game.Red;
-Game.move g 0 Game.Yellow;
-(*Game.move g 0 Game.Yellow;*)
-(*Game.move g 1 Game.Red;*)
-Game.move g 3 Game.Red;
-Game.move g 2 Game.Yellow;
-Game.move g 2 Game.Red;
-(*Game.move g 3 Game.Yellow;*)
-(*Game.move g 0 Game.Red;*)
-Game.move g 2 Game.Yellow;
-(*Game.move g 2 Game.Red;*)
-(*Game.move g 3 Game.Yellow;*)
-(*Game.move g 3 Game.Red;*)
-(*Game.move g 2 Game.Yellow;*)
-Game.move g 5 Game.Red;
-Game.move g 6 Game.Yellow;
-Game.move g 6 Game.Red;
-Game.move g 5 Game.Yellow;
-Game.move g 5 Game.Red;
-Game.move g 6 Game.Yellow;
-(*Game.move g 6 Game.Red;*)
-(*Game.move g 5 Game.Yellow;*)
-(*Game.move g 5 Game.Red;*)
-(*Game.move g 6 Game.Yellow;*)
-Game.move g 4 Game.Red;
-Game.move g 4 Game.Yellow;
-Game.move g 4 Game.Red;;
-(*Game.move g 4 Game.Red;;*)
-(*Game.move g 4 Game.Red;;*)
-(*Game.move g 3 Game.Yellow;;*)
-(*Game.move g 4 Game.Red;;*)
-*)
-
-
-Game.move g 2 Game.Red;;
-Game.move g 0 Game.Yellow;;
-Game.move g 0 Game.Red;;
-Game.move g 2 Game.Yellow;;
-Game.move g 2 Game.Red;;
-Game.move g 0 Game.Yellow;;
-Game.move g 0 Game.Red;;
-Game.move g 0 Game.Yellow;;
-Game.move g 2 Game.Red;;
-(*Game.move g 0 Game.Yellow;;
-Game.move g 0 Game.Red;;
-Game.move g 2 Game.Yellow;;
-Game.move g 0 Game.Red;;
-Game.move g 0 Game.Yellow;;*)
-
-Useful.print g;;
-
-Printf.printf "\n";;
-
-let a = alphabeta g Game.Yellow neg_infinity infinity 8 h;;
+let a = alphabeta jeu Game.Red neg_infinity infinity 8 h;;
 Printf.printf "%f" (fst a);;
 Printf.printf "\n";;
 Printf.printf "%i" (snd a);;

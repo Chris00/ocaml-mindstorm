@@ -69,7 +69,7 @@ struct
 
   let wait_next next _ =
     Motor.set C.conn2 motor_dist (Motor.speed 0);
-    next ()
+    next
 
   (*fait tomber la pièce dans la pince et attend pour lancer next*)
   let put_in_pincer next _ =
@@ -145,7 +145,7 @@ struct
     wait_open_pincer col next
 
   let run col =
-   put_piece col stop; (*changer la fct next en fct de ce qu'on veut...*)
+   (*put_piece col stop;*) (*changer la fct next en fct de ce qu'on veut...*)
    Robot.run r
 
 end

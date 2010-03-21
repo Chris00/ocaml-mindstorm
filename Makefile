@@ -17,21 +17,19 @@ all: byte native
 
 #changer sources et faire une autre variable, une qui prendra ceux a exectuer
 #une autre qui prendra ceux a ne pas utiliser en .exe
-SOURCES = game.ml alphabeta.ml useful.ml plateauJeu.ml DeuxUnitesPush.ml scanPiece.ml pincer.ml run_connect4.ml
+SOURCES = game.ml alphabeta.ml plateauJeu.ml DeuxUnitesPush.ml scanPiece.ml pincer.ml run_connect4.ml
 byte: $(SOURCES:.ml=.exe)
 native: $(SOURCES:.ml=.com)
 
 DeuxUnitesPush.exe : robot.cma
-useful.exe : game.cmo
-alphabeta.exe : game.cmo useful.cmo
+alphabeta.exe : game.cmo
 scanPiece.exe : robot.cma
 pincer.exe : robot.cma
 run_connect4.exe : robot.cma game.cmo alphabeta.cmo scanPiece.cmo pincer.cmo
 plateauJeu.exe : game.cmo
 
 DeuxUnitesPush.com : robot.cmxa
-useful.com : game.cmx
-alphabeta.com : game.cmx useful.cmx
+alphabeta.com : game.cmx
 scanPiece.com : robot.cmxa
 pincer.com : robot.cmxa
 run_connect4.com : robot.cmxa game.cmx alphabeta.cmx pincer.cmx scanPiece.cmx
@@ -61,10 +59,10 @@ MAKE_DOC = $(OCAMLDOC) -colorize-code -stars -html $(PACKAGES)
 #rubik/%:
 #	cd rubik/ && $(MAKE) $(@F)
 
-# Define the OS type for the Camlp4 preprocessor, RM,...
-#.os_type: make_os_type.exe
+#Define the OS type for the Camlp4 preprocessor, RM,...
+.os_type: make_os_type.exe
 #	"./$<" > $@
-#include .os_type
+include .os_type
 
 include Makefile.ocaml
 
