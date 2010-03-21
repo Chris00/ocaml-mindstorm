@@ -1,5 +1,5 @@
 open Printf
-open  Mindstorm.Sensor
+open Mindstorm.Sensor
 open Mindstorm.Motor
 module Motor = Mindstorm.Motor
 
@@ -69,7 +69,7 @@ struct
 
   let wait_next next _ =
     Motor.set C.conn2 motor_dist (Motor.speed 0);
-    next ()
+    next
 
   (*fait tomber la pièce dans la pince et attend pour lancer next*)
   let put_in_pincer next _ =
@@ -135,33 +135,34 @@ struct
   let wait_open_pincer col next =
     Robot.event meas_translation_pincer (function
                                          |None -> false
-                                         |Some d -> d >= (rotation.(col)))
+                                         |Some d -> d >= (rotation.(col)-open_rot))
    (open_pincer col next)
 
 
   (*déplace la pince et attend d'être au dessus de la colonne [col]*)
-  let put_piece col next _ =
+  let put_piece col next =
     go_pincer (rotation.(col)) 1;
     wait_open_pincer col next
 
   let run col =
-   put_piece col stop () ; (*changer la fct next en fct de ce qu'on veut...*)
+    (* put_piece col stop;*)
+    (*changer la fct next en fct de ce qu'on veut...*)
    Robot.run r
 
 end
 
-let () =
-  let (bt2,col)=
-    if Array.length Sys.argv < 3 then (
-      printf "%s <bluetooth addr><co>\n" Sys.argv.(0);
-      exit 1;
-    )
-    else (Sys.argv.(1),Sys.argv.(2)) in
+(* let () = *)
+(*   let (bt2,col)= *)
+(*     if Array.length Sys.argv < 3 then ( *)
+(*       printf "%s <bluetooth addr><co>\n" Sys.argv.(0); *)
+(*       exit 1; *)
+(*     ) *)
+(*     else (Sys.argv.(1),Sys.argv.(2)) in *)
 
-  let  conn2 = Mindstorm.connect_bluetooth bt2
-  and column = int_of_string col in
-  let module R = Run(struct let conn2 = conn2  end) in
-  printf "Press the button on the robot to stop.\n%!";
-  R.run(column)
+(*   let  conn2 = Mindstorm.connect_bluetooth bt2 *)
+(*   and column = int_of_string col in *)
+(*   let module R = Run(struct let conn2 = conn2  end) in *)
+(*   printf "Press the button on the robot to stop.\n%!"; *)
+(*   R.run(column) *)
 
 

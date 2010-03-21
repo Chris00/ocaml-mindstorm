@@ -1,8 +1,10 @@
 open Printf
-open  Mindstorm.Sensor
+open Mindstorm.Sensor
 open Mindstorm.Motor
 module Motor = Mindstorm.Motor
 module Sensor = Mindstorm.Sensor
+
+
 
 let color_port = `S4
 let motor_captor_l = Motor.a
@@ -16,7 +18,7 @@ let col_had_play = ref 0
 let light = ref true (*mettre à faux lorsqu'on veut juste remettre le capteur
  à droite*)
 let go_to_next = ref false
-let current_game = ref 1635412 (*representation du jeu par un entier*)
+let current_game = ref 0 (*representation du jeu par un entier*)
 (*num du jeu: de 0 a 6 de gauche à droit du cote du joueur*)
 let expo_10 = [| 1; 10; 100; 1000; 10000; 100000; 1000000|]
 
@@ -427,7 +429,7 @@ struct
         go_to_next := false;
         next_col := -1;
         printf"passe à next\n%!";
-        next !col_had_play ()
+        next !col_had_play
       )
     else
       (
@@ -456,21 +458,25 @@ struct
           )
       )
 
-  let scan col_new_piece next _ =
-    add_piece col_new_piece !current_game;
-    printf "%i\n%!" !current_game;
+  let scan col_new_piece next =
+    if col_new_piece <> -1 then
+      (
+        add_piece col_new_piece !current_game;
+        printf "%i\n%!" !current_game;
+      );
     scan_game next ()
 
-  let afficher c _ =
+  let afficher c =
     printf "%i\n%!" c
 
   let run () =
-    scan 0 (afficher) (); (*qd il a fini, il affiche où l'autre a joué*)
+    (* scan 0 (afficher); *)
+    (*qd il a fini, il affiche où l'autre a joué*)
     Robot.run r
 
 end
 
-let () =
+(*let () =
   let (bt)=
     if Array.length Sys.argv < 2 then (
       printf "%s <bluetooth addr>\n" Sys.argv.(0);
@@ -480,4 +486,4 @@ let () =
   let conn = Mindstorm.connect_bluetooth bt in
   let module R = Run(struct let conn = conn end) in
   printf "Press the button on the robot to stop.\n%!";
-  R.run()
+  R.run()*)
