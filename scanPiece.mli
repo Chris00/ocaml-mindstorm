@@ -14,7 +14,7 @@ sig
   val run : unit -> unit
     (** Starts the event loop associated with the scan. *)
 
-  val stop : unit -> unit
+  val stop : int -> unit
     (** Stop all motors associated with the scan. *)
 
 

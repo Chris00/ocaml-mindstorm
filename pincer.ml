@@ -1,12 +1,12 @@
+(*rem : les colonnes sont numérotées de 0 à 6, la sixième étant celle près
+  du distributeur*)
+
 open Printf
 open Mindstorm.Sensor
 open Mindstorm.Motor
 module Motor = Mindstorm.Motor
 
 let switch_port = `S1
-(* let motor_captor_color_l = Motor.a *)
-(* let motor_captor_color_r = Motor.b *)
-(* let motor_captor_vert = Motor.c *)
 let motor_pincer = Motor.a
 let motor_open_pincer = Motor.b
 let motor_dist = Motor.c
@@ -21,8 +21,8 @@ let move_speed = 15
 let open_speed = -10
 let close_speed = 10
 
-(* let rotation = [|235;373;504;635;768;900;1035|] vitesse 10 vitesse 12*)
-let rotation = [|230;368;499;630;763;905;1033|]
+(* let rotation = [|1035; 900; 768; 635; 504; 373; 235|] vitesse 10 vitesse 12*)
+let rotation = [|1033; 905; 763; 630; 499; 368; 230|]
 
 (*ajuste l'angle à faire suivant la vitesse du moteur open pincer*)
 let adjust_speed = 20   (* 4 pr une vitesse 10; 9 pr une vitesse 12 *)
