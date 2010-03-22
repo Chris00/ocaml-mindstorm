@@ -1,9 +1,9 @@
-open Printf
-
-let print game =
+open Printf;;
+(*
+  let print game =
   printf "\n";
   for i = 5 downto 0 do
-    for j = 0 to 6 do
+  for j = 0 to 6 do
       let couleur = match (Game.get_color game i j) with
         | None -> " "
         | Some Game.Yellow -> "Y"
@@ -40,7 +40,7 @@ Game.move jeu 1 Game.Red;;
 Game.move jeu 2 Game.Yellow;;
 Game.move jeu 1 Game.Red;;
 Game.move jeu 3 Game.Yellow;;
-
+*)
 (*print jeu;;
 
 let a = alphabeta jeu Game.Red 8 h;;
@@ -109,10 +109,11 @@ Game.move jeu 0 Game.Red;;
 Game.move jeu 2 Game.Yellow;;
 Game.move jeu 0 Game.Red;;
 Game.move jeu 0 Game.Yellow;;*)
-
-let () =
+(*
+  let () =
   print jeu;
   printf "%!";
   let cost, col =
-    Alphabeta.alphabeta jeu Game.Yellow 9 Alphabeta.heuristic in
-  printf "cost = %f   colum, = %i\n" cost col;;
+  Alphabeta.alphabeta jeu Game.Yellow 9 Alphabeta.heuristic in
+*)
+
