@@ -90,8 +90,9 @@ struct
   let col_had_play = ref 0
   let light = ref true (*mettre à faux lorsqu'on veut juste remettre le capteur
                          à droite*)
+  let scan_right = ref true (*on commence par le scannage de droite à gauche*)
   let go_to_next = ref false
-  let current_game = ref 1051203 (*representation du jeu par un entier*)
+  let current_game = ref 0 (*representation du jeu par un entier*)
 
  
   let get_angle motor = let _,_,_,a = Motor.get C.conn_scan motor in a
@@ -165,14 +166,25 @@ struct
             printf "%i\n%!" !current_game;
             printf "%i\n%!" !current_game;
             light := false; (*pr ne pas rescanner*)
-            next_col := -1; (*pr que scan_game renvoie le capteur à droite du
-                              jeu*)
+            if !current_col > 3 then
+              (
+                next_col := 7;
+                scan_right := false
+                  (*pr que scan_game renvoie le capteur à gauche du jeu*)
+              )
+            else
+              (
+                next_col := -1;
+                scan_right := true
+                  (*pr que scan_game renvoie le capteur à droite du jeu*)
+              );
             f ()
           )
       )
     else
       (
-        next_col := -1;
+        if !current_col = 6 then next_col := 7
+        else next_col := -1;
         light := true;
         f ()
       )
@@ -355,7 +367,7 @@ struct
         if (diff_line > 0) then (*on va vers le haut*)
           (
             let speed_vert, speed_m1, speed_m2 = speed_up.(diff_line).
-              (diff_col) in
+              (abs(diff_col)) in
             printf"monte\n%!";
             (match (Robot.read meas_vert) with
              |Some m_v  ->
@@ -403,8 +415,8 @@ struct
 
         else (*on descend*)
           (
-            let speed_vert, speed_m1, speed_m2 = speed_down.(diff_line).
-              (diff_col) in
+            let speed_vert, speed_m1, speed_m2 = speed_down.(-diff_line).
+              (abs(diff_col)) in
             printf"descend\n%!";
             (match (Robot.read meas_vert) with
              |Some m_v  ->
@@ -456,7 +468,7 @@ struct
 
 
 
-  let rec scan_game next =
+  let rec scan_game_right next =
     if !go_to_next then
       (
         go_to_next := false;
@@ -488,15 +500,49 @@ struct
           )
       )
 
-
-
-  let scan col_new_piece next =
-    if col_new_piece <> -1 then
+  and scan_game_left next =
+    if !go_to_next then
       (
-        add_piece col_new_piece !current_game;
-        printf "%i\n%!" !current_game;
-      );
-    scan_game next
+        go_to_next := false;
+        next_col := 7;
+        printf"passe à next\n%!";
+        next !col_had_play
+      )
+    else
+      (
+        go_to_next := not !light;
+
+        if !next_col > 0 then
+          (
+            next_col := !next_col - 1;
+            next_line := piece_in_col !next_col !current_game;
+            if !next_line = 6 then
+              scan_game next
+            else
+              (
+                printf"%i\n%i\n%!" !next_line !next_col;
+                scan_case !next_line !next_col (fun () -> scan_game next)
+              )
+          )
+        else
+          (
+            next_col := 6;
+            next_line := piece_in_col !next_col !current_game;
+            scan_case !next_line !next_col (fun () -> scan_game next)
+          )
+      )
+
+  and scan_game next =
+   if !scan_right then scan_game_right next
+   else scan_game_left next
+
+ let scan col_new_piece next =
+   if col_new_piece <> -1 then
+     (
+       add_piece col_new_piece !current_game;
+       printf "%i\n%!" !current_game;
+     );
+   scan_game next
 
   (* let run () = *)
     (* scan stop; *)

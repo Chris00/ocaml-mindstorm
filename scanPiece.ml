@@ -436,6 +436,7 @@ struct
    if col_new_piece <> -1 then
      (
        add_piece col_new_piece !current_game;
+       printf "le jeu courant après coup du robot est : ";
        printf "%i\n%!" !current_game;
      );
    scan_game next
