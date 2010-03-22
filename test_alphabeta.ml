@@ -115,4 +115,7 @@ let () =
   printf "%!";
   let cost, col =
     Alphabeta.alphabeta jeu Game.Yellow 9 Alphabeta.heuristic in
-  printf "cost = %f   colum, = %i\n" cost col
+  printf "cost = %f   colum, = %i\n" cost col;;
+
+Board.gameboard();;
+let attend = Board.close_when_clicked();;
