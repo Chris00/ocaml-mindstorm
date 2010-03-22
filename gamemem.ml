@@ -349,8 +349,8 @@ let check_double board group pos side =
 
 
 let groupeval board =
-  let t1 = board.turn in
-  let t2 = switch t1
+  let t2 = board.turn in
+  let t1 = switch t2
   and score = ref 0. in
     for x = 0 to groups-1 do
       let p1 = ref 0
