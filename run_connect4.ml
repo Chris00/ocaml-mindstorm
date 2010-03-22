@@ -61,7 +61,7 @@ let rec step game color col =
     else P.put_piece col_to_play P.stop
 
 let () =
-  Board.gameboard()
+  Board.gameboard();
   let game = Game.make() in
   if Conn.fst_computer then step game Game.Yellow 0
   else S.scan (-1) (fun c -> step game Game.Yellow c);

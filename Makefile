@@ -15,8 +15,7 @@ LIBS_CMXA=$(LIBS_CMA:.cma=.cmxa)
 
 all: byte native
 
-SOURCES = game.ml alphabeta.ml board.ml scanPiece.ml \
-  evaluate.ml pincer.ml run_connect4.ml
+SOURCES = game.ml gamemem.ml alphabeta.ml alphabetamem.ml board.ml scanPiece.ml pincer.ml run_connect4.ml
 byte: run_connect4.exe
 native: run_connect4.com
 
@@ -32,7 +31,7 @@ TESTS=$(wildcard test*.ml)
 tests: $(TESTS:.ml=.com)
 $(TESTS:.ml=.com): robot.cmxa
 
-test_alphabeta.com: game.cmx alphabeta.cmx board.cmx
+test_alphabeta.com: game.cmx alphabeta.cmx
 test_pincer.com: pincer.cmx
 test_scanPiece.com: scanPiece.cmx
 scanPiece2.com:scanPiece.cmx

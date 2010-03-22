@@ -1,5 +1,5 @@
 open Printf
-
+(*
 let print game =
   printf "\n";
   for i = 5 downto 0 do
@@ -40,7 +40,7 @@ Game.move jeu 1 Game.Red;;
 Game.move jeu 2 Game.Yellow;;
 Game.move jeu 1 Game.Red;;
 Game.move jeu 3 Game.Yellow;;
-
+*)
 (*print jeu;;
 
 let a = alphabeta jeu Game.Red 8 h;;
@@ -115,7 +115,4 @@ let () =
   printf "%!";
   let cost, col =
     Alphabeta.alphabeta jeu Game.Yellow 9 Alphabeta.heuristic in
-  printf "cost = %f   colum, = %i\n" cost col;;
-
-Board.gameboard();;
-let attend = Board.close_when_clicked();;
+  

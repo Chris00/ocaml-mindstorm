@@ -1,4 +1,6 @@
-(*http://www.ce.unipr.it/~gbe/velsrc.html*)
+
+
+*http://www.ce.unipr.it/~gbe/velsrc.html*)
 
 
 
@@ -788,8 +790,6 @@ let aftereven board =
 	helper (y1+2)
       )
   in helper 1
-
-
 
 let lowinverse board =
   let set = Array.make 64 true in

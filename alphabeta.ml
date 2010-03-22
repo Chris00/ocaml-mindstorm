@@ -229,13 +229,12 @@ let alphabeta game color level heuristic=
     let n_in_col = Game.nbr_token_in_col g column in
     if n_in_col <> 6 then (cost, column)
     else if Game.nbr_token_in_col g 3 <> 6 then
-      what_col_to_play g cost 3
+      (cost, 3)
     else if Game.nbr_token_in_col g 2 <> 6 then
-      what_col_to_play g cost 2
+      (cost, 2)
     else if Game.nbr_token_in_col g 4 <> 6 then
-      what_col_to_play g cost 4
-    else if n_in_col = 6 then what_col_to_play g cost (column+1)
-    else (cost, col)
+      (cost, 4)
+    else what_col_to_play g cost (column+1)
   in what_col_to_play game value col
 
 
