@@ -1,6 +1,6 @@
 type mode = Max | Min
 
-val h : Game.t -> Game.color -> mode -> float * int
+val heuristic : Game.t -> Game.color -> mode -> float * int
 (** h est une fonction heuristique qui retourne la valeur que l'on peut obtenir
    et la colonne à jouer pour l'obtenir*)
 
