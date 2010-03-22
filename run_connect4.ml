@@ -84,8 +84,11 @@ let rec step game color col =
           else
             (
               Printf.printf"c fini, on stoppe après avoir ajouter la piece\n%!";
-              P.put_piece col_to_play P.stop)
+              P.put_piece col_to_play S.return_init_pos;
+              Printf.printf"LE ROBOT GAGNE\n%!"
+            )
         )
+  else S.return_init_pos ()
 let () =
   let game = Game.make() in
   if Conn.fst_computer then step game Game.Red (-1)

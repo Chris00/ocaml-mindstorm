@@ -50,7 +50,7 @@ PP_FLAGS = $(if $(PP), -pp "$(PP)")
 	-@test -z "$^" || $(OCAMLDEP) $(PP_FLAGS) $(SYNTAX_OPTS) $^ > $@
 # If we do not force inclusion (e.g. with "-" prefix), then it is not
 # recreated and taken into account properly.
-include .depend.ocaml
+#include .depend.ocaml
 
 
 .PHONY: clean

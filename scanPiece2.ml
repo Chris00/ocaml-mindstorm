@@ -123,11 +123,6 @@ struct
 
 
 
-
-
-
-
-
   (* retourne la couleur devant le capteur*)
   let rec scan_light f =
     Motor.set C.conn_scan Motor.all (Motor.speed 0);
@@ -141,16 +136,12 @@ struct
           | `Yellow -> 1 | `Red  -> 0 | `White -> -1 in
 
         let color = color_of_data data in
-        printf "%i\n%!" color;
         Mindstorm.Sensor.set C.conn_scan color_port `No_sensor `Raw;
         usleep 0.25;
 
         if (color = (-1)) then
-          (
-            printf "Continuer\n%!";
-            f () (*rappelle la fct scan_game qui appelera scan_case sur la
+          f () (*rappelle la fct scan_game qui appelera scan_case sur la
                    prochaine case*)
-          )
         else if (color = 2) then
           (
             printf "Ajustement\n%!";
@@ -160,10 +151,9 @@ struct
           (
             add_piece !current_col !current_game;
             col_had_play := !current_col; (*sera placé en param de la fct next*)
-            printf "l'autre a joué dans la colonne : ";
+            printf "l'humain a joué dans la colonne : ";
             printf "%i\n%!" !col_had_play;
             printf "le jeu courant est : ";
-            printf "%i\n%!" !current_game;
             printf "%i\n%!" !current_game;
             light := false; (*pr ne pas rescanner*)
             if !current_col > 3 then
@@ -349,7 +339,6 @@ struct
 
 
   let rec scan_case new_pos_line new_pos_col f =
-    printf"coucouscancase!!\n%!";
     let diff_line = new_pos_line - !current_line and
         diff_col = new_pos_col - !current_col and
         angle_v = rot_v new_pos_line and
@@ -360,7 +349,7 @@ struct
     current_col := new_pos_col;
 
     if(diff_line = 0 && diff_col = 0) then
-      (adjustment new_pos_line new_pos_col  f)
+      scan_light f
     else
       (
         (*on fait les deux mouvements en meme temps*)
@@ -368,7 +357,6 @@ struct
           (
             let speed_vert, speed_m1, speed_m2 = speed_up.(diff_line).
               (abs(diff_col)) in
-            printf"monte\n%!";
             (match (Robot.read meas_vert) with
              |Some m_v  ->
                 (
@@ -381,7 +369,6 @@ struct
 
             if (diff_col >= 0) then (*on va vers la gauche*)
               (
-                printf"va à gauche\n%!";
                 (match (Robot.read meas_right) with
                  |Some m_r  ->
                     Motor.set C.conn_scan motor_captor_r (Motor.speed
@@ -397,7 +384,6 @@ struct
             else (*on va vers la droite*)
               (
 
-                printf"va à droite\n%!";
                 (match (Robot.read meas_right) with
                  |Some m_r  ->
                     Motor.set C.conn_scan motor_captor_r (Motor.speed
@@ -417,7 +403,6 @@ struct
           (
             let speed_vert, speed_m1, speed_m2 = speed_down.(-diff_line).
               (abs(diff_col)) in
-            printf"descend\n%!";
             (match (Robot.read meas_vert) with
              |Some m_v  ->
                 Motor.set C.conn_scan motor_captor_vert (Motor.speed
@@ -427,8 +412,6 @@ struct
 
             if (diff_col >= 0) then (*on va vers la gauche*)
               (
-                printf"va à gauche\n%!";
-
                 (match (Robot.read meas_right) with
                  |Some m_r  ->
                     Motor.set C.conn_scan motor_captor_r (Motor.speed
@@ -447,7 +430,6 @@ struct
               )
             else (*on va vers la droite*)
               (
-                printf"va à droite\n%!";
                 (match (Robot.read meas_right) with
                  |Some m_r  ->
                     (
@@ -487,16 +469,14 @@ struct
             if !next_line = 6 then
               scan_game next
             else
-              (
-                printf"%i\n%i\n%!" !next_line !next_col;
-                scan_case !next_line !next_col (fun () -> scan_game next)
-              )
+              scan_case !next_line !next_col (fun () -> scan_game next)
           )
         else
           (
-            next_col := 0;
-            next_line := piece_in_col !next_col !current_game;
-            scan_case !next_line !next_col (fun () -> scan_game next)
+            next_col := -1;
+            scan_game next
+            (* next_line := piece_in_col !next_col !current_game; *)
+            (* scan_case !next_line !next_col (fun () -> scan_game next) *)
           )
       )
 
@@ -519,22 +499,25 @@ struct
             if !next_line = 6 then
               scan_game next
             else
-              (
-                printf"%i\n%i\n%!" !next_line !next_col;
                 scan_case !next_line !next_col (fun () -> scan_game next)
-              )
           )
         else
           (
-            next_col := 6;
-            next_line := piece_in_col !next_col !current_game;
-            scan_case !next_line !next_col (fun () -> scan_game next)
+            next_col := 7;
+            scan_game next
           )
       )
 
   and scan_game next =
    if !scan_right then scan_game_right next
    else scan_game_left next
+
+
+  let return_init_pos i =
+    light := false;
+    scan_case 0 0 stop
+
+
 
  let scan col_new_piece next =
    if col_new_piece <> -1 then
