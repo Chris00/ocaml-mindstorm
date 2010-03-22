@@ -46,6 +46,7 @@ module S = ScanPiece.Run(Conn)
 (*si fst_player est vrai, ca veut dire que c'est a l'ordi de commencer,
   on lance donc alphabeta puis la pince et enfin le scan*)
 let rec step game color col =
+  if col <> -1 then Game.move game col (Game.color_invers color)
   (*on verifie que le jeu n'est pas gagné ou match nul*)
   if not (Game.is_winning game col) && not (Game.is_draw game) then
     (*on cherche la colonne a jouer*)
