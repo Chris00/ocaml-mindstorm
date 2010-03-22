@@ -1,11 +1,14 @@
 # .bzrignore						-*-conf-unix-*-
 *.annot
-*.cm[ioax]
-*.obj
-*.lib
+*.cmi
+*.cmo
+*.cma
+*.cmx
 *.cmxa
 *.exe
 *.com
+.obj
+.bzrignore
 .os_type
 .depend.ocaml
 doc/
@@ -20,7 +23,6 @@ auto
 *.pdf
 *.snm
 *.toc
-# Tarballs & misc
+# Tarballs
 *.tar.gz
-biblio/
-photo robot/
+.obj

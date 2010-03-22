@@ -5,84 +5,114 @@ let print game =
   for i = 5 downto 0 do
     for j = 0 to 6 do
       let couleur = match (Game.get_color game i j) with
-        | None -> "       "
-        | Some Game.Yellow -> " Yellow"
-        | Some Game.Red -> " Red   " in
+        | None -> " "
+        | Some Game.Yellow -> "Y"
+        | Some Game.Red -> "R" in
       printf "%s" couleur;
     done;
     printf "\n"
-  done;
-  printf "--------------------------------------------------\n"
+  done
 
-let g = Game.make();;
-Game.move g 3 Game.Yellow;;
-Game.move g 3 Game.Red;;
-Game.move g 3 Game.Yellow;;
+let jeu = Game.make();;
+Game.move jeu 3 Game.Red;;
+Game.move jeu 3 Game.Yellow;;
+Game.move jeu 3 Game.Red;;
+Game.move jeu 2 Game.Yellow;;
+Game.move jeu 4 Game.Red;;
+Game.move jeu 4 Game.Yellow;;
+Game.move jeu 3 Game.Red;;
+Game.move jeu 2 Game.Yellow;;
+Game.move jeu 2 Game.Red;;
+Game.move jeu 0 Game.Yellow;;
+Game.move jeu 2 Game.Red;;
+Game.move jeu 1 Game.Yellow;;
+Game.move jeu 1 Game.Red;;
+Game.move jeu 0 Game.Yellow;;
+Game.move jeu 0 Game.Red;;
+Game.move jeu 1 Game.Yellow;;
+Game.move jeu 1 Game.Red;;
+Game.move jeu 0 Game.Yellow;;
+Game.move jeu 0 Game.Red;;
+Game.move jeu 5 Game.Yellow;;
+Game.move jeu 5 Game.Red;;
+Game.move jeu 0 Game.Yellow;;
+Game.move jeu 1 Game.Red;;
+Game.move jeu 2 Game.Yellow;;
+Game.move jeu 1 Game.Red;;
+Game.move jeu 3 Game.Yellow;;
 
+(*print jeu;;
 
-(*let a = alphabeta g Game.Red (neg_infinity) infinity 2 h;;
+let a = alphabeta jeu Game.Red 8 h;;
 Printf.printf "%f" (fst a);;
 Printf.printf "\n";;
 Printf.printf "%i" (snd a);;*)
 
-(*let g = Game.make();;*)
-(*Game.move g 0 Game.Red;
-Game.move g 1 Game.Yellow;
-Game.move g 1 Game.Red;
-Game.move g 0 Game.Yellow;
-Game.move g 0 Game.Red;
-Game.move g 1 Game.Yellow;
-Game.move g 1 Game.Red;
-Game.move g 0 Game.Yellow;
-(*Game.move g 0 Game.Yellow;*)
-(*Game.move g 1 Game.Red;*)
-Game.move g 3 Game.Red;
-Game.move g 2 Game.Yellow;
-Game.move g 2 Game.Red;
-(*Game.move g 3 Game.Yellow;*)
-(*Game.move g 0 Game.Red;*)
-Game.move g 2 Game.Yellow;
-(*Game.move g 2 Game.Red;*)
-(*Game.move g 3 Game.Yellow;*)
-(*Game.move g 3 Game.Red;*)
-(*Game.move g 2 Game.Yellow;*)
-Game.move g 5 Game.Red;
-Game.move g 6 Game.Yellow;
-Game.move g 6 Game.Red;
-Game.move g 5 Game.Yellow;
-Game.move g 5 Game.Red;
-Game.move g 6 Game.Yellow;
-(*Game.move g 6 Game.Red;*)
-(*Game.move g 5 Game.Yellow;*)
-(*Game.move g 5 Game.Red;*)
-(*Game.move g 6 Game.Yellow;*)
-Game.move g 4 Game.Red;
-Game.move g 4 Game.Yellow;
-Game.move g 4 Game.Red;;
-(*Game.move g 4 Game.Red;;*)
-(*Game.move g 4 Game.Red;;*)
-(*Game.move g 3 Game.Yellow;;*)
-(*Game.move g 4 Game.Red;;*)
+
+(*let a = alphabeta jeu Game.Red (neg_infinity) infinity 2 h;;
+Printf.printf "%f" (fst a);;
+Printf.printf "\n";;
+Printf.printf "%i" (snd a);;*)
+
+(*let jeu = Game.make();;*)
+(*Game.move jeu 0 Game.Red;
+Game.move jeu 1 Game.Yellow;
+Game.move jeu 1 Game.Red;
+Game.move jeu 0 Game.Yellow;
+Game.move jeu 0 Game.Red;
+Game.move jeu 1 Game.Yellow;
+Game.move jeu 1 Game.Red;
+Game.move jeu 0 Game.Yellow;
+(*Game.move jeu 0 Game.Yellow;*)
+(*Game.move jeu 1 Game.Red;*)
+Game.move jeu 3 Game.Red;
+Game.move jeu 2 Game.Yellow;
+Game.move jeu 2 Game.Red;
+(*Game.move jeu 3 Game.Yellow;*)
+(*Game.move jeu 0 Game.Red;*)
+Game.move jeu 2 Game.Yellow;
+(*Game.move jeu 2 Game.Red;*)
+(*Game.move jeu 3 Game.Yellow;*)
+(*Game.move jeu 3 Game.Red;*)
+(*Game.move jeu 2 Game.Yellow;*)
+Game.move jeu 5 Game.Red;
+Game.move jeu 6 Game.Yellow;
+Game.move jeu 6 Game.Red;
+Game.move jeu 5 Game.Yellow;
+Game.move jeu 5 Game.Red;
+Game.move jeu 6 Game.Yellow;
+(*Game.move jeu 6 Game.Red;*)
+(*Game.move jeu 5 Game.Yellow;*)
+(*Game.move jeu 5 Game.Red;*)
+(*Game.move jeu 6 Game.Yellow;*)
+Game.move jeu 4 Game.Red;
+Game.move jeu 4 Game.Yellow;
+Game.move jeu 4 Game.Red;;
+(*Game.move jeu 4 Game.Red;;*)
+(*Game.move jeu 4 Game.Red;;*)
+(*Game.move jeu 3 Game.Yellow;;*)
+(*Game.move jeu 4 Game.Red;;*)
 *)
 
 
-Game.move g 2 Game.Red;;
-Game.move g 0 Game.Yellow;;
-Game.move g 0 Game.Red;;
-Game.move g 2 Game.Yellow;;
-Game.move g 2 Game.Red;;
-Game.move g 0 Game.Yellow;;
-Game.move g 0 Game.Red;;
-Game.move g 0 Game.Yellow;;
-Game.move g 2 Game.Red;;
-(*Game.move g 0 Game.Yellow;;
-Game.move g 0 Game.Red;;
-Game.move g 2 Game.Yellow;;
-Game.move g 0 Game.Red;;
-Game.move g 0 Game.Yellow;;*)
+(*Game.move jeu 2 Game.Red;;
+Game.move jeu 0 Game.Yellow;;
+Game.move jeu 0 Game.Red;;
+Game.move jeu 2 Game.Yellow;;
+Game.move jeu 2 Game.Red;;
+Game.move jeu 0 Game.Yellow;;
+Game.move jeu 0 Game.Red;;
+Game.move jeu 0 Game.Yellow;;
+Game.move jeu 2 Game.Red;;*)
+(*Game.move jeu 0 Game.Yellow;;
+Game.move jeu 0 Game.Red;;
+Game.move jeu 2 Game.Yellow;;
+Game.move jeu 0 Game.Red;;
+Game.move jeu 0 Game.Yellow;;*)
 
-print g;;
-printf "\n";;
-
-let cost, col = Alphabeta.alphabeta g Game.Yellow neg_infinity infinity 8 Alphabeta.h;;
-printf "%f\n%i" cost, col
+let () =
+  print jeu;
+  printf "%!";
+  let cost, col =
+    Alphabeta.alphabeta jeu Game.Yellow 9 Alphabeta.heuristic in
+  printf "cost = %f   colum, = %i\n" cost col
