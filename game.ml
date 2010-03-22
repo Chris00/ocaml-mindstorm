@@ -174,7 +174,8 @@ let is_winning game j =
   let col = get_col game j and
       pos = ref 0 in
   (*cas vertical*)
-  if col = 31 || col = 62 || col = 124 || col = 16 || col = 33 || col = 67
+  if col = 31 || col = 62 || col = 124 || col = 125
+    || col = 16 || col = 33 || col = 67 ||col = 66
   then true
   else
     (
