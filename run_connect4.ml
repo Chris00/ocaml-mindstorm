@@ -1,4 +1,6 @@
 open Alphabeta
+open Board
+
 
 let print game =
   Printf.printf "\n%!";
@@ -59,39 +61,46 @@ module S = ScanPiece2.Run(Conn)
 (*si fst_player est vrai, ca veut dire que c'est a l'ordi de commencer,
   on lance donc alphabeta puis la pince et enfin le scan*)
 let rec step game color col =
-  Printf.printf "jeu avant l'ajout de la piece de scan\n%!";
-  print game;
-  if col <> -1 then Game.move game col (Game.color_invers color);
-  Printf.printf "jeu après l'ajout de la piece de scan \n%!";
-  print game;
+  if col <> -1 then
+    (
+      try
+        Game.move game col (Game.color_invers color);
+        Board.add_piece_to_board (match (Game.color_invers color) with
+                                |Game.Yellow -> Graphics.yellow
+                                |Game.Red -> Graphics.red) col
+      with Game.Column_full -> Printf.printf "%i%! %s%!"  col "exception colonne\n\n\n\n
+"
+    );
   (*on verifie que le jeu n'est pas gagné ou match nul*)
   if (col = -1) ||
     (not (Game.is_winning game col) && not (Game.is_draw game)) then
-        (
-          (*on cherche la colonne a jouer*)
-          Printf.printf "calcul de la colonne a jouer\n%!";
-          let _, col_to_play = alphabeta game color 8 heuristic in
-          Printf.printf "%i\n%!" col_to_play;
-          Game.move game col_to_play color;
-          Printf.printf "ajout de la piece après calcul alphabeta \n%!";
-          print game;
-          (*la pince va mettre la piece dans la colonne a jouer
-            et on va scanner pour voir si le joueur a joue*)
-          if not(Game.is_winning game col_to_play) && not(Game.is_draw game)
-          then
-            P.put_piece col_to_play
-              (fun () -> S.scan col_to_play (fun c -> step game color c))
-          else
-            (
-              Printf.printf"c fini, on stoppe après avoir ajouter la piece\n%!";
-              P.put_piece col_to_play S.return_init_pos;
-              Printf.printf"LE ROBOT GAGNE\n%!"
-            )
-        )
+      (
+        (*on cherche la colonne a jouer*)
+        let _, col_to_play = alphabeta game color 8 heuristic in
+        Printf.printf "%i\n%!" col_to_play;
+        Game.move game col_to_play color;
+        Board.add_piece_to_board (match color with
+                                  |Game.Yellow -> Graphics.yellow
+                                  |Game.Red -> Graphics.red) col_to_play;
+        (*la pince va mettre la piece dans la colonne a jouer
+          et on va scanner pour voir si le joueur a joue*)
+        if not(Game.is_winning game col_to_play) && not(Game.is_draw game)
+        then
+          P.put_piece col_to_play
+            (fun () -> S.scan col_to_play (fun c -> step game color c))
+        else
+          (
+            Printf.printf"c fini, on stoppe après avoir ajouter la piece\n%!";
+            P.put_piece col_to_play S.return_init_pos;
+            Printf.printf"LE ROBOT GAGNE\n%!"
+          )
+      )
   else S.return_init_pos ()
 let () =
+  Board.gameboard ();
+  (* Board.close_when_clicked(); *)
   let game = Game.make() in
-  if Conn.fst_computer then step game Game.Red (-1)
-  else S.scan (-1) (fun c -> step game Game.Red c);
+  if Conn.fst_computer then step game Game.Yellow (-1)
+  else S.scan (-1) (fun c -> step game Game.Yellow c);
   Robot.run Conn.r
 

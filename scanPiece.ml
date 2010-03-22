@@ -444,6 +444,6 @@ struct
  let run () =
    scan 0 (fun c -> printf "%i\n%!" c);
    (* qd il a fini, il affiche où l'autre a joué *)
-   Robot.run C.r
+   (*    Robot.run C.r *)
 
 end

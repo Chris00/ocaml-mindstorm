@@ -175,7 +175,7 @@ struct
       (
         if !current_col = 6 then next_col := 7
         else next_col := -1;
-        light := true;
+        (* light := true; *)
         f ()
       )
 
@@ -451,64 +451,74 @@ struct
 
 
   let rec scan_game_right next =
+   printf"lance scan_game_right\n%!";
     if !go_to_next then
       (
         go_to_next := false;
+        light := true;
         next_col := -1;
         printf"passe à next\n%!";
         next !col_had_play
       )
     else
       (
-        go_to_next := not !light;
+        if !next_col < 6 then next_col := !next_col + 1
+        else next_col:=0;
 
-        if !next_col < 6 then
-          (
-            next_col := !next_col + 1;
-            next_line := piece_in_col !next_col !current_game;
-            if !next_line = 6 then
-              scan_game next
-            else
-              scan_case !next_line !next_col (fun () -> scan_game next)
-          )
+        next_line := piece_in_col !next_col !current_game;
+        if !next_line = 6 then scan_game next
         else
           (
-            next_col := -1;
-            scan_game next
-            (* next_line := piece_in_col !next_col !current_game; *)
-            (* scan_case !next_line !next_col (fun () -> scan_game next) *)
+            go_to_next := not !light;
+            scan_case !next_line !next_col (fun () -> scan_game next)
           )
       )
+
 
   and scan_game_left next =
     if !go_to_next then
       (
         go_to_next := false;
+        light := true;
         next_col := 7;
         printf"passe à next\n%!";
         next !col_had_play
       )
     else
       (
-        go_to_next := not !light;
+        if !next_col > 0 then next_col := !next_col - 1
+        else next_col := 6;
 
-        if !next_col > 0 then
-          (
-            next_col := !next_col - 1;
-            next_line := piece_in_col !next_col !current_game;
-            if !next_line = 6 then
-              scan_game next
-            else
-                scan_case !next_line !next_col (fun () -> scan_game next)
-          )
+        next_line := piece_in_col !next_col !current_game;
+        if !next_line = 6 then scan_game next
         else
           (
-            next_col := 7;
-            scan_game next
+            go_to_next := not !light;
+            scan_case !next_line !next_col (fun () -> scan_game next)
           )
       )
 
   and scan_game next =
+    printf"lance scan_game\n%!";
+    printf"lance scan_game_left\n%!";
+    printf "current_col : ";
+    printf "%i\n%!" !current_col;
+    printf "current_line : ";
+    printf "%i\n%!" !current_line;
+    printf "next_line : ";
+    printf "%i\n%!" !next_line;
+    printf "next_col : ";
+    printf "%i\n%!" !next_col;
+    printf "col_had_play : ";
+    printf "%i\n%!" !col_had_play;
+    printf "light : ";
+    printf "%b\n%!" !light;
+    printf "scan_right : ";
+    printf "%b\n%!" !scan_right;
+    printf "go_to_next : ";
+    printf "%b\n%!" !go_to_next;
+    printf "current_game : ";
+    printf "%i\n%!" !current_game;
    if !scan_right then scan_game_right next
    else scan_game_left next
 
@@ -518,16 +528,16 @@ struct
     scan_case 0 0 stop
 
 
+  let scan col_new_piece next =
+    if col_new_piece <> -1 then
+      (
+        add_piece col_new_piece !current_game;
+        printf "le jeu courant après le coup du robot : ";
+        printf "%i\n%!" !current_game
+      );
+    scan_game next
 
- let scan col_new_piece next =
-   if col_new_piece <> -1 then
-     (
-       add_piece col_new_piece !current_game;
-       printf "%i\n%!" !current_game;
-     );
-   scan_game next
-
-  (* let run () = *)
+(* let run () = *)
     (* scan stop; *)
 
     (* current_col := 6; *)

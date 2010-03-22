@@ -79,45 +79,6 @@ let fst_moves game nbr_moves =
   |_ -> raise (Failure "methode can be used only if the number of moves is
                          minder than 2")
 
-(*fonction qui doit retourner vrai si on peut jouer dans une colonne (on verifie
-  que l'autre joueur ne gagne pas en jouant au dessus ou si on peut gagner si
-  l'autre joueur joue dans cette colonne)
-  retourne faux sinon*)
-let win_in_2moves game j color =
-  let n = Game.nbr_token_in_col game j in
-  if n < 5 then
-    (
-      Game.move game j color;
-      Game.move game j (Game.color_invers color);
-      if Game.is_winning game j then
-        (
-          Game.remove game j (Game.color_invers color);
-          Game.remove game j color;
-          false
-        )
-      else
-        (
-          Game.remove game j (Game.color_invers color);
-          Game.remove game j color;
-          Game.move game j (Game.color_invers color);
-          Game.move game j color;
-          if Game.is_winning game j then
-            (
-              Game.remove game j color;
-              Game.remove game j (Game.color_invers color);
-              false
-            )
-          else
-            (
-              Game.remove game j color;
-              Game.remove game j (Game.color_invers color);
-              true
-            )
-        )
-    )
-  else if n = 5 then true
-  else false
-
 let heuristic game color mode =
   let col_win_max = Game.next_win game color
   and col_win_min = Game.next_win game (Game.color_invers color) in
@@ -265,9 +226,12 @@ let alphabeta game color level heuristic=
   let rec what_col_to_play g cost column =
     let n_in_col = Game.nbr_token_in_col g column in
     if n_in_col <> 6 then (cost, column)
-    else if Game.nbr_token_in_col g 3 <> 6 then what_col_to_play g cost 3
-    else if Game.nbr_token_in_col game 2 <> 6 then what_col_to_play g cost 2
-    else if Game.nbr_token_in_col game 4 <> 6 then what_col_to_play g cost 4
+    else if Game.nbr_token_in_col g 3 <> 6 then
+      (cost, 3)
+    else if Game.nbr_token_in_col g 2 <> 6 then
+      (cost, 2)
+    else if Game.nbr_token_in_col g 4 <> 6 then
+      (cost, 4)
     else what_col_to_play g cost (column+1)
   in what_col_to_play game value col
 

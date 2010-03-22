@@ -1950,16 +1950,15 @@ let undomove board move =
       true
     )
 
-     
 
-let bb = make_board() in
-  initboard bb;
-  let _ = makemove bb 0
-  and _ = makemove bb 1
-  and _ = makemove bb 0
-  and _ = makemove bb 1
-  and _ = makemove bb 0 in
-  groupeval bb
+(* let bb = make_board() in *)
+(*   initboard bb; *)
+(*   let _ = makemove bb 0 *)
+(*   and _ = makemove bb 1 *)
+(*   and _ = makemove bb 0 *)
+(*   and _ = makemove bb 1 *)
+(*   and _ = makemove bb 0 in *)
+(*   groupeval bb *)
 
 
 
