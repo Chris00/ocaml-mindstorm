@@ -63,13 +63,10 @@ module S = ScanPiece2.Run(Conn)
 let rec step game color col =
   if col <> -1 then
     (
-      try
         Game.move game col (Game.color_invers color);
         Board.add_piece_to_board (match (Game.color_invers color) with
                                 |Game.Yellow -> Graphics.yellow
                                 |Game.Red -> Graphics.red) col
-      with Game.Column_full -> Printf.printf "%i%! %s%!"  col "exception colonne\n\n\n\n
-"
     );
   (*on verifie que le jeu n'est pas gagné ou match nul*)
   if (col = -1) ||

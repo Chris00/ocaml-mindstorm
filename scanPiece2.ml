@@ -94,7 +94,6 @@ struct
   let go_to_next = ref false
   let current_game = ref 0 (*representation du jeu par un entier*)
 
- 
   let get_angle motor = let _,_,_,a = Motor.get C.conn_scan motor in a
 
  (*nous retourne l'angle courant du moteur droit*)
@@ -122,22 +121,35 @@ struct
 
 
 
+  let scan_light () =
+    let rec helper count count_excep =
+      Mindstorm.Sensor.set C.conn_scan color_port `Color_full `Pct_full_scale;
+      usleep 0.25;
+      let data  = Mindstorm.Sensor.get C.conn_scan color_port in
+      let color_of_data data =
+        try  match Sensor.color_of_data data with
+        | `Blue -> 2 | `Red  -> 0 | `Yellow -> 1
+        | `Green | `Black | `White -> -1
+        with Failure "Invalid_argument" ->
+          if count_excep = 3 then -1
+          else helper 0 (count_excep + 1)
+            (*Invalid_argument("Mindstorm.Sensor.color_of_scaled :
+              scaled data out of range"*)
+      in
+      let color = color_of_data data in
+      Mindstorm.Sensor.set C.conn_scan color_port `No_sensor `Raw;
+      (* usleep 0.25; *)
+      if count = 0 && (color = 0 || color = 1) then helper 1 0
+      else color
+    in helper 0 0
+
 
   (* retourne la couleur devant le capteur*)
-  let rec scan_light f =
+  let rec scan_piece f =
     Motor.set C.conn_scan Motor.all (Motor.speed 0);
     if !light then
       (
-        Mindstorm.Sensor.set C.conn_scan color_port `Color_full `Pct_full_scale;
-        usleep 0.25;
-        let data  = Mindstorm.Sensor.get C.conn_scan color_port in
-        let color_of_data data = match Sensor.color_of_data data with
-          | `Black  -> -1 | `Blue -> 2 | `Green -> -1
-          | `Yellow -> 1 | `Red  -> 0 | `White -> -1 in
-
-        let color = color_of_data data in
-        Mindstorm.Sensor.set C.conn_scan color_port `No_sensor `Raw;
-        usleep 0.25;
+        let color = scan_light() in
 
         if (color = (-1)) then
           f () (*rappelle la fct scan_game qui appelera scan_case sur la
@@ -187,14 +199,14 @@ struct
     Robot.event meas_left (function
                            |None -> false
                            |Some d -> d <= angle_l)
-      (fun _ -> scan_light f)
+      (fun _ -> scan_piece f)
 
   and adj_l_r angle_l f =
     Motor.set C.conn_scan motor_captor_l (Motor.speed (5));
     Robot.event meas_left (function
                            |None -> false
                            |Some d -> d >= angle_l)
-      (fun _ -> scan_light f)
+      (fun _ -> scan_piece f)
 
   and adj_l angle_l f _ =
     Motor.set C.conn_scan motor_captor_l (Motor.speed 0);
@@ -296,7 +308,7 @@ struct
                            |None -> false
                            |Some d -> d >= angle_v)
       (* (wait_up_end angle_v f) *)
-      (fun _ -> scan_light f)
+      (fun _ -> scan_piece f)
 
 
   (*attend d'avoir fini ac le moteur r (ac ralenti) avant de scanner la case*)
@@ -308,14 +320,14 @@ struct
   (*     Robot.event meas_right (function *)
   (*                            |None -> false *)
   (*                            |Some d -> d <= angle_r) *)
-  (*       (fun _ -> scan_light f) *)
+  (*       (fun _ -> scan_piece f) *)
 
   let wait_down_right angle_r f =
     Robot.event meas_right (function
                             |None -> false
                             |Some d -> d <= angle_r)
       (* (wait_down_right_end angle_r f) *)
-     (fun _ -> scan_light f)
+     (fun _ -> scan_piece f)
 
 
   (*attend d'avoir fini ac le moteur l (ac ralenti) avant de scanner la case*)
@@ -327,7 +339,7 @@ struct
   (*     Robot.event meas_right (function *)
   (*                            |None -> false *)
   (*                            |Some d -> d <= angle_l+5) *)
-  (*       (fun _ -> scan_light f) *)
+  (*       (fun _ -> scan_piece f) *)
 
 
   let wait_down_left angle_l f =
@@ -335,7 +347,7 @@ struct
                            |None -> false
                            |Some d -> d <= angle_l)
       (* (wait_down_left_end angle_l f) *)
-      (fun _ -> scan_light f)
+      (fun _ -> scan_piece f)
 
 
   let rec scan_case new_pos_line new_pos_col f =
@@ -349,7 +361,7 @@ struct
     current_col := new_pos_col;
 
     if(diff_line = 0 && diff_col = 0) then
-      scan_light f
+      scan_piece f
     else
       (
         (*on fait les deux mouvements en meme temps*)
@@ -499,27 +511,7 @@ struct
       )
 
   and scan_game next =
-    printf"lance scan_game\n%!";
-    printf"lance scan_game_left\n%!";
-    printf "current_col : ";
-    printf "%i\n%!" !current_col;
-    printf "current_line : ";
-    printf "%i\n%!" !current_line;
-    printf "next_line : ";
-    printf "%i\n%!" !next_line;
-    printf "next_col : ";
-    printf "%i\n%!" !next_col;
-    printf "col_had_play : ";
-    printf "%i\n%!" !col_had_play;
-    printf "light : ";
-    printf "%b\n%!" !light;
-    printf "scan_right : ";
-    printf "%b\n%!" !scan_right;
-    printf "go_to_next : ";
-    printf "%b\n%!" !go_to_next;
-    printf "current_game : ";
-    printf "%i\n%!" !current_game;
-   if !scan_right then scan_game_right next
+    if !scan_right then scan_game_right next
    else scan_game_left next
 
 
