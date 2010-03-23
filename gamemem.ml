@@ -422,18 +422,18 @@ let connected board move =
     else connect in
   let rec diago_NE_left x y connect =
     if x>=0 && y>=0 && !(board.square.(elm x y)) = board.turn then
-      diago_NE_left (x+1) (y+1) (connect+1)
+      diago_NE_left (x-1) (y-1) (connect+1)
     else connect in
   let rec diago_NE_right x y connect =
     if x<boardX && y<boardY && !(board.square.(elm x y)) = board.turn then
-      diago_NE_right (x-1) (y-1) (connect+1)
+      diago_NE_right (x+1) (y+1) (connect+1)
     else connect in
   let h_l = hori_left (move-1) 1
   and d_nw_l = diago_NW_left (move-1) (board.stack.(move)+1) 1 
   and d_ne_l = diago_NE_left (move-1) (board.stack.(move)-1) 1 in
-  let h = hori_right (move+1) h_l
-  and d_ne = diago_NW_right (move+1) (board.stack.(move)-1) d_nw_l
-  and d_nw = diago_NE_right (move+1) (board.stack.(move)+1) d_ne_l
+  let h = hori_right (move+1) h_l 
+  and d_nw = diago_NW_right (move+1) (board.stack.(move)-1) d_nw_l
+  and d_ne = diago_NE_right (move+1) (board.stack.(move)+1) d_ne_l
   and v = verti (board.stack.(move)-1) 1 in
     max (max h v) (max d_ne d_nw)
 
