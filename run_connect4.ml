@@ -55,7 +55,7 @@ struct
 end
 
 module P = Pincer.Run(Conn)
-module S = ScanPiece2.Run(Conn)
+module S = ScanPiece.Run(Conn)
 
 (*si fst_player est vrai, ca veut dire que c'est a l'ordi de commencer,
   on lance donc alphabeta puis la pince et enfin le scan*)

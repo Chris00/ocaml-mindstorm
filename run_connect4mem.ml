@@ -25,7 +25,9 @@ struct
 end
 
 module P = Pincer.Run(Conn)
-module S = ScanPiece2.Run(Conn)
+module S = ScanPiece.Run(Conn)
+
+let move game col = ignore(Gamemem.makemove game col)
 
 (*si fst_player est vrai, ca veut dire que c'est a l'ordi de commencer,
   on lance donc alphabeta puis la pince et enfin le scan*)
@@ -33,7 +35,7 @@ let rec computer_play game =
   (* On cherche la colonne a jouer *)
   let _, col_to_play = Alphabetamem.alphabeta game 9 Gamemem.groupeval in
   Printf.printf "col_to_play = %i\n%!" col_to_play;
-  Gamemem.makemove game col_to_play;
+  move game col_to_play;
   Board.add_piece_to_board Graphics.yellow col_to_play;
   Printf.printf "%s\n%!" "les connectés de l'ordi";
   Printf.printf "%i\n!" (Gamemem.connected game col_to_play);
@@ -57,7 +59,7 @@ let rec computer_play game =
 
 and human_play game =
   S.scan begin fun col ->
-    Gamemem.makemove game col;
+    move game col;
     Board.add_piece_to_board Graphics.red col;
     Printf.printf "%s\n%!" "les connectés de l'ordi";
     Printf.printf "%i\n%!" (Gamemem.connected game col);

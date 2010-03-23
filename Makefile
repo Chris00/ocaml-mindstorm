@@ -16,7 +16,7 @@ LIBS_CMXA=$(LIBS_CMA:.cma=.cmxa)
 all: byte native
 
 SOURCES = game.ml alphabeta.ml board.ml scanPiece.ml pincer.ml \
-	scanPiece2.ml gamemem.ml alphabetamem.ml
+	gamemem.ml alphabetamem.ml
 byte: run_connect4.exe run_connect4mem.exe
 native: run_connect4.com run_connect4mem.com
 

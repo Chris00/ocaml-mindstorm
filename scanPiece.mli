@@ -13,8 +13,10 @@ sig
         colonne où la pièce a été ajoutée (utile pr pouvoir ensuite
         calculer le coup prochain. *)
 
-  val stop : int -> unit
+  val stop : 'a -> unit
     (** Stop all motors associated with the scan. *)
 
-
+  val return_init_pos : (unit -> unit) -> unit
+    (** [return_init_pos k] puts the scanner in its initial position.
+        [k] is the continuation to be executed after. *)
 end
