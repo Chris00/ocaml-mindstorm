@@ -1,3 +1,6 @@
+
+(* Inspired by http://www.ce.unipr.it/~gbe/velsrc.html *)
+
 (*Constantes et petites fonctions*)
 
 let boardX = 7
