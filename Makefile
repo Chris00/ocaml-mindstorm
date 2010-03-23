@@ -62,9 +62,9 @@ MAKE_DOC = $(OCAMLDOC) -colorize-code -stars -html $(PACKAGES)
 #	cd rubik/ && $(MAKE) $(@F)
 
 #Define the OS type for the Camlp4 preprocessor, RM,...
-#.os_type: make_os_type.exe
-#	"./$<" > $@
-#include .os_type
+.os_type: make_os_type.exe
+	"./$<" > $@
+include .os_type
 
 include Makefile.ocaml
 
