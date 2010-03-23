@@ -142,46 +142,22 @@ struct
         Robot.event meas_right (when_some good_angle) (adj_l angle_l f)
     | None -> assert false
 
-
-  and adj_vert_down angle_v angle_r angle_l f =
-    Motor.set C.conn_scan motor_captor_vert (Motor.speed (-5));
-    Motor.set C.conn_scan motor_captor_l (Motor.speed (-7));
-    Motor.set C.conn_scan motor_captor_r (Motor.speed (-7));
-    Robot.event meas_vert (when_some (fun d -> d <= angle_v))
-      (adj_r angle_r angle_l f)
-
-
-
-  and adj_vert_up angle_v angle_r angle_l f =
-    Motor.set C.conn_scan motor_captor_vert (Motor.speed 5);
-    Motor.set C.conn_scan motor_captor_l (Motor.speed 7);
-    Motor.set C.conn_scan motor_captor_r (Motor.speed 7);
-    Robot.event meas_vert (when_some (fun d -> d >= angle_v))
-      (adj_r angle_r angle_l f)
-
-
   (*ajustement de la position du capteur*)
   (*on ajuste d'abord le moteur vert à petite vitesse puis le r puis le l*)
   and adjustment line col f =
     let angle_v = rot_v line and
         angle_r = rot_r line col and
         angle_l = rot_l line col in
-
-    match (Robot.read meas_vert) with
-    |Some m  ->
-       (
-         if m <= angle_v then
-           adj_vert_up angle_v angle_r angle_l f
-         else adj_vert_down angle_v angle_r angle_l f
-       )
-    |None -> assert false
-
-
-
-
-
-
-
+    match Robot.read meas_vert with
+    | Some m  ->
+        let speed_vert, speed, good_angle =
+          if m <= angle_v then 5, 7, (fun a -> a >= angle_v) (* go up *)
+          else -5, -7, (fun a -> a <= angle_v) in
+        Motor.set C.conn_scan motor_captor_vert (Motor.speed speed_vert);
+        Motor.set C.conn_scan motor_captor_l (Motor.speed speed);
+        Motor.set C.conn_scan motor_captor_r (Motor.speed speed);
+        Robot.event meas_vert (when_some good_angle) (adj_r angle_r angle_l f)
+    | None -> assert false
 
 
   (*méthode pour descendre le capteur; vitesse neg pour descendre*)
