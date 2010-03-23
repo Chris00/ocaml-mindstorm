@@ -386,13 +386,13 @@ let groupeval board =
 	  )
 	else if !p1 = 2 && !p2 = 0 then score := !score +. 10.
 	else if !p2 = 2 && !p1 = 0 then score := !score -. 30.;
-	
+
 	if check_pentas board 1 then
 	  if t1 = 1 then score := !score +. 800.
 	  else score := !score -. 8000.
     done;
     !score
-      
+ 
 
 
 let connected board move =
