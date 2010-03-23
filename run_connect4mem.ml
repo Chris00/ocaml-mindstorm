@@ -7,14 +7,14 @@ and if_computer = ref true
 
 let spec = Arg.align [
   "--pince", Arg.Set_string bt_pincer,
-  "<bt_address>set the bluetooth address of the brick which uses the pincer";
+  "<bt_address> set the bluetooth address of the brick which uses the pincer";
   "--scan", Arg.Set_string bt_scan,
-  "<bt_address>set the bluetooth address of the brick which uses the scan";
+  "<bt_address> set the bluetooth address of the brick which uses the scan";
   "--human_first", Arg.Clear if_computer,
-  " set the humas as first player"]
+  " set human as first player"]
 let () =
   Arg.parse spec (fun _ -> raise (Arg.Bad "no anonymous arg"))
-    "run_connect4 <option>"
+    "run_connect4 <options>"
 
 module Conn =
 struct
@@ -30,10 +30,15 @@ module S = ScanPiece2.Run(Conn)
 (*si fst_player est vrai, ca veut dire que c'est a l'ordi de commencer,
   on lance donc alphabeta puis la pince et enfin le scan*)
 let rec step game col =
-  if col <> -1 then (
-    Gamemem.makemove game col;
-    Board.add_piece_to_board Graphics.red col
-  );
+  if col <> -1 then
+    (
+        Gamemem.makemove game col;
+        Board.add_piece_to_board Graphics.red col;
+        Printf.printf "%s\n%!" "les connectés de l'ordi";
+        Printf.printf "%i\n%!" (Gamemem.connected game col);
+        Printf.printf "%s\n%!" "les connectés de l'humain";
+        Printf.printf "%i\n%!" (Gamemem.opponent_connected game col)
+    );
   (*on verifie que le jeu n'est pas gagné ou match nul*)
   if (col <> -1) &&
     (Gamemem.opponent_connected game col >= 4 || Gamemem.draw game)
@@ -48,15 +53,20 @@ let rec step game col =
     Printf.printf "col_to_play = %i\n%!" col_to_play;
     Gamemem.makemove game col_to_play;
     Board.add_piece_to_board Graphics.yellow col_to_play;
+    Printf.printf "%s\n%!" "les connectés de l'ordi";
+    Printf.printf "%i\n!" (Gamemem.connected game col_to_play);
+    Printf.printf "%s\n%!" "les connectés de l'humain";
+    Printf.printf "%i\n!" (Gamemem.opponent_connected game col_to_play);
+    Board.add_piece_to_board Graphics.yellow col_to_play;
     (*la pince va mettre la piece dans la colonne a jouer
       et on va scanner pour voir si le joueur a joue*)
     if Gamemem.connected game col_to_play >= 4 || Gamemem.draw game
     then
       (
-        Printf.printf"c fini, on stoppe après avoir ajouter la piece\n%!";
+        Printf.printf "c fini, on stoppe après avoir ajouter la piece\n%!";
         if Gamemem.draw game then Board.draw()
         else Board.yellow_success();
-        Printf.printf"LE ROBOT GAGNE\n%!";
+        Printf.printf "LE ROBOT GAGNE\n%!";
         P.put_piece col_to_play
           (fun () -> S.return_init_pos Board.close_when_clicked)
       )

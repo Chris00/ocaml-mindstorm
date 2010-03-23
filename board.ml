@@ -26,6 +26,26 @@ let add_piece_to_board color col =
   color_circle color (w/6 + col*w/9) (2*h/9 + h/18 + line*h/9);
   add_piece col
 
+let write_player_turn color =
+  moveto (w/9) (h/9);
+  set_font "12x24kana";
+  let text_red = "C'est au tour du joueur rouge à jouer"
+  and text_yellow = "C'est au tour du joueur jaune à jouer" in
+  set_color white;
+  if color = red then
+    (
+      draw_string text_yellow;
+      set_color black;
+      draw_string text_red
+    )
+  else
+    (
+      draw_string text_red;
+      set_color black;
+      draw_string text_yellow
+    )
+
+
 let gameboard () =
   open_graph(sprintf " %ix%i" w h);
   set_window_title("Connect Four");
@@ -57,7 +77,8 @@ let gameboard () =
   synchronize()
 
 let red_success () =
-  set_color black;
+  set_font "12x24kana";
+  set_color red;
   let winner = "Le joueur ROUGE gagne!!!" in
   let (n_xw, n_yw) = text_size winner in
   let xw = (w - n_xw)/2
@@ -66,7 +87,8 @@ let red_success () =
   draw_string winner
 
 let yellow_success () =
-  set_color black;
+  set_font "12x24kana";
+  set_color yellow;
   let winner = "Le joueur Jaune gagne!!!" in
   let (n_xw, n_yw) = text_size winner in
   let xw = (w - n_xw)/2
@@ -75,6 +97,7 @@ let yellow_success () =
   draw_string winner
 
 let draw () =
+  set_font "12x24kana";
   set_color black;
   let winner = "Match Nul" in
   let (n_xw, n_yw) = text_size winner in

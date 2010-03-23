@@ -124,30 +124,6 @@ struct
   let pieces_per_col() =
     String.concat "; " (Array.to_list (Array.map string_of_int number_piece))
 
-  (* (\*scan la piece et rescanne pr etre sur si piece rencontrée*\) *)
-(*   let scan_light () = *)
-(*     let rec helper count count_excep = *)
-(*       Mindstorm.Sensor.set C.conn_scan color_port `Color_full `Pct_full_scale; *)
-(*       usleep 0.25; *)
-(*       let data  = Mindstorm.Sensor.get C.conn_scan color_port in *)
-(*       let color_of_data data = *)
-(*         try match Sensor.color_of_data data with *)
-(*         | `Blue -> 2 | `Red  -> 0 | `Yellow -> 1 *)
-(*         | `Green | `Black | `White -> -1 *)
-(*         with Failure "Invalid_argument" -> *)
-(*           if count_excep = 3 then -1 *)
-(*           else helper 0 (count_excep + 1) *)
-(*             (\*Invalid_argument("Mindstorm.Sensor.color_of_scaled : *)
-(*               scaled data out of range"*\) *)
-(*       in *)
-(*       let color = color_of_data data in *)
-(*       Mindstorm.Sensor.set C.conn_scan color_port `No_sensor `Raw; *)
-(*       (\* usleep 0.25; *\) *)
-(*       if count = 0 && (color = 0 || color = 1) then helper 1 0 *)
-(*       else color *)
-(*     in helper 0 0 *)
-
-
   (*scanne la case, si c'est une piece (couleur jaune ou rouge), il rescanne
     une 2ème fois pr etre sur du résultat, si c'est bleu, il se réajuste,
     sinon il continue*)
@@ -160,7 +136,6 @@ struct
         let data  = Mindstorm.Sensor.get C.conn_scan color_port in
         let color = Sensor.color_of_data data in
         Mindstorm.Sensor.set C.conn_scan color_port `No_sensor `Raw;
-        usleep 0.25;
         try match color with
         | `Black | `Green | `White ->
             f () (*rappelle la fct scan_game qui appelera scan_case sur la
