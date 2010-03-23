@@ -363,7 +363,7 @@ let groupeval board =
 	else if !p2 = 4 then score := !score +. badmove
 	else if !p1 = 3 && !p2 = 0 then
 	  (
-	    score := !score +. 1.;
+	    score := !score +. 21.;
 	    let z = gen_odd_threat board x t1 in
 	      if z <> -1 then
 		let f = check_double board x z t1 in
@@ -375,18 +375,18 @@ let groupeval board =
 	  )
 	else if !p2 = 3 && !p1 = 0 then
 	  (
-	    score := !score -. 1.;
+	    score := !score -. 101.;
 	    let z = gen_odd_threat board x t2 in
 	      if z <> -1 then
 		let f = check_double board x z t2 in
 		  if not f then
-		    if t1 = 2 then score := !score -. 200.
-		    else score := !score -. 150.
-		  else if t1 = 2 then score := !score -. 750.
-		  else score := !score -. 500.
+		    if t1 = 2 then score := !score -. 2000.
+		    else score := !score -. 1500.
+		  else if t1 = 2 then score := !score -. 7500.
+		  else score := !score -. 5000.
 	  )
 	else if !p1 = 2 && !p2 = 0 then score := !score +. 10.
-	else if !p2 = 2 && !p1 = 0 then score := !score -. 10.;
+	else if !p2 = 2 && !p1 = 0 then score := !score -. 30.;
 	
 	if check_pentas board 1 then
 	  if t1 = 1 then score := !score +. 800.
