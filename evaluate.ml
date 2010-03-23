@@ -1,6 +1,4 @@
-
-
-*http://www.ce.unipr.it/~gbe/velsrc.html*)
+(* Inspired by http://www.ce.unipr.it/~gbe/velsrc.html *)
 
 
 

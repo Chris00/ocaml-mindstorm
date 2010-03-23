@@ -130,27 +130,17 @@ struct
         Robot.event meas_left (when_some good_angle) (fun _ -> scan_light f)
     | None -> assert false
 
-  and adj_r_r angle_r angle_l f =
-    Motor.set C.conn_scan motor_captor_l (Motor.speed (5));
-    Motor.set C.conn_scan motor_captor_r (Motor.speed (-5));
-    Robot.event meas_right (when_some (fun d -> d <= angle_r)) (adj_l angle_l f)
-
-  and adj_r_l angle_r angle_l f =
-    Motor.set C.conn_scan motor_captor_l (Motor.speed (-5));
-    Motor.set C.conn_scan motor_captor_r (Motor.speed (5));
-    Robot.event meas_right (when_some (fun d -> d >= angle_r))
-      (adj_l angle_l f)
-
   and adj_r angle_r angle_l f _ =
     Motor.set C.conn_scan Motor.all (Motor.speed 0);
-    match (Robot.read meas_right) with
-    |Some m  ->
-       (
-         if m < angle_r then
-           adj_r_l angle_r angle_l f
-         else adj_r_r angle_r angle_l f
-       )
-    |None -> assert false
+    match Robot.read meas_right with
+    | Some m  ->
+        let speed_r, good_angle =
+          if m < angle_r then 5, (fun a -> a >= angle_r)
+          else -5, (fun a -> a <= angle_r) in
+        Motor.set C.conn_scan motor_captor_r (Motor.speed speed_r);
+        Motor.set C.conn_scan motor_captor_l (Motor.speed (- speed_r));
+        Robot.event meas_right (when_some good_angle) (adj_l angle_l f)
+    | None -> assert false
 
 
   and adj_vert_down angle_v angle_r angle_l f =
