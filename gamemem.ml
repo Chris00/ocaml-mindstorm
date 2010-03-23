@@ -362,7 +362,7 @@ let groupeval board =
 	else if !p2 = 4 then score := !score +. badmove
 	else if !p1 = 3 && !p2 = 0 then
 	  (
-	    score := !score +. 21.;
+	    score := !score +. 100.;
 	    let z = gen_odd_threat board x t1 in
 	      if z <> -1 then
 		let f = check_double board x z t1 in
@@ -374,22 +374,22 @@ let groupeval board =
 	  )
 	else if !p2 = 3 && !p1 = 0 then
 	  (
-	    score := !score -. 101.;
+	    score := !score -. 100.;
 	    let z = gen_odd_threat board x t2 in
 	      if z <> -1 then
 		let f = check_double board x z t2 in
 		  if not f then
-		    if t1 = 2 then score := !score -. (2000./. (float) (ely z))
-		    else score := !score -. (1500./.(float) (ely z))
-		  else if t1 = 2 then score := !score -.(7500./.(float) (ely z))
-		  else score := !score -. (5000./.(float) (ely z))
+		    if t1 = 2 then score := !score -. (200./. (float) (ely z))
+		    else score := !score -. (150./.(float) (ely z))
+		  else if t1 = 2 then score := !score-.(750./.(float) (ely z))
+		  else score := !score -. (500./.(float) (ely z))
 	  )
 	else if !p1 = 2 && !p2 = 0 then score := !score +. 10.
-	else if !p2 = 2 && !p1 = 0 then score := !score -. 30.;
+	else if !p2 = 2 && !p1 = 0 then score := !score -. 10.;
 
 	if check_pentas board 1 then
 	  if t1 = 1 then score := !score +. 800.
-	  else score := !score -. 8000.
+	  else score := !score -. 800.
     done;
     !score
  
@@ -421,18 +421,18 @@ let connected board move =
     else connect in
   let rec diago_NE_left x y connect =
     if x>=0 && y>=0 && !(board.square.(elm x y)) = board.turn then
-      diago_NE_left (x+1) (y+1) (connect+1)
+      diago_NE_left (x-1) (y-1) (connect+1)
     else connect in
   let rec diago_NE_right x y connect =
     if x<boardX && y<boardY && !(board.square.(elm x y)) = board.turn then
-      diago_NE_right (x-1) (y-1) (connect+1)
+      diago_NE_right (x+1) (y+1) (connect+1)
     else connect in
   let h_l = hori_left (move-1) 1
   and d_nw_l = diago_NW_left (move-1) (board.stack.(move)+1) 1 
   and d_ne_l = diago_NE_left (move-1) (board.stack.(move)-1) 1 in
-  let h = hori_right (move+1) h_l
-  and d_ne = diago_NW_right (move+1) (board.stack.(move)-1) d_nw_l
-  and d_nw = diago_NE_right (move+1) (board.stack.(move)+1) d_ne_l
+  let h = hori_right (move+1) h_l 
+  and d_nw = diago_NW_right (move+1) (board.stack.(move)-1) d_nw_l
+  and d_ne = diago_NE_right (move+1) (board.stack.(move)+1) d_ne_l
   and v = verti (board.stack.(move)-1) 1 in
     max (max h v) (max d_ne d_nw)
 

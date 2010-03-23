@@ -7,8 +7,16 @@ let motor_captor_l = Motor.a
 let motor_captor_r = Motor.b
 let motor_captor_vert = Motor.c
 
-let usleep sec =
-  ignore(Unix.select [] [] [] sec)
+let usleep n =
+  let start = Unix.gettimeofday() in
+  let rec delay t =
+    try
+      ignore (Unix.select [] [] [] t)
+    with Unix.Unix_error(Unix.EINTR, _, _) ->
+      let now = Unix.gettimeofday() in
+      let remaining = start +. n -. now in
+      if remaining > 0.0 then delay remaining in
+  delay n
 
 let adjust_r = 27
 let adjust_v = 20
@@ -37,10 +45,10 @@ let when_some cond v = match v with
   | Some d -> cond d
 
 
-(*tab des vitesses des trois moteurs (vert, r, l) lors des déplacements vers la
-  gauche. pr aller à droite vitesse, le tableau nous donne (vert, l, r)*)
+(*tab des vitesses des trois moteurs (vert, r, l) lors des dÃ©placements vers la
+  gauche. pr aller Ã  droite vitesse, le tableau nous donne (vert, l, r)*)
 (*speed_up.(i).(j) nous donne les vitesses des moteurs (vert, r, l) lorsqu'on
-  doit se déplacer de i lignes vers le haut et de j col vers la gauche*)
+  doit se dÃ©placer de i lignes vers le haut et de j col vers la gauche*)
 let speed_up =
   [|
     [|(0, 0, 0); (0, 15, -14); (0, 15, -14); (0, 15, -14);
@@ -79,18 +87,18 @@ module Run(C: sig val conn_scan : Mindstorm.bluetooth Mindstorm.conn
                   val r : Robot.t end) =
 struct
 
-  (* État du jeu *)
+  (* Ã‰tat du jeu *)
   let current_line = ref 0
   let current_col = ref 0
   let next_line = ref 0
   let next_col = ref (-1)
-  let col_had_play = ref 0
-  let light = ref true (*mettre à faux lorsqu'on veut juste remettre le capteur
-                         à droite*)
-  let scan_right = ref true (*on commence par le scannage de droite à gauche*)
+  let col_had_play = ref 0 (*permet Ã  la fct next de savoir oÃ¹ l'humain a jouÃ©*)
+  let light = ref true (*mettre Ã  faux lorsqu'on veut juste remettre le capteur
+                         Ã  droite*)
+  let scan_right = ref true (*on commence par le scannage de droite Ã  gauche*)
   let go_to_next = ref false
   let number_piece = Array.make 7 0
-    (* Nombre de pièces par colonne.  Utile pour savoir où scanner. *)
+    (* Nombre de piÃ¨ces par colonne.  Utile pour savoir oÃ¹ scanner. *)
   let get_angle motor = let _,_,_,a = Motor.get C.conn_scan motor in a
 
  (*nous retourne l'angle courant du moteur droit*)
@@ -107,15 +115,6 @@ struct
     Motor.set C.conn_scan Motor.all (Motor.speed 0)
 
 
-(*   (\*methode retournant le nbre de pions ds la col [col] du jeu [game]*\) *)
-(*   let piece_in_col col game = *)
-(*     (game/expo_10.(col)) mod 10 *)
-
-
-(*   (\*methode ajoutant une piece au jeu [game] en colonne [col]*\) *)
-(*   let add_piece col game = *)
-(*     current_game := game + expo_10.(col) *)
-
  (*methode retournant le nbre de pions ds la col [col] du jeu [game]*)
   let piece_in_col col = number_piece.(col)
 
@@ -125,7 +124,7 @@ struct
   let pieces_per_col() =
     String.concat "; " (Array.to_list (Array.map string_of_int number_piece))
 
-  (* (\*scan la piece et rescanne pr etre sur si piece rencontrée*\) *)
+  (* (\*scan la piece et rescanne pr etre sur si piece rencontrÃ©e*\) *)
 (*   let scan_light () = *)
 (*     let rec helper count count_excep = *)
 (*       Mindstorm.Sensor.set C.conn_scan color_port `Color_full `Pct_full_scale; *)
@@ -149,8 +148,8 @@ struct
 (*     in helper 0 0 *)
 
 
-  (*scan la piece, si c'est une piece (couleur jaune ou rouge), il rescanne
-    une 2ème fois pr etre sur du résultat, si c'est bleu, il se réajuste,
+  (*scanne la case, si c'est une piece (couleur jaune ou rouge), il rescanne
+    une 2Ã¨me fois pr etre sur du rÃ©sultat, si c'est bleu, il se rÃ©ajuste,
     sinon il continue*)
   let rec scan_light ?(count = 0) f =
     Motor.set C.conn_scan Motor.all (Motor.speed 0);
@@ -162,38 +161,39 @@ struct
         let color = Sensor.color_of_data data in
         Mindstorm.Sensor.set C.conn_scan color_port `No_sensor `Raw;
         usleep 0.25;
-        match color with
+        try match color with
         | `Black | `Green | `White ->
-            printf "Continuer\n%!";
             f () (*rappelle la fct scan_game qui appelera scan_case sur la
                    prochaine case*)
         | `Blue ->
             printf "Ajustement\n%!";
             adjustment !current_line !current_col f
         | `Yellow | `Red ->
-            (*il a trouvé une piece*)
+            (*il a trouvÃ© une piece*)
             if count = 0 then scan_light ~count:1 f
             else
               (
                 add_piece !current_col;
                 col_had_play := !current_col;
-                (*retourner la colonne au prog de jésus et sab*)
                 printf "%i\n%s\n%!" !col_had_play (pieces_per_col());
                 light := false; (*pr ne pas rescanner*)
                 if !current_col > 3 then
                   (
                     next_col := 7;
                     scan_right := false
-                      (*pr que scan_game renvoie le capteur à gauche du jeu*)
+                      (*pr que scan_game renvoie le capteur Ã  gauche du jeu*)
                   )
                 else
                   (
                     next_col := -1;
                     scan_right := true
-                      (*pr que scan_game renvoie le capteur à droite du jeu*)
+                      (*pr que scan_game renvoie le capteur Ã  droite du jeu*)
                   );
                 f ()
               )
+        with Failure "Invalid_argument" ->
+          if count = 3 then  f ()
+          else scan_light ~count:(count + 1) f
       )
     else
       (
@@ -230,7 +230,7 @@ struct
 
  
   (*ajustement de la position du capteur*)
-  (*on ajuste d'abord le moteur vert à petite vitesse puis le r puis le l*)
+  (*on ajuste d'abord le moteur vert Ã  petite vitesse puis le r puis le l*)
   and adjustment line col f =
     let angle_v = rot_v line and
         angle_r = rot_r line col and
@@ -429,7 +429,7 @@ struct
         light := true;
         if !scan_right then next_col := -1
         else next_col := 7;
-        printf"passe à next\n%!";
+        printf"passe Ã  next\n%!";
         next !col_had_play
       )
     else
@@ -450,9 +450,9 @@ struct
           )
       )
 
-  let return_init_pos i =
+  let return_init_pos f =
     light := false;
-    scan_case 0 0 stop
+    scan_case 0 0 f
 
 
   let scan col_new_piece next =
