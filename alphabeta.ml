@@ -79,7 +79,6 @@ let fst_moves game nbr_moves =
   |_ -> raise (Failure "methode can be used only if the number of moves is
                          minder than 2")
 
-
 let heuristic game color mode =
   let col_win_max = Game.next_win game color
   and col_win_min = Game.next_win game (Game.color_invers color) in
@@ -98,25 +97,24 @@ let heuristic game color mode =
             and aline_vert_max = Game.vertical game color j
             and aline_diag_left_max = Game.left_diagonal game color j
             and aline_diag_right_max = Game.right_diagonal game color j in
-
             if fst aline_horiz_max >= 4 && snd aline_horiz_max >= 2 then
               tab_value.(j) <- tab_value.(j) +. 4.;
             if fst aline_vert_max >= 4 && snd aline_vert_max >= 2 then
               tab_value.(j) <- tab_value.(j) +. 4.;
             if fst aline_diag_left_max >= 4 && snd aline_diag_left_max >= 2
-              then
-                tab_value.(j) <- tab_value.(j) +. 5.;
+            then
+              tab_value.(j) <- tab_value.(j) +. 6.;
             if fst aline_diag_left_max >= 4 && snd aline_diag_left_max >= 2
             then
-              tab_value.(j) <- tab_value.(j) +. 5.;
+              tab_value.(j) <- tab_value.(j) +. 6.;
 
             if fst aline_horiz_max >= 4 && snd aline_horiz_max >= 1 then
               tab_value.(j) <- tab_value.(j) +. 2.;
             if fst aline_vert_max >= 4 && snd aline_vert_max >= 1 then
               tab_value.(j) <- tab_value.(j) +. 2.;
             if fst aline_diag_left_max >= 4 && snd aline_diag_left_max >= 1
-              then
-                tab_value.(j) <- tab_value.(j) +. 3.;
+            then
+              tab_value.(j) <- tab_value.(j) +. 3.;
             if fst aline_diag_right_max >= 4 && snd aline_diag_right_max >= 1
             then
               tab_value.(j) <- tab_value.(j) +. 3.;
@@ -133,24 +131,25 @@ let heuristic game color mode =
             if fst aline_horiz_min >= 4 && snd aline_horiz_min >= 2 then
               tab_value.(j) <- tab_value.(j) +. 4.;
             if fst aline_vert_min >= 4 && snd aline_vert_min >= 2 then
-                tab_value.(j) <- tab_value.(j) +. 4.;
+              tab_value.(j) <- tab_value.(j) +. 4.;
             if fst aline_diag_left_min >= 4 && snd aline_diag_left_min >= 2
             then
-              tab_value.(j) <- tab_value.(j) +. 5.;
+              tab_value.(j) <- tab_value.(j) +. 6.;
             if fst aline_diag_right_min >= 4 && snd aline_diag_left_min >= 2
             then
-              tab_value.(j) <- tab_value.(j) +. 5.;
+              tab_value.(j) <- tab_value.(j) +. 6.;
 
             if fst aline_horiz_min >= 4 && snd aline_horiz_min >= 1 then
               tab_value.(j) <- tab_value.(j) +. 2.;
             if fst aline_vert_min >= 4 && snd aline_vert_min >= 1 then
-                tab_value.(j) <- tab_value.(j) +. 2.;
+              tab_value.(j) <- tab_value.(j) +. 2.;
             if fst aline_diag_left_min >= 4 && snd aline_diag_left_min >= 1
             then
               tab_value.(j) <- tab_value.(j) +. 3.;
             if fst aline_diag_right_min >= 4 && snd aline_diag_right_min >= 1
             then
               tab_value.(j) <- tab_value.(j) +. 3.;
+
           )
       done;
       if mode = Max then Useful.max_tab tab_value
@@ -223,8 +222,7 @@ let rec ab nbr_token col game alpha beta mode depth color heuristic =
 
 let alphabeta game color level heuristic=
   let n = Game.nbr_token game in
-  let value, col = ab n 0 game neg_infinity infinity Max level color heuristic
-  in
+  let value, col = ab n 0 game neg_infinity infinity Max level color heuristic in
   let rec what_col_to_play g cost column =
     let n_in_col = Game.nbr_token_in_col g column in
     if n_in_col <> 6 then (cost, column)
