@@ -19,9 +19,9 @@ let () =
 module Conn =
 struct
   let r = Robot.make()
-  let conn_pincer = Mindstorm.connect_bluetooth !bt_pincer,
-  and conn_scan = Mindstorm.connect_bluetooth !bt_scan,
-  and fst_computer =!if_computer
+  let conn_pincer = Mindstorm.connect_bluetooth !bt_pincer
+  and conn_scan = Mindstorm.connect_bluetooth !bt_scan
+  and fst_computer = !if_computer
 end
 
 module P = Pincer.Run(Conn)

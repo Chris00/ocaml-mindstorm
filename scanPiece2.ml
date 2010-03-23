@@ -320,100 +320,67 @@ struct
     current_line := new_pos_line;
     current_col := new_pos_col;
 
-    if(diff_line = 0 && diff_col = 0) then
+    if diff_line = 0 && diff_col = 0 then
       scan_light f
     else (
       (*on fait les deux mouvements en meme temps*)
-      if (diff_line > 0) then ( (*on va vers le haut*)
+      if diff_line > 0 then ( (*on va vers le haut*)
         let speed_vert, speed_m1, speed_m2 =
           speed_up.(diff_line).(abs(diff_col)) in
-        (match (Robot.read meas_vert) with
+        (match Robot.read meas_vert with
          | Some m_v  ->
              Motor.set C.conn_scan motor_captor_vert (Motor.speed speed_vert);
              wait_up angle_v f
          | None -> assert false);
-
-            if (diff_col >= 0) then (*on va vers la gauche*)
-              (
-                (match (Robot.read meas_right) with
-                 |Some m_r  ->
-                    Motor.set C.conn_scan motor_captor_r (Motor.speed
-                          ~tach_limit: (abs(angle_r - m_r)) speed_m1)
-                 |None -> assert false);
-
-                (match (Robot.read meas_left) with
-                 |Some m_l  ->
-                    Motor.set C.conn_scan motor_captor_l (Motor.speed
-                        ~tach_limit: (abs(angle_l - m_l)) speed_m2)
-                 |None -> assert false)
-              )
-            else (*on va vers la droite*)
-              (
-
-                (match (Robot.read meas_right) with
-                 |Some m_r  ->
-                    Motor.set C.conn_scan motor_captor_r (Motor.speed
-                         ~tach_limit: (abs(angle_r - m_r)) speed_m2)
-                 |None -> assert false);
-
-
-                (match (Robot.read meas_left) with
-                 |Some m_l  ->
-                    Motor.set C.conn_scan motor_captor_l (Motor.speed
-                           ~tach_limit: (abs(angle_l - m_l)) speed_m1)
-                 |None -> assert false)
-              )
-          )
-
-        else (*on descend*)
-          (
-            let speed_vert, speed_m1, speed_m2 = speed_down.(-diff_line).
-              (abs(diff_col)) in
-            (match (Robot.read meas_vert) with
-             |Some m_v  ->
-                Motor.set C.conn_scan motor_captor_vert (Motor.speed
-                    ~tach_limit: (abs(m_v -angle_v)) speed_vert)
-             |None -> assert false);
-
-
-            if (diff_col >= 0) then (*on va vers la gauche*)
-              (
-                (match (Robot.read meas_right) with
-                 |Some m_r  ->
-                    Motor.set C.conn_scan motor_captor_r (Motor.speed
-                          ~tach_limit: (abs(angle_r - m_r)) speed_m1)
-                 |None -> assert false);
-
-                (match (Robot.read meas_left) with
-                 |Some m_l  ->
-                    (
-                      Motor.set C.conn_scan motor_captor_l (Motor.speed
-                         speed_m2);
-                      wait_down_left angle_l f
-                    )
-                 |None -> assert false);
-
-              )
-            else (*on va vers la droite*)
-              (
-                (match (Robot.read meas_right) with
-                 |Some m_r  ->
-                    (
-                      Motor.set C.conn_scan motor_captor_r (Motor.speed
-                             speed_m2);
-                      wait_down_right angle_r f
-                    )
-                 |None -> assert false);
-
-                (match (Robot.read meas_left) with
-                 |Some m_l  ->
-                    Motor.set C.conn_scan motor_captor_l (Motor.speed
-                      ~tach_limit: (abs(angle_l - m_l)) speed_m1)
-                 |None -> assert false);
-              )
-          )
+        let speed_r, speed_l =
+          if diff_col >= 0 then speed_m1, speed_m2 (*on va vers la gauche*)
+          else speed_m2, speed_m1  (*on va vers la droite*) in
+        (match Robot.read meas_right with
+         | Some m_r  ->
+             Motor.set C.conn_scan motor_captor_r
+               (Motor.speed ~tach_limit:(abs(angle_r - m_r)) speed_r)
+         | None -> assert false);
+        (match Robot.read meas_left with
+         | Some m_l  ->
+             Motor.set C.conn_scan motor_captor_l
+               (Motor.speed ~tach_limit:(abs(angle_l - m_l)) speed_l)
+         | None -> assert false)
       )
+      else ( (*on descend*)
+        let speed_vert, speed_m1, speed_m2 =
+          speed_down.(-diff_line).(abs(diff_col)) in
+        (match Robot.read meas_vert with
+         | Some m_v  ->
+             Motor.set C.conn_scan motor_captor_vert
+               (Motor.speed ~tach_limit:(abs(m_v -angle_v)) speed_vert)
+         | None -> assert false);
 
+        if diff_col >= 0 then ( (*on va vers la gauche*)
+          (match Robot.read meas_right with
+           | Some m_r  ->
+               Motor.set C.conn_scan motor_captor_r
+                 (Motor.speed ~tach_limit:(abs(angle_r - m_r)) speed_m1)
+           | None -> assert false);
+          (match Robot.read meas_left with
+           | Some m_l  ->
+               Motor.set C.conn_scan motor_captor_l (Motor.speed speed_m2);
+               wait_down_left angle_l f
+           | None -> assert false);
+        )
+        else ( (*on va vers la droite*)
+          (match Robot.read meas_right with
+           | Some m_r  ->
+               Motor.set C.conn_scan motor_captor_r (Motor.speed speed_m2);
+               wait_down_right angle_r f
+           | None -> assert false);
+          (match Robot.read meas_left with
+           | Some m_l  ->
+               Motor.set C.conn_scan motor_captor_l
+                 (Motor.speed ~tach_limit: (abs(angle_l - m_l)) speed_m1)
+           | None -> assert false);
+        )
+      )
+    )
 
 
   let rec scan_game next =
