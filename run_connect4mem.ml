@@ -62,6 +62,7 @@ let rec step game col =
           else Board.yellow_success();
           P.put_piece col_to_play S.return_init_pos;
           Printf.printf"LE ROBOT GAGNE\n%!";
+          Board.close_when_cliked()
         )
     )
   else
