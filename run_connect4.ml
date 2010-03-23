@@ -35,24 +35,23 @@ let bt_pincer = ref "00:16:53:0C:84:49"
 and bt_scan = ref "00:16:53:0A:F3:3C"
 and if_computer = ref true
 
-let spec = Arg.align ["--pince", Arg.Set_string bt_pincer,
-                      "<bt_address>set the bluetooth address of the brick
-which uses the pincer";
-                      "--scan", Arg.Set_string bt_scan,
-                      "<bt_address>set the bluetooth address of the brick
-which uses the scan";
-                      "--computer_first", Arg.Set if_computer,
-                      " set first player"]
-let () = Arg.parse spec (fun _ -> raise (Arg.Bad "no anonymous arg"))
-  "run_connect4 <option>"
+let spec = Arg.align [
+  "--pince", Arg.Set_string bt_pincer,
+  "<bt_address>set the bluetooth address of the brick which uses the pincer";
+  "--scan", Arg.Set_string bt_scan,
+  "<bt_address>set the bluetooth address of the brick which uses the scan";
+  "--human_first", Arg.Clear if_computer,
+  " set the humas as first player"]
+let () =
+  Arg.parse spec (fun _ -> raise (Arg.Bad "no anonymous arg"))
+    "run_connect4 <option>"
 
 module Conn =
 struct
   let r = Robot.make()
-  let conn_pincer, conn_scan, fst_computer =
-    Mindstorm.connect_bluetooth !bt_pincer,
-    Mindstorm.connect_bluetooth !bt_scan,
-    !if_computer
+  let conn_pincer = Mindstorm.connect_bluetooth !bt_pincer
+  and conn_scan = Mindstorm.connect_bluetooth !bt_scan
+  and fst_computer = !if_computer
 end
 
 module P = Pincer.Run(Conn)
