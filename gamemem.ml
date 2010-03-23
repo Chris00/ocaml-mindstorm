@@ -26,7 +26,6 @@ and ely z = z lsr 3
 and int_to_tab z =
    [|(z lsr 8) land 0xFF;z land 0xFF|]
 and memset tab a n =
-
   for i=0 to n - 1 do
     tab.(i) <- a
   done
@@ -368,10 +367,10 @@ let groupeval board =
 	      if z <> -1 then
 		let f = check_double board x z t1 in
 		  if not f then
-		    if t1 = 1 then score := !score +. (200.*.(float) (elx z))
-		    else score := !score +. (150.*.(float) (elx z))
-		  else if t1 = 1 then score := !score +.(750.*.(float) (elx z))
-		  else score := !score +.(500.*.(float) (elx z))
+		    if t1 = 1 then score := !score +. (200./.(float) (ely z))
+		    else score := !score +. (150./.(float) (ely z))
+		  else if t1 = 1 then score := !score +.(750./.(float) (ely z))
+		  else score := !score +.(500./.(float) (ely z))
 	  )
 	else if !p2 = 3 && !p1 = 0 then
 	  (
@@ -380,10 +379,10 @@ let groupeval board =
 	      if z <> -1 then
 		let f = check_double board x z t2 in
 		  if not f then
-		    if t1 = 2 then score := !score -. (2000.*. (float) (elx z))
-		    else score := !score -. (1500.*.(float) (elx z))
-		  else if t1 = 2 then score := !score -.(7500.*.(float) (elx z))
-		  else score := !score -. (5000.*.(float) (elx z))
+		    if t1 = 2 then score := !score -. (2000./. (float) (ely z))
+		    else score := !score -. (1500./.(float) (ely z))
+		  else if t1 = 2 then score := !score -.(7500./.(float) (ely z))
+		  else score := !score -. (5000./.(float) (ely z))
 	  )
 	else if !p1 = 2 && !p2 = 0 then score := !score +. 10.
 	else if !p2 = 2 && !p1 = 0 then score := !score -. 30.;
