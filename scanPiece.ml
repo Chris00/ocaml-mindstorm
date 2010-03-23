@@ -8,15 +8,11 @@ let motor_captor_l = Motor.a
 let motor_captor_r = Motor.b
 let motor_captor_vert = Motor.c
 
-(*num du jeu: de 0 a 6 de gauche à droit du cote du joueur*)
-let expo_10 = [| 1; 10; 100; 1000; 10000; 100000; 1000000|]
-
 let usleep sec =
   ignore(Unix.select [] [] [] sec)
 
 let adjust_r = 27
 let adjust_v = 20
-
 
 let shift_h = 198
 let shift_up_v = 132
@@ -52,7 +48,8 @@ struct
   let light = ref true (*mettre à faux lorsqu'on veut juste remettre le capteur
                          à droite*)
   let go_to_next = ref false
-  let current_game = ref 0 (*representation du jeu par un entier*)
+  let number_piece = Array.make 7 0
+    (* Nombre de pièces par colonne.  Utile pour savoir où scanner. *)
 
   let get_angle motor = let _,_,_,a = Motor.get C.conn_scan motor in a
 
@@ -65,23 +62,17 @@ struct
  (*nous retourne l'angle courant du moteur vertical*)
   let meas_vert = Robot.meas C.r (fun () -> get_angle motor_captor_vert)
 
-
   let stop _ =
     Motor.set C.conn_scan Motor.all (Motor.speed 0)
 
-  let stop_motor_l () =
-    Motor.set C.conn_scan motor_captor_l (Motor.speed 0)
-
-
   (*methode retournant le nbre de pions ds la col [col] du jeu [game]*)
-  let piece_in_col col game =
-    (game/expo_10.(col)) mod 10
-
+  let piece_in_col col = number_piece.(col)
 
   (*methode ajoutant une piece au jeu [game] en colonne [col]*)
-  let add_piece col game =
-    current_game := game + expo_10.(col)
+  let add_piece col = number_piece.(col) <- number_piece.(col) + 1
 
+  let pieces_per_col() =
+    String.concat "; " (Array.to_list (Array.map string_of_int number_piece))
 
   (* retourne la couleur devant le capteur*)
   let rec scan_light f =
@@ -103,10 +94,10 @@ struct
           adjustment !current_line !current_col f
       | `Yellow | `Red ->
           (*il a trouvé une piece*)
-          add_piece !current_col !current_game;
+          add_piece !current_col;
           col_had_play := !current_col;
           (*retourner la colonne au prog de jésus et sab*)
-          printf "%i\n%i\n%!" !col_had_play !current_game;
+          printf "%i\n%s\n%!" !col_had_play (pieces_per_col());
           light := false; (*pr ne pas rescanner*)
           next_col := -1; (*pr que scan_game renvoie le capteur à droite du
                             jeu*)
@@ -324,7 +315,7 @@ struct
         if !next_col < 6 then
           (
             next_col := !next_col + 1;
-            next_line := piece_in_col !next_col !current_game;
+            next_line := piece_in_col !next_col;
             if !next_line = 6 then
                 scan_game next
             else
@@ -336,7 +327,7 @@ struct
         else
           (
             next_col := 0;
-            next_line := piece_in_col !next_col !current_game;
+            next_line := piece_in_col !next_col;
             scan_case !next_line !next_col (fun () -> scan_game next)
           )
       )
@@ -344,8 +335,8 @@ struct
   let scan col_new_piece next =
     if col_new_piece <> -1 then
       (
-        add_piece col_new_piece !current_game;
-        printf "%i\n%!" !current_game;
+        add_piece col_new_piece;
+        printf "%s\n%!" (pieces_per_col());
       );
     scan_game next
 
