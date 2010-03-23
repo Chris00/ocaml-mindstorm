@@ -13,6 +13,7 @@ which uses the pincer";
 which uses the scan";
                       "--human_first", Arg.Clear if_computer,
                       " set first player"]
+
 let () = Arg.parse spec (fun _ -> raise (Arg.Bad "no anonymous arg"))
   "run_connect4 <option>"
 
