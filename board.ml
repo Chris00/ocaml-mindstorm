@@ -7,8 +7,8 @@ let game_cur = ref 0
   (*nombre représentant le nombre de pion dans chaque colonne*)
 let get_line game col =
   (game/expo_10.(6-col)) mod 10
-let add_piece col game =
-  game_cur := game + expo_10.(6-col)
+let add_piece col =
+  game_cur := !game_cur + expo_10.(6-col)
 
 let w = 1000 and h = 720
 
@@ -25,7 +25,7 @@ let color_circle color x_center y_center =
 let add_piece_to_board color col =
   let line = get_line !game_cur col in
   color_circle color (w/6 + col*w/9) (2*h/9 + h/18 + line*h/9);
-  add_piece col !game_cur
+  add_piece col
 
 let gameboard () =
   open_graph(sprintf " %ix%i" w h);
