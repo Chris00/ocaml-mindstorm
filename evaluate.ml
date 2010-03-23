@@ -410,8 +410,8 @@ let generate_all_other_before_instances board cols cl j =
   let rec helper cnt =
       if cnt < 128 then
 	(
-	  let pn = Array.init 4 (fun i -> (cnt lsr 6) land 1)
-	  and sl = Array.init 4 (fun l -> (Array.init 2 (fun l -> 0)))
+	  let pn = Array.make 4 ((cnt lsr 6) land 1)
+	  and sl = Array.matrix 4 2  0
 	  and flag = ref true and j = ref 0 and k = ref 0 in
 	    for x=0 to cols-1 do
 	      sl.(x).(1) <- gc.(x).(1+pn.(x));
@@ -1575,7 +1575,7 @@ let make_board() =
       filled = 0;
       cpu = 1;
       bbposit =0;
-      groups = Array.init 69 (fun i -> (Array.init 4 (fun j -> ref 0)));
+      groups = Array.make_matrix 69 4 0;
       xplace = Array.make_matrix 69 4 0;
       yplace = Array.make_matrix 69 4 0;
       square = Array.init ((boardX+1)*(boardY+2)) (fun i -> ref 0);
@@ -1588,15 +1588,16 @@ let make_board() =
       choices = Array.make maxmen 0;
       mlist = Array.make maxmen 0;
       intgp = intg;
-      solution = Array.init alloc_solutions (fun i -> {
-      valid = true;
-      solname = CLAIMEVEN;  (* any will do *)
-      solpoint = Array.make 2 0;
-      sqinv = Array.make (2*tiles) 0;
-      sqinvnumb = 0;
-      solgroups = Array.make groups 0;
-      solgroupsnumb = 0
-    });
+      solution = Array.init alloc_solutions
+      (fun i -> {
+         valid = true;
+         solname = CLAIMEVEN;  (* any will do *)
+         solpoint = Array.make 2 0;
+         sqinv = Array.make (2*tiles) 0;
+         sqinvnumb = 0;
+         solgroups = Array.make groups 0;
+         solgroupsnumb = 0
+       });
       sp = -1;
       problem_solved = 0;
       solused = -1;
@@ -1906,15 +1907,15 @@ let make_node() =
   {
       squaree = Array.make ((boardX+1)*(boardY+2)) 0;
       tur = 0;
-      stac = Array.init (boardX+1) (fun i -> 0);
+      stac = Array.make (boardX+1) 0;
       evaluated = false;
       expanded = false;
       value = 0;
       typed = or_type;
       proof = 0;
       disproof = 0;
-      child = Array.init boardX (fun i -> None);
-      parents = Array.init boardX (fun i -> None);
+      child = Array.make boardX None;
+      parents = Array.make boardX None;
       direct = 0;
       symmetric = Array.make boardX 0
   }
@@ -2009,8 +2010,8 @@ let her_generate_all_children node =
 	    squaree = Array.copy node.squaree;
 	    stac = Array.copy node.stac;
 	    tur = switch node.tur;
-	    child = Array.init boardX (fun i -> None);
-	    parents = Array.init boardX (fun i -> None);
+	    child = Array.make boardX None;
+	    parents = Array.make boardX None;
 	    evaluated = false;
 	    expanded = false;
 	    value = 0;
@@ -2032,8 +2033,8 @@ let her_generate_all_children node =
 		   squaree = Array.copy no.squaree;
 		   stac = Array.copy no.stac;
 		   tur = switch node.tur;
-		   child = Array.init boardX (fun i -> None);
-		   parents = Array.init boardX (fun i -> None);
+		   child = Array.make boardX None;
+		   parents = Array.make boardX None;
 		   evaluated = false;
 		   expanded = false;
 		   value = 0;
@@ -2308,15 +2309,15 @@ let heuristic_play_best board maxnodenum =
     {
       squaree = Array.make ((boardX+1)*(boardY+2)) 0;
       tur = 0;
-      stac = Array.init (boardX+1) (fun i -> 0);
+      stac = Array.make (boardX+1) 0;
       evaluated = false;
       expanded = false;
       value = unknown;
       typed = or_type;
       proof = 0;
       disproof = 0;
-      child = Array.init boardX (fun i -> None);
-      parents = Array.init boardX (fun i -> None);
+      child = Array.make boardX None;
+      parents = Array.make boardX None
       symmetric = Array.make boardX 0 ;
       direct = 0
     }
@@ -2332,8 +2333,8 @@ let heuristic_play_best board maxnodenum =
       typed = or_type;
       proof = 0;
       disproof = 0;
-      child = Array.init boardX (fun i -> None);
-      parents = Array.init boardX (fun i -> None);
+      child = Array.make boardX None;
+      parents = Array.make boardX None;
       symmetric = Array.make boardX 0;
       direct = 0
     } in
