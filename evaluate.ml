@@ -1,6 +1,6 @@
 
 
-*http://www.ce.unipr.it/~gbe/velsrc.html*)
+(*http://www.ce.unipr.it/~gbe/velsrc.html*)
 
 
 
@@ -306,7 +306,7 @@ let rec recurse_groups board cols cl gp =
       let g1 = q.(i) in
 	if g1 <> gp then helper (i+1)
 	else if cols=1
-	  || recurse_groups board (cols-1) (int_to_tab cl.(1)) g1 then
+	  || recurse_groups board (cols-1) (Array.sub cl 1 ((Array.length cl)-1)) g1 then
 	    true
 	else helper (i+1)
     else false
@@ -321,7 +321,8 @@ let both_many_groups board cols cl =
       if i < len_q then
         let g1 = q.(i) in
         if not board.intgp.tgroups.(g1) then helper (i+1)
-        else if cols=1 || recurse_groups board (cols-1) (int_to_tab cl.(1)) g1
+        else if cols=1 || recurse_groups board (cols-1)
+	(Array.sub cl 1 ((Array.length cl)-1)) g1
         then (
           sol.solgroups.(sol.solgroupsnumb) <- g1;
           sol.solgroupsnumb <- sol.solgroupsnumb + 1
@@ -446,7 +447,8 @@ let generate_all_other_before_instances board cols cl j =
 		for x = 0 to cols-1 do
 		  let py2 = ely sl.(x).(1) in
 		    if py2 land 1 = 1 then
-		      both_many_groups board 1 (int_to_tab sl.(x).(1))
+                        both_many_groups board 1
+			(Array.sub sl.(x) 1 ((Array.length sl.(x))-1))
 		    else both_groups board sl.(x).(0) sl.(x).(1)
 		done;
 		both_many_groups board cols cl;
@@ -523,7 +525,8 @@ let wipe_many_groups board cols cl =
     for i = 0 to Array.length g - 1 do
       let gi = g.(i) in
       if board.usablegroup.(gi) then
-        if cols = 1 || recurse_groups board (cols-1) (int_to_tab cl.(1)) gi
+        if cols = 1 || recurse_groups board (cols-1)
+	(Array.sub cl 1 ((Array.length cl)-1)) gi
         then board.usablegroup.(gi) <- false
     done
 
@@ -807,7 +810,7 @@ let lowinverse board =
 		      if board.intgp.tgroups.(grp.(j)) &&
 			board.xplace.(grp.(j)).(0) <>
 			board.xplace.(grp.(j)).(3) then
-			  for x=0 to tiles do
+			  for x=0 to tiles-1 do
 			    let wx = board.xplace.(grp.(j)).(x)
 			    and wy = board.yplace.(grp.(j)).(x) in
 			      if x1<wx && board.stack.(wx)<wy && wy>0 &&
@@ -847,7 +850,7 @@ let highinverse board =
   let rec helper y1 =
     if y1<boardY then
       (
-	for x1=0 to boardX do
+	for x1=0 to boardX-1 do
 	  let q1 = elm x1 y1 in
 	    if board.sqused.(q1) then
 	      (
@@ -944,7 +947,7 @@ let baseclaim board =
 				cl.(3) <- cl.(1);
 				cl.(4) <- cl.(0);
 				if set.(cl.(0)) then
-				  check_claim board (int_to_tab cl.(0));
+				  check_claim board cl;
 				set.(cl.(0)) <- false
 			      )
 			  )
@@ -1346,7 +1349,7 @@ let evaluate_black board =
   board.intgp.j <- 0;
   board.intgp.k <- 0;
   board.sqused <- Array.make ((boardX+1) * (boardY+2)) true;
-  for i = 0 to groups do
+  for i = 0 to groups-1 do
     if threat_group board i 2 then
       (
 	board.intgp.tgroups.(i)<-true;
@@ -1361,6 +1364,7 @@ let evaluate_black board =
     else board.intgp.mygroups.(i) <- false
   done;
 
+  
   claimeven board;
   baseinverse board;
   vertical board;
@@ -1378,7 +1382,6 @@ let evaluate_black board =
       let oracle = problem_solver board matrix in
       oracle
     )
-
 
 let evaluate_white board =
   let threats = Array.make maxgroups 0
@@ -1531,13 +1534,14 @@ let init_board board =
       sqpnt.(p) <- sqpnt.(p) + 1
     done
   done;
+
   (* Resize the solvable groups to their max number of elements: *)
-  for p = 0 to 64 do solv.(p) <- Array.sub solv.(p) 0 sqpnt.(p) done;
+  for p = 0 to 63 do solv.(p) <- Array.sub solv.(p) 0 sqpnt.(p) done; 
 
   (* Here we set all out squares to a default value to detect problems *)
   for i=0 to 7 do
     board.square.(elm 7 i) := -1;
-    board.square.(elm i 6) := -1
+    board.square.(elm i 6) := -1;
   done;
   board.stack.(7) <- -1;
   for y=0 to boardY - 1 do
@@ -1555,16 +1559,6 @@ let make_board() =
       j = 0;
       k = 0;
       mygroups = Array.make groups true
-    }
-  and sol =
-    {
-      valid = true;
-      solname = CLAIMEVEN;  (* any will do *)
-      solpoint = Array.make 2 0;
-      sqinv = Array.make (2*tiles) 0;
-      sqinvnumb = 0;
-      solgroups = Array.make groups 0;
-      solgroupsnumb = 0
     } in
   let board = {
       wins = Array.make 2 0;
@@ -1595,7 +1589,15 @@ let make_board() =
       choices = Array.make maxmen 0;
       mlist = Array.make maxmen 0;
       intgp = intg;
-      solution = Array.init alloc_solutions (fun i -> sol);
+      solution = Array.init alloc_solutions (fun i -> {
+      valid = true;
+      solname = CLAIMEVEN;  (* any will do *)
+      solpoint = Array.make 2 0;
+      sqinv = Array.make (2*tiles) 0;
+      sqinvnumb = 0;
+      solgroups = Array.make groups 0;
+      solgroupsnumb = 0
+    });
       sp = -1;
       problem_solved = 0;
       solused = -1;
@@ -1609,7 +1611,6 @@ let make_board() =
   } in
   init_board board;
   board
-
 
 (*IA*)
 
@@ -1775,18 +1776,18 @@ let connected board move =
     else connect in
   let rec diago_NE_left x y connect =
     if x>=0 && y>=0 && !(board.square.(elm x y)) = board.turn then
-      diago_NE_left (x+1) (y+1) (connect+1)
+      diago_NE_left (x-1) (y-1) (connect+1)
     else connect in
   let rec diago_NE_right x y connect =
     if x<boardX && y<boardY && !(board.square.(elm x y)) = board.turn then
-      diago_NE_right (x-1) (y-1) (connect+1)
+      diago_NE_right (x+1) (y+1) (connect+1)
     else connect in
   let h_l = hori_left (move-1) 1
   and d_nw_l = diago_NW_left (move-1) (board.stack.(move)+1) 1 
   and d_ne_l = diago_NE_left (move-1) (board.stack.(move)-1) 1 in
-  let h = hori_right (move+1) h_l
-  and d_ne = diago_NW_right (move+1) (board.stack.(move)-1) d_nw_l
-  and d_nw = diago_NE_right (move+1) (board.stack.(move)+1) d_ne_l
+  let h = hori_right (move+1) h_l 
+  and d_nw = diago_NW_right (move+1) (board.stack.(move)-1) d_nw_l
+  and d_ne = diago_NE_right (move+1) (board.stack.(move)+1) d_ne_l
   and v = verti (board.stack.(move)-1) 1 in
     max (max h v) (max d_ne d_nw)
 
@@ -1816,25 +1817,115 @@ let undomove board move =
       board.filled <- board.filled - 1;
       true
     )
-     
-let a =
-  let bb = make_board() in
-    makemove bb 0;
-    makemove bb 0;
-    makemove bb 0;
-    connected bb 0
 
 
+let fast_try_to_win board =
+  let rec win x =
+    if x<boardX then
+      if board.stack.(x)<boardY && connected board x >= 4 then x
+      else win (x+1)
+    else -1 in
+    win 0
 
 
+(*Binary Tree*)
+let proved = 1
+and disproved = -1
+and unknown = 0
+and and_type = 1
+and or_type = 2
+exception Error
 
+type info =
+    {
+      mutable max_tree_depth : int;
+      mutable bestmove : int
+    }
+      
+type node =
+    {
+      squaree : int array;
+      stac : int array;
+      mutable tur : int;
+      mutable evaluated : bool;
+      mutable expanded : bool;
+      mutable value : int;
+      mutable typed : int;
+      mutable proof : int;
+      mutable disproof : int;
+      mutable direct : int;
+      mutable symmetric : int array;
+      child : node option array;
+      parents : node option array
+    }
 
+type bintree =
+    {
+      mutable parent : bintree option;
+      mutable lson : bintree option;
+      mutable rson : bintree option;
+      mutable node : node
+    }
 
-  (*Binary Tree*)
+type dbtree =
+    {
+      paren : dbtree option;
+      rison : dbtree option;
+      leson : dbtree option;
+      cpos : int array;
+      mutable stacked : int;
+      mutable valu : int
+    }
 
-let semaphore = ref 0
-and tpp = ref 0
+let make_node() =
+  {
+      squaree = Array.make ((boardX+1)*(boardY+2)) 0;
+      tur = 0;
+      stac = Array.init (boardX+1) (fun i -> 0);
+      evaluated = false;
+      expanded = false;
+      value = 0;
+      typed = or_type;
+      proof = 0;
+      disproof = 0;
+      child = Array.init boardX (fun i -> None);
+      parents = Array.init boardX (fun i -> None);
+      direct = 0;
+      symmetric = Array.make boardX 0
+  }
 
+let rootnode = ref (make_node())
+let streeroot = ref
+  {
+    parent = None;
+    lson = None;
+    rson = None;
+    node = (make_node())
+  }
+let her_node_not_expanded = ref 0
+let her_node_expanded = ref 0
+let nodeseq = [|3;2;4;5;1;0;6|]
+      
+let fast_init_bin_tree node =
+  let root =
+    {
+      parent = None;
+      lson = None;
+      rson = None;
+      node = node
+    }
+  in root
+
+let fast_set_node root node =
+  let child =
+    {
+      parent = Some root;
+      lson = None;
+      rson = None;
+      node = node
+    }
+  in child
+	  
 
 let bin_compare c1 c2 =
   let rec helper x =
@@ -1844,3 +1935,398 @@ let bin_compare c1 c2 =
       else helper (x+1)
     else 0 in
     helper 0
+
+let copy a =
+  {
+      squaree = Array.copy a.squaree;
+      stac = Array.copy a.stac;
+      tur = a.tur;
+      child = Array.copy a.child;
+      parents = Array.copy a.parents;
+      evaluated = a.evaluated;
+      expanded = a.expanded;
+      value = a.value;
+      typed = a.typed;
+      proof = a.proof;
+      disproof = a.disproof;
+      direct = a.direct;
+      symmetric = Array.copy a.symmetric
+    }
+    
+    
+let rec fast_check_node root node =
+  match root with
+    |Some tree ->
+       (
+	 let cmp = bin_compare tree.node.squaree node.squaree in
+	   if cmp<0 then
+	     match tree.lson with
+	       |None -> (tree.lson <- Some (fast_set_node tree node);None)
+	       |Some lson -> fast_check_node (Some lson) node;
+	   else if cmp>0 then
+	     match tree.rson with
+	       |None -> (tree.rson <- Some (fast_set_node tree node);None)
+	       |Some rson -> fast_check_node (Some rson) node;
+	   else Some (tree.node)
+       )
+    |None -> let _ = fast_init_bin_tree node in (Some node)
+	 
+
+
+let her_generate_all_children node =
+  let backtrace = ref 0 in
+  for x=0 to boardX-1 do
+    if node.stac.(x) < boardY then
+      (
+	node.child.(x) <-
+	  Some 
+	  {
+	    squaree = Array.copy node.squaree;
+	    stac = Array.copy node.stac;
+	    tur = switch node.tur;
+	    child = Array.init boardX (fun i -> None);
+	    parents = Array.init boardX (fun i -> None);
+	    evaluated = false;
+	    expanded = false;
+	    value = 0;
+	    typed = or_type;
+	    proof = 0;
+	    disproof = 0;
+	    direct = 0;
+	    symmetric = Array.make boardX 0
+	  };
+	backtrace := x;
+	match node.child.(x) with
+	  |None -> ()
+	  |Some no ->
+	     (
+	       no.squaree.(elm x no.stac.(x)) <- node.tur;
+	       no.stac.(x) <- no.stac.(x) + 1;
+	       let symm =
+		 {
+		   squaree = Array.copy no.squaree;
+		   stac = Array.copy no.stac;
+		   tur = switch node.tur;
+		   child = Array.init boardX (fun i -> None);
+		   parents = Array.init boardX (fun i -> None);
+		   evaluated = false;
+		   expanded = false;
+		   value = 0;
+		   typed = or_type;
+		   proof = 0;
+		   disproof = 0;
+		   direct = 0;
+		   symmetric = Array.make boardX 0
+		 } in
+		 for y1=0 to boardY-1 do
+		   for x1 = 0 to boardX-1 do
+		     symm.squaree.(elm x1 y1)
+		     <- no.squaree.(elm (boardX-x1-1) y1)
+		   done
+		 done;
+		 for x1=0 to boardX-1 do
+		   symm.stac.(x1) <- no.stac.(boardX-x1-1)
+		 done;
+		 if bin_compare symm.squaree no.squaree > 0 then
+		   node.child.(x) <- Some symm;
+		 let dummy = fast_check_node (Some !streeroot) no in
+		   match dummy with
+		     |None ->
+			(
+			  no.parents.(!backtrace) <- Some node;
+			  her_node_expanded := !her_node_expanded + 1;
+			  if node.typed = and_type then no.typed <- or_type
+			  else no.typed <- and_type;
+			  node.symmetric.(x) <- !backtrace
+			)
+		     |Some n ->
+			(
+			  node.child.(x) <- dummy;
+			  no.parents.(!backtrace) <- Some node;
+			  her_node_not_expanded := !her_node_not_expanded + 1
+			)
+	     )
+      )
+    else node.child.(x) <- None
+  done
+
+
+let rec explore_tree board side depth =
+  let cn = ref 0
+  and tmp = if board.turn = side then
+    group_eval board
+  else (-1) * (group_eval board) in
+  let answ = ref 0 in
+    if depth = 0 then tmp
+    else
+      (
+	if board.turn <> side then
+	  (
+	    answ := goodmove-depth;
+	    let x = ref 0 in
+	      while !x<boardX && !answ > badmove do
+		if board.stack.(!x) < boardY then
+		  (
+		    cn := !cn+1;
+		    if connected board !x >=4 then answ := badmove
+		    else
+		      (
+			let _ = makemove board !x
+			and tmp = explore_tree board side (depth-1) in
+			  answ := min !answ tmp;
+			  let _ = undomove board !x in ()
+		      )
+		  )
+	      done;
+	      if !cn = 0 then answ := 0
+	  )
+	else
+	  (
+	    answ := badmove + depth;
+	    let x = ref 0 in
+	      while !x<boardX do
+		if board.stack.(!x) < boardY then
+		  (
+		    cn := !cn + 1;
+		    if connected board !x >= 4 then answ := goodmove
+		    else
+		      (
+			let _ = makemove board !x
+			and tmp = explore_tree board side (depth-1) in
+			  answ := max !answ tmp;
+			  let _ = undomove board !x in ()
+		      )
+		  )
+	      done;
+	      if !cn = 0 then answ := 0
+	  );
+	!answ
+      )
+
+
+let her_evaluate node =
+  node.evaluated <- true;
+  let auxboard = make_board() in
+    for x=0 to 63 do
+      auxboard.square.(x) := node.squaree.(x)
+    done;
+    auxboard.turn <- node.tur;
+    for x=0 to boardX-1 do
+      auxboard.stack.(x) <- node.stac.(x);
+      if (x<boardX) then auxboard.filled <- auxboard.filled + node.stac.(x)
+    done;
+    if auxboard.filled = maxmen then
+      (
+        if !rootnode.tur = 1 then
+	  if !rootnode.typed = or_type then node.value <- proved
+	   else node.value <- disproved
+	 else if !rootnode.typed = or_type then node.value <- disproved
+	 else node.value <- proved;
+	 -1
+      )
+    else
+      let bestmove = fast_try_to_win auxboard in
+	if bestmove <> -1 then
+	  if node.typed = or_type then node.value <- proved
+	  else node.value <- disproved
+	else node.value <- unknown;
+	bestmove
+      
+	
+let her_set_pdv_according_to_children node =
+  let children = ref 0 in
+    for x=0 to boardX-1 do
+      if node.stac.(x)<boardY then children := !children + 1
+    done;
+    if node.typed = and_type then
+      (
+	node.proof <- !children;
+	node.disproof <- 1
+      )
+    else
+      (
+	node.proof <- 1;
+	node.disproof <- !children
+      )
+
+
+let her_set_proof_and_disproof_numbers node =
+  if node.expanded then
+    if node.typed = and_type then
+      (
+	node.proof <- 0;
+	node.disproof <- 1000000000;
+	for x=0 to boardX-1 do
+	  match node.child.(x) with
+	    |Some no -> (node.proof <- node.proof + no.proof;
+			 node.disproof <- min node.disproof no.disproof)
+	    |None -> ()
+	done;
+	if node.disproof = 0 then node.proof <- 1000000000
+      )
+    else
+      (
+	node.proof <- 1000000000;
+	node.disproof <- 0;
+	for x=0 to boardX-1 do
+	  match node.child.(x) with
+	    |Some no -> (node.proof <- min node.proof no.proof;
+			 node.disproof <- node.disproof + no.disproof)
+	    |None -> ()
+	done;
+	if node.proof = 0 then node.disproof <- 1000000000
+      )
+  else if node.evaluated then
+    if node.value = proved then
+      (
+	node.proof <- 0;
+	node.disproof <- 1000000000;
+      )
+    else if node.value = disproved then
+      (
+	node.proof <- 1000000000;
+	node.disproof <- 0
+      )
+    else her_set_pdv_according_to_children node
+	
+
+
+let her_ressources_available maxnodes =
+  if her_node_expanded > maxnodes then false
+  else true
+
+
+let her_select_most_proving_node node info =
+  let depth = ref 0
+  and nono = ref (copy node) in
+  while !nono.expanded do
+    let rec helper x typ =
+      if x<boardX then
+	match node.child.(nodeseq.(x)) with
+	  |None -> helper (x+1) typ
+	  |Some no ->
+	     (
+	       if no.proof = node.proof && typ = or_type then x
+	       else if no.disproof = node.disproof && typ = and_type then x
+	       else helper (x+1) typ
+	     )
+      else raise Error 
+    in let i = helper 0 (node.typed) in
+      if !depth <> 0 then
+	(
+	  info.bestmove <- nodeseq.(i);
+	  nono := match node.child.(nodeseq.(i)) with
+	    |None -> raise Error
+	    |Some n -> n
+	);
+      depth := !depth+1
+  done;
+    info.max_tree_depth <- max info.max_tree_depth (!depth+1);
+    !nono
+
+
+let her_develop_node node =
+  node.expanded <- true;
+  her_generate_all_children node;
+  for i=0 to boardX-1 do
+    match node.child.(i) with
+      |None -> ()
+      |Some no -> (
+	  let _ = her_evaluate no in
+	  her_set_proof_and_disproof_numbers no
+	)
+  done
+
+
+let rec her_update_ancestors node =
+  match node with
+    |None -> ()
+    |Some n -> (
+	her_set_proof_and_disproof_numbers n;
+	for x=0 to boardX-1 do
+	  her_update_ancestors n.parents.(x)
+	done
+      )
+    
+let her_pn_search root maxnodes info =
+  info.max_tree_depth <- 1;
+  info.bestmove <- her_evaluate root;
+  her_set_proof_and_disproof_numbers root;
+  while root.proof <> 0 && root.disproof <> 0 && 
+    her_ressources_available maxnodes do
+      let her_most_proving_node = her_select_most_proving_node root info in
+	her_develop_node her_most_proving_node;
+	her_update_ancestors (Some her_most_proving_node);
+  done;
+  if root.proof = 0 then root.value <- proved
+  else if root.disproof = 0 then root.value <- disproved
+  else root.value <- unknown
+  
+
+
+let heuristic_play_best board maxnodenum =
+  let rootnode_ =
+    {
+      squaree = Array.make ((boardX+1)*(boardY+2)) 0;
+      tur = 0;
+      stac = Array.init (boardX+1) (fun i -> 0);
+      evaluated = false;
+      expanded = false;
+      value = unknown;
+      typed = or_type;
+      proof = 0;
+      disproof = 0;
+      child = Array.init boardX (fun i -> None);
+      parents = Array.init boardX (fun i -> None);
+      symmetric = Array.make boardX 0 ;
+      direct = 0
+    }
+  and symmetric =
+    {
+      squaree = Array.make ((boardX+1)*(boardY+2)) 0;
+      tur = board.turn;
+      stac = Array.init (boardX+1)
+	(fun x -> if x < boardX then board.stack.(boardX-1-x) else -1);
+      evaluated = false;
+      expanded = false;
+      value = unknown;
+      typed = or_type;
+      proof = 0;
+      disproof = 0;
+      child = Array.init boardX (fun i -> None);
+      parents = Array.init boardX (fun i -> None);
+      symmetric = Array.make boardX 0;
+      direct = 0
+    } in
+her_develop_node rootnode_;
+her_develop_node symmetric;
+    for y=0 to boardY-1 do
+      rootnode_.squaree.(elm boardX y) <-
+	!(board.square.(elm boardX y));
+      symmetric.squaree.(elm boardX y) <-
+	!(board.square.(elm boardX y));
+      for x = 0 to boardX-1 do
+	rootnode_.squaree.(elm x y) <-
+	  !(board.square.(elm x y));
+	symmetric.squaree.(elm x y) <-
+	  !(board.square.(elm (boardX-1-x) y))
+      done
+    done;
+
+    rootnode_.stac.(boardX) <- board.stack.(boardX);
+    symmetric.stac.(boardX) <- board.stack.(boardX);
+    rootnode := if bin_compare symmetric.squaree rootnode_.squaree > 0
+    then symmetric else rootnode_;
+    let issymm = if bin_compare symmetric.squaree rootnode_.squaree > 0
+    then true else false in
+    let info = {
+      bestmove = -1;
+      max_tree_depth = 0
+    } in
+      her_pn_search !rootnode maxnodenum info;
+      let mymove =
+	if !rootnode.value = unknown then -1
+	else if !rootnode.value = disproved then -2
+	else if issymm then boardX-1 - info.bestmove
+	else info.bestmove in
+	mymove
