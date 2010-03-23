@@ -450,9 +450,9 @@ struct
           )
       )
 
-  let return_init_pos i =
+  let return_init_pos f =
     light := false;
-    scan_case 0 0 stop
+    scan_case 0 0 f
 
 
   let scan col_new_piece next =

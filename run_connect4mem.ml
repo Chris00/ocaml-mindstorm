@@ -37,9 +37,16 @@ let rec step game col =
         Board.add_piece_to_board Graphics.red col
     );
   (*on verifie que le jeu n'est pas gagné ou match nul*)
-  if (col = -1) ||
-    (not (Gamemem.opponent_connected game col >= 4) && not (Gamemem.draw game))
+  if (col <> -1) &&
+    (Gamemem.opponent_connected game col >= 4 || Gamemem.draw game)
   then
+    (
+      if Gamemem.draw game then Board.draw()
+      else Board.red_success();
+      S.return_init_pos Board.close_when_clicked
+    )
+
+  else
     (
       (*on cherche la colonne a jouer*)
       let _, col_to_play = Alphabetamem.alphabeta game 9 Gamemem.groupeval in
@@ -48,27 +55,21 @@ let rec step game col =
       Board.add_piece_to_board Graphics.yellow col_to_play;
       (*la pince va mettre la piece dans la colonne a jouer
         et on va scanner pour voir si le joueur a joue*)
-      if not(Gamemem.connected game col_to_play >= 4) && not(Gamemem.draw game)
+      if Gamemem.connected game col_to_play >= 4 || Gamemem.draw game
       then
-        P.put_piece col_to_play
-          (fun () -> S.scan col_to_play (fun c -> step game c))
-      else
         (
           Printf.printf"c fini, on stoppe après avoir ajouter la piece\n%!";
           if Gamemem.draw game then Board.draw()
           else Board.yellow_success();
-          Board.close_when_clicked();
-          P.put_piece col_to_play S.return_init_pos;
-          Printf.printf"LE ROBOT GAGNE\n%!"
+          Printf.printf"LE ROBOT GAGNE\n%!";
+          P.put_piece col_to_play
+            (fun () -> S.return_init_pos Board.close_when_clicked)
         )
+      else
+        P.put_piece col_to_play
+          (fun () -> S.scan col_to_play (fun c -> step game c))
     )
-  else
-    (
-      if Gamemem.draw game then Board.draw()
-      else Board.red_success();
-      Board.close_when_clicked();
-      S.return_init_pos ()
-    )
+  
 let () =
   Board.gameboard ();
   let game = Gamemem.make_board() in
