@@ -34,7 +34,11 @@ let rec step game col =
   if col <> -1 then
     (
         Gamemem.makemove game col;
-        Board.add_piece_to_board Graphics.red col
+        Board.add_piece_to_board Graphics.red col;
+        Printf.printf "%s\n%!" "les connectés de l'ordi";
+        Printf.printf "%i\n%!" (Gamemem.connected game col);
+        Printf.printf "%s\n%!" "les connectés de l'humain";
+        Printf.printf "%i\n%!" (Gamemem.opponent_connected game col)
     );
   (*on verifie que le jeu n'est pas gagné ou match nul*)
   if (col <> -1) &&
@@ -52,6 +56,10 @@ let rec step game col =
       let _, col_to_play = Alphabetamem.alphabeta game 9 Gamemem.groupeval in
       Printf.printf "%i\n%!" col_to_play;
       Gamemem.makemove game col_to_play;
+      Printf.printf "%s\n%!" "les connectés de l'ordi";
+      Printf.printf "%i\n!" (Gamemem.connected game col_to_play);
+      Printf.printf "%s\n%!" "les connectés de l'humain";
+      Printf.printf "%i\n!" (Gamemem.opponent_connected game col_to_play);
       Board.add_piece_to_board Graphics.yellow col_to_play;
       (*la pince va mettre la piece dans la colonne a jouer
         et on va scanner pour voir si le joueur a joue*)
@@ -69,7 +77,7 @@ let rec step game col =
         P.put_piece col_to_play
           (fun () -> S.scan col_to_play (fun c -> step game c))
     )
-  
+
 let () =
   Board.gameboard ();
   let game = Gamemem.make_board() in
