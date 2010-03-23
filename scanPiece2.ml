@@ -422,20 +422,24 @@ struct
 
 
 
-  let rec scan_game_right next =
-   printf"lance scan_game_right\n%!";
+  let rec scan_game next =
     if !go_to_next then
       (
         go_to_next := false;
         light := true;
-        next_col := -1;
+        if !scan_right then next_col := -1
+        else next_col := 7;
         printf"passe à next\n%!";
         next !col_had_play
       )
     else
       (
-        if !next_col < 6 then next_col := !next_col + 1
-        else next_col:=0;
+        if !scan_right then
+          if !next_col < 6 then next_col := !next_col + 1
+          else next_col:=0
+        else
+          if !next_col > 0 then next_col := !next_col - 1
+          else next_col := 6;
 
         next_line := piece_in_col !next_col;
         if !next_line = 6 then scan_game next
@@ -445,35 +449,6 @@ struct
             scan_case !next_line !next_col (fun () -> scan_game next)
           )
       )
-
-
-  and scan_game_left next =
-    if !go_to_next then
-      (
-        go_to_next := false;
-        light := true;
-        next_col := 7;
-        printf"passe à next\n%!";
-        next !col_had_play
-      )
-    else
-      (
-        if !next_col > 0 then next_col := !next_col - 1
-        else next_col := 6;
-
-        next_line := piece_in_col !next_col;
-        if !next_line = 6 then scan_game next
-        else
-          (
-            go_to_next := not !light;
-            scan_case !next_line !next_col (fun () -> scan_game next)
-          )
-      )
-
-  and scan_game next =
-    if !scan_right then scan_game_right next
-   else scan_game_left next
-
 
   let return_init_pos i =
     light := false;
