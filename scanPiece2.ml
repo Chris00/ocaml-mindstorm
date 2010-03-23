@@ -459,16 +459,6 @@ struct
     if col_new_piece <> -1 then add_piece col_new_piece;
     scan_game next
 
-(* let run () = *)
-    (* scan stop; *)
-
-    (* current_col := 6; *)
-    (* current_line := 5; *)
-    (* scan_case 5 6 stop; *)
-    (* scan_case 0 0 stop; *)
-
-    (* adjustment 0 0 stop; *)
-    (* Robot.run C.r *)
 
 end
 

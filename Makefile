@@ -16,7 +16,7 @@ LIBS_CMXA=$(LIBS_CMA:.cma=.cmxa)
 all: byte native
 
 SOURCES = game.ml alphabeta.ml board.ml scanPiece.ml pincer.ml \
-	scanPiece2.ml gamemem.ml alphabetamem.ml run_connect4.ml\
+	scanPiece2.ml gamemem.ml alphabetamem.ml run_connect4.ml \
 	run_connect4mem.ml
 byte: run_connect4.exe run_connect4mem.exe
 native: run_connect4.com run_connect4mem.com
@@ -63,9 +63,9 @@ MAKE_DOC = $(OCAMLDOC) -colorize-code -stars -html $(PACKAGES)
 #	cd rubik/ && $(MAKE) $(@F)
 
 #Define the OS type for the Camlp4 preprocessor, RM,...
-.os_type: make_os_type.exe
-	"./$<" > $@
-include .os_type
+#.os_type: make_os_type.exe
+#	"./$<" > $@
+#include .os_type
 
 include Makefile.ocaml
 

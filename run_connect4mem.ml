@@ -11,7 +11,7 @@ which uses the pincer";
                       "--scan", Arg.Set_string bt_scan,
                       "<bt_address>set the bluetooth address of the brick
 which uses the scan";
-                      "--computer_first", Arg.Set if_computer,
+                      "--human_first", Arg.Clear if_computer,
                       " set first player"]
 let () = Arg.parse spec (fun _ -> raise (Arg.Bad "no anonymous arg"))
   "run_connect4 <option>"
@@ -57,17 +57,17 @@ let rec step game col =
           Printf.printf"c fini, on stoppe après avoir ajouter la piece\n%!";
           if Gamemem.draw game then Board.draw()
           else Board.yellow_success();
+          Board.close_when_clicked();
           P.put_piece col_to_play S.return_init_pos;
-          Printf.printf"LE ROBOT GAGNE\n%!";
-          Board.close_when_clicked()
+          Printf.printf"LE ROBOT GAGNE\n%!"
         )
     )
   else
     (
       if Gamemem.draw game then Board.draw()
       else Board.red_success();
-      S.return_init_pos ();
-      Board.close_when_clicked()
+      Board.close_when_clicked();
+      S.return_init_pos ()
     )
 let () =
   Board.gameboard ();
