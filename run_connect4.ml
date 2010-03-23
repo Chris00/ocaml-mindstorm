@@ -83,7 +83,9 @@ let rec step game color col =
         if not(Game.is_winning game col_to_play) && not(Game.is_draw game)
         then
           P.put_piece col_to_play
-            (fun () -> S.scan col_to_play (fun c -> step game color c))
+            (fun () ->
+               S.add_piece col_to_play;
+               S.scan (fun c -> step game color c))
         else
           (
             Printf.printf"c fini, on stoppe après avoir ajouter la piece\n%!";
@@ -98,6 +100,6 @@ let () =
   (* Board.close_when_clicked(); *)
   let game = Game.make() in
   if Conn.fst_computer then step game Game.Yellow (-1)
-  else S.scan (-1) (fun c -> step game Game.Yellow c);
+  else S.scan (fun c -> step game Game.Yellow c);
   Robot.run Conn.r
 

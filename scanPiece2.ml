@@ -358,7 +358,7 @@ struct
     )
 
 
-  let rec scan_game next =
+  let rec scan next =
     if !go_to_next then
       (
         go_to_next := false;
@@ -378,23 +378,17 @@ struct
           else next_col := 6;
 
         next_line := piece_in_col !next_col;
-        if !next_line = 6 then scan_game next
+        if !next_line = 6 then scan next
         else
           (
             go_to_next := not !light;
-            scan_case !next_line !next_col (fun () -> scan_game next)
+            scan_case !next_line !next_col (fun () -> scan next)
           )
       )
 
   let return_init_pos f =
     light := false;
     scan_case 0 0 f
-
-
-  let scan col_new_piece next =
-    if col_new_piece <> -1 then add_piece col_new_piece;
-    scan_game next
-
 
 end
 

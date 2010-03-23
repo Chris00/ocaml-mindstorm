@@ -127,7 +127,7 @@ type board = {
   mutable wipesq : int array;
   mutable usablegroup : bool array;
   mutable sqused : bool array;
-  stack : int array;
+  stack : int array; (* stack.(c) = the number of piece in the column c *)
   groups : int ref array array;
   xplace : int array array;
   yplace : int array array;
