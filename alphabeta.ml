@@ -79,45 +79,6 @@ let fst_moves game nbr_moves =
   |_ -> raise (Failure "methode can be used only if the number of moves is
                          minder than 2")
 
-(*fonction qui doit retourner vrai si on peut jouer dans une colonne (on verifie
-  que l'autre joueur ne gagne pas en jouant au dessus ou si on peut gagner si
-  l'autre joueur joue dans cette colonne)
-  retourne faux sinon*)
-let win_in_2moves game j color =
-  let n = Game.nbr_token_in_col game j in
-  if n < 5 then
-    (
-      Game.move game j color;
-      Game.move game j (Game.color_invers color);
-      if Game.is_winning game j then
-        (
-          Game.remove game j (Game.color_invers color);
-          Game.remove game j color;
-          false
-        )
-      else
-        (
-          Game.remove game j (Game.color_invers color);
-          Game.remove game j color;
-          Game.move game j (Game.color_invers color);
-          Game.move game j color;
-          if Game.is_winning game j then
-            (
-              Game.remove game j color;
-              Game.remove game j (Game.color_invers color);
-              false
-            )
-          else
-            (
-              Game.remove game j color;
-              Game.remove game j (Game.color_invers color);
-              true
-            )
-        )
-    )
-  else if n = 5 then true
-  else false
-
 let heuristic game color mode =
   let col_win_max = Game.next_win game color
   and col_win_min = Game.next_win game (Game.color_invers color) in
@@ -132,66 +93,63 @@ let heuristic game color mode =
         if row = 6 then tab_value.(j) <- 0.
         else
           (
-            if win_in_2moves game j color then
-              let aline_horiz_max = Game.horizontal game color j
-              and aline_vert_max = Game.vertical game color j
-              and aline_diag_left_max = Game.left_diagonal game color j
-              and aline_diag_right_max = Game.right_diagonal game color j in
+            let aline_horiz_max = Game.horizontal game color j
+            and aline_vert_max = Game.vertical game color j
+            and aline_diag_left_max = Game.left_diagonal game color j
+            and aline_diag_right_max = Game.right_diagonal game color j in
+            if fst aline_horiz_max >= 4 && snd aline_horiz_max >= 2 then
+              tab_value.(j) <- tab_value.(j) +. 4.;
+            if fst aline_vert_max >= 4 && snd aline_vert_max >= 2 then
+              tab_value.(j) <- tab_value.(j) +. 4.;
+            if fst aline_diag_left_max >= 4 && snd aline_diag_left_max >= 2
+            then
+              tab_value.(j) <- tab_value.(j) +. 6.;
+            if fst aline_diag_left_max >= 4 && snd aline_diag_left_max >= 2
+            then
+              tab_value.(j) <- tab_value.(j) +. 6.;
 
-              if fst aline_horiz_max >= 4 && snd aline_horiz_max >= 2 then
-                tab_value.(j) <- tab_value.(j) +. 4.;
-              if fst aline_vert_max >= 4 && snd aline_vert_max >= 2 then
-                tab_value.(j) <- tab_value.(j) +. 4.;
-              if fst aline_diag_left_max >= 4 && snd aline_diag_left_max >= 2
-              then
-                tab_value.(j) <- tab_value.(j) +. 6.;
-              if fst aline_diag_left_max >= 4 && snd aline_diag_left_max >= 2
-              then
-                tab_value.(j) <- tab_value.(j) +. 6.;
+            if fst aline_horiz_max >= 4 && snd aline_horiz_max >= 1 then
+              tab_value.(j) <- tab_value.(j) +. 2.;
+            if fst aline_vert_max >= 4 && snd aline_vert_max >= 1 then
+              tab_value.(j) <- tab_value.(j) +. 2.;
+            if fst aline_diag_left_max >= 4 && snd aline_diag_left_max >= 1
+            then
+              tab_value.(j) <- tab_value.(j) +. 3.;
+            if fst aline_diag_right_max >= 4 && snd aline_diag_right_max >= 1
+            then
+              tab_value.(j) <- tab_value.(j) +. 3.;
 
-              if fst aline_horiz_max >= 4 && snd aline_horiz_max >= 1 then
-                tab_value.(j) <- tab_value.(j) +. 2.;
-              if fst aline_vert_max >= 4 && snd aline_vert_max >= 1 then
-                tab_value.(j) <- tab_value.(j) +. 2.;
-              if fst aline_diag_left_max >= 4 && snd aline_diag_left_max >= 1
-              then
-                tab_value.(j) <- tab_value.(j) +. 3.;
-              if fst aline_diag_right_max >= 4 && snd aline_diag_right_max >= 1
-              then
-                tab_value.(j) <- tab_value.(j) +. 3.;
+            let aline_horiz_min =
+              Game.horizontal game (Game.color_invers color) j
+            and aline_vert_min =
+              Game.vertical game (Game.color_invers color) j
+            and aline_diag_left_min =
+              Game.left_diagonal game (Game.color_invers color) j
+            and aline_diag_right_min =
+              Game.right_diagonal game (Game.color_invers color) j in
 
-              let aline_horiz_min =
-                Game.horizontal game (Game.color_invers color) j
-              and aline_vert_min =
-                Game.vertical game (Game.color_invers color) j
-              and aline_diag_left_min =
-                Game.left_diagonal game (Game.color_invers color) j
-              and aline_diag_right_min =
-                Game.right_diagonal game (Game.color_invers color) j in
+            if fst aline_horiz_min >= 4 && snd aline_horiz_min >= 2 then
+              tab_value.(j) <- tab_value.(j) +. 4.;
+            if fst aline_vert_min >= 4 && snd aline_vert_min >= 2 then
+              tab_value.(j) <- tab_value.(j) +. 4.;
+            if fst aline_diag_left_min >= 4 && snd aline_diag_left_min >= 2
+            then
+              tab_value.(j) <- tab_value.(j) +. 6.;
+            if fst aline_diag_right_min >= 4 && snd aline_diag_left_min >= 2
+            then
+              tab_value.(j) <- tab_value.(j) +. 6.;
 
-              if fst aline_horiz_min >= 4 && snd aline_horiz_min >= 2 then
-                tab_value.(j) <- tab_value.(j) +. 4.;
-              if fst aline_vert_min >= 4 && snd aline_vert_min >= 2 then
-                tab_value.(j) <- tab_value.(j) +. 4.;
-              if fst aline_diag_left_min >= 4 && snd aline_diag_left_min >= 2
-              then
-                tab_value.(j) <- tab_value.(j) +. 6.;
-              if fst aline_diag_right_min >= 4 && snd aline_diag_left_min >= 2
-              then
-                tab_value.(j) <- tab_value.(j) +. 6.;
+            if fst aline_horiz_min >= 4 && snd aline_horiz_min >= 1 then
+              tab_value.(j) <- tab_value.(j) +. 2.;
+            if fst aline_vert_min >= 4 && snd aline_vert_min >= 1 then
+              tab_value.(j) <- tab_value.(j) +. 2.;
+            if fst aline_diag_left_min >= 4 && snd aline_diag_left_min >= 1
+            then
+              tab_value.(j) <- tab_value.(j) +. 3.;
+            if fst aline_diag_right_min >= 4 && snd aline_diag_right_min >= 1
+            then
+              tab_value.(j) <- tab_value.(j) +. 3.;
 
-              if fst aline_horiz_min >= 4 && snd aline_horiz_min >= 1 then
-                tab_value.(j) <- tab_value.(j) +. 2.;
-              if fst aline_vert_min >= 4 && snd aline_vert_min >= 1 then
-                tab_value.(j) <- tab_value.(j) +. 2.;
-              if fst aline_diag_left_min >= 4 && snd aline_diag_left_min >= 1
-              then
-                tab_value.(j) <- tab_value.(j) +. 3.;
-              if fst aline_diag_right_min >= 4 && snd aline_diag_right_min >= 1
-              then
-                tab_value.(j) <- tab_value.(j) +. 3.;
-
-            else tab_value.(j) <- tab_value.(j) -. 16.
           )
       done;
       if mode = Max then Useful.max_tab tab_value
@@ -264,7 +222,18 @@ let rec ab nbr_token col game alpha beta mode depth color heuristic =
 
 let alphabeta game color level heuristic=
   let n = Game.nbr_token game in
-  ab n 0 game neg_infinity infinity Max level color heuristic
+  let value, col = ab n 0 game neg_infinity infinity Max level color heuristic in
+  let rec what_col_to_play g cost column =
+    let n_in_col = Game.nbr_token_in_col g column in
+    if n_in_col <> 6 then (cost, column)
+    else if Game.nbr_token_in_col g 3 <> 6 then
+      (cost, 3)
+    else if Game.nbr_token_in_col g 2 <> 6 then
+      (cost, 2)
+    else if Game.nbr_token_in_col g 4 <> 6 then
+      (cost, 4)
+    else what_col_to_play g cost (column+1)
+  in what_col_to_play game value col
 
 
 (* Return [(beta', col)] where [beta'] is the "cost" of this node and

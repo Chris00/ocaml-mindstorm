@@ -15,14 +15,14 @@ let motor_dist = Motor.c
   (*angle d'ouverture de la pince*)
 let open_rot = 120
   (*rotation pr prendre une piece du jeu ds le distributeur*)
-let rot_dist = 60
+let rot_dist = 65
   (* let move_speed = 10 *)
 let move_speed = 15
 let open_speed = -10
 let close_speed = 10
 
 (* let rotation = [|1035; 900; 768; 635; 504; 373; 235|] vitesse 10 vitesse 12*)
-let rotation = [|1033; 905; 763; 630; 499; 368; 230|]
+let rotation = [|1033; 902; 760; 627; 496; 365; 229|]
 
 (*ajuste l'angle à faire suivant la vitesse du moteur open pincer*)
 let adjust_speed = 20   (* 4 pr une vitesse 10; 9 pr une vitesse 12 *)
