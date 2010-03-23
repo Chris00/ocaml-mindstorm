@@ -52,8 +52,6 @@ struct
   let go_to_next = ref false
   let current_game = ref 0 (*representation du jeu par un entier*)
 
-  (* let r = Robot.make() *)
-
   let get_angle motor = let _,_,_,a = Motor.get C.conn_scan motor in a
 
  (*nous retourne l'angle courant du moteur droit*)
@@ -66,7 +64,7 @@ struct
   let meas_vert = Robot.meas C.r (fun () -> get_angle motor_captor_vert)
 
 
-  let stop i =
+  let stop _ =
     Motor.set C.conn_scan Motor.all (Motor.speed 0)
 
   let stop_motor_l () =
@@ -86,49 +84,36 @@ struct
   (* retourne la couleur devant le capteur*)
   let rec scan_light f =
     Motor.set C.conn_scan Motor.all (Motor.speed 0);
-    if !light then
-      (
-        Mindstorm.Sensor.set C.conn_scan color_port `Color_full `Pct_full_scale;
-        usleep 0.25;
-        let data  = Mindstorm.Sensor.get C.conn_scan color_port in
-        let color_of_data data = match Sensor.color_of_data data with
-          | `Black  -> -1 | `Blue -> 2 | `Green -> -1
-          | `Yellow -> 1 | `Red  -> 0 | `White -> -1 in
-
-        let color = color_of_data data in
-        printf "%i\n%!" color;
-        Mindstorm.Sensor.set C.conn_scan color_port `No_sensor `Raw;
-        usleep 0.25;
-
-        if (color = (-1)) then
-          (
-            printf "Continuer\n%!";
-            f () (*rappelle la fct scan_game qui appelera scan_case sur la
-                   prochaine case*)
-          )
-        else if (color = 2) then
-          (
-            printf "Ajustement\n%!";
-            adjustment !current_line !current_col f
-          )
-        else (*il a trouvé une piece*)
-          (
-            add_piece !current_col !current_game;
-            col_had_play := !current_col;
-            (*retourner la colonne au prog de jésus et sab*)
-            printf "%i\n%!" !col_had_play;
-            printf "%i\n%!" !current_game;
-            light := false; (*pr ne pas rescanner*)
-            next_col := -1; (*pr que scan_game renvoie le capteur à droite du
-                              jeu*)
-            f ()
-          )
-      )
-    else
-      (
-        light := true;
-        f ()
-      )
+    if !light then (
+      Mindstorm.Sensor.set C.conn_scan color_port `Color_full `Pct_full_scale;
+      usleep 0.25;
+      let data  = Mindstorm.Sensor.get C.conn_scan color_port in
+      let color = Sensor.color_of_data data in
+      Mindstorm.Sensor.set C.conn_scan color_port `No_sensor `Raw;
+      usleep 0.25;
+      match color with
+      | `Black | `Green | `White ->
+          printf "Continuer\n%!";
+          f () (*rappelle la fct scan_game qui appelera scan_case sur la
+                 prochaine case*)
+      | `Blue ->
+          printf "Ajustement\n%!";
+          adjustment !current_line !current_col f
+      | `Yellow | `Red ->
+          (*il a trouvé une piece*)
+          add_piece !current_col !current_game;
+          col_had_play := !current_col;
+          (*retourner la colonne au prog de jésus et sab*)
+          printf "%i\n%i\n%!" !col_had_play !current_game;
+          light := false; (*pr ne pas rescanner*)
+          next_col := -1; (*pr que scan_game renvoie le capteur à droite du
+                            jeu*)
+          f ()
+    )
+    else (
+      light := true;
+      f ()
+    )
 
   (*ajuste la position du capteur couleur*)
   and adj_l_l angle_l f =
@@ -152,38 +137,38 @@ struct
     match (Robot.read meas_left) with
     |Some m ->
        (
-          if m <= angle_l then
-            adj_l_r angle_l f
-          else adj_l_l angle_l f
-        )
-     |None -> assert false
+         if m <= angle_l then
+           adj_l_r angle_l f
+         else adj_l_l angle_l f
+       )
+    |None -> assert false
 
   and adj_r_r angle_r angle_l f =
     Motor.set C.conn_scan motor_captor_l (Motor.speed (5));
     Motor.set C.conn_scan motor_captor_r (Motor.speed (-5));
     Robot.event meas_right (function
-                           |None -> false
-                           |Some d -> d <= angle_r)
+                            |None -> false
+                            |Some d -> d <= angle_r)
       (adj_l angle_l f)
 
   and adj_r_l angle_r angle_l f =
     Motor.set C.conn_scan motor_captor_l (Motor.speed (-5));
     Motor.set C.conn_scan motor_captor_r (Motor.speed (5));
     Robot.event meas_right (function
-                           |None -> false
-                           |Some d -> d >= angle_r)
+                            |None -> false
+                            |Some d -> d >= angle_r)
       (adj_l angle_l f)
 
   and adj_r angle_r angle_l f _ =
     Motor.set C.conn_scan Motor.all (Motor.speed 0);
     match (Robot.read meas_right) with
-     |Some m  ->
-        (
-          if m < angle_r then
-            adj_r_l angle_r angle_l f
-          else adj_r_r angle_r angle_l f
-        )
-     |None -> assert false
+    |Some m  ->
+       (
+         if m < angle_r then
+           adj_r_l angle_r angle_l f
+         else adj_r_r angle_r angle_l f
+       )
+    |None -> assert false
 
 
   and adj_vert_down angle_v angle_r angle_l f =
@@ -215,13 +200,13 @@ struct
         angle_l = rot_l line col in
 
     match (Robot.read meas_vert) with
-     |Some m  ->
-        (
-          if m <= angle_v then
-               adj_vert_up angle_v angle_r angle_l f
-          else adj_vert_down angle_v angle_r angle_l f
-        )
-     |None -> assert false
+    |Some m  ->
+       (
+         if m <= angle_v then
+           adj_vert_up angle_v angle_r angle_l f
+         else adj_vert_down angle_v angle_r angle_l f
+       )
+    |None -> assert false
 
 
 
