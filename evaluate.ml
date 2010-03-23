@@ -1,4 +1,3 @@
-
 (* Inspired by http://www.ce.unipr.it/~gbe/velsrc.html *)
 
 (*Constantes et petites fonctions*)
@@ -12,16 +11,34 @@ and maxgroups = 50
 and alloc_solutions = 621
 and tiles = 4
 and maxmen = 42
-and claimeven_ = 1
-and baseinverse_ = 2
-and vertical_ = 3
-and aftereven_ = 4
-and lowinverse_ = 5
-and highinverse_ = 6
-and baseclaim_ = 7
-and before_ = 8
-and specialbefore_ = 9
-and elm x y = (x+(y lsl 3))
+
+type rule_t =
+  | CLAIMEVEN | BASEINVERSE | VERTICAL | AFTEREVEN | LOWINVERSE
+  | HIGHINVERSE | BASECLAIM | BEFORE | SPECIALBEFORE
+
+module Rule : sig
+  type t = rule_t
+  val to_int : t -> int
+    (** Returns a number in [0 .. n-1] where [n] is the number of
+        rules which are numbered in the order of their declaration. *)
+  type 'a vec (* abstract to force the use of the functions of Rule *)
+  val vec : int -> 'a -> 'a vec
+  val incr : int vec -> t -> unit
+end =
+struct
+  type t = rule_t
+  let to_int (r:t) = (Obj.magic r : int) (* WARNING : unsafe *)
+
+  type 'a vec = 'a array
+  let vec n a = Array.make n a
+  let get a r = a.(to_int r)
+  let incr a r = let i = to_int r in a.(i) <- a.(i) + 1
+
+  let rules_name = [|"CLAIMEVEN";"BASEINVERSE";"VERTICAL";"LOWINVERSE";
+                     "HIGHINVERSE";"BASECLAIM";"BEFORE";"SPECIALBEFORE"|]
+end
+
+let elm x y = (x+(y lsl 3))
 and elx z = z land 7
 and ely z = z lsr 3
 and int_to_tab z =
@@ -86,14 +103,11 @@ type threat_combo = {
 }
 
 
-type solvable_groups = {
-  squar : int array array;
-  sqpnt : int array
-}
+type solvable_groups = int array array
 
 type solution = {
   mutable valid : bool;
-  mutable solname : int;
+  mutable solname : Rule.t;
   solpoint : int array;
   sqinv : int array;
   mutable sqinvnumb : int;
@@ -134,7 +148,7 @@ type board = {
   nodes_visited : int;
   maxtreedepth : int;
   rules : int array;
-  instances : int array;
+  instances : int Rule.vec;
   wins : int array;
   draws : int;
   lastwin : int;
@@ -208,13 +222,13 @@ let wiped_group board group =
   in helper 0 0
 
 let check_threat board px i side =
+  let sg = board.solvable_groups.(elm px i) in
   let rec helper y =
-    if y < board.solvable_groups.sqpnt.(elm px i) then
-      let j = board.solvable_groups.squar.(elm px i).(y) in
+    if y < Array.length sg then
+      let j = sg.(y) in
 	if board.xplace.(j).(0) = board.xplace.(j).(3) then
 	  helper (y+1)
-	else
-	  (
+	else (
 	  let rec help_intern x a b =
 	    if x < tiles then
 	      let fx = board.xplace.(j).(x)
@@ -223,10 +237,10 @@ let check_threat board px i side =
 		if !(board.square.(elm fx fy)) = side then (a+1,b)
 		else if !(board.square.(elm fx fy)) = 0 then (a,b+1)
 		else (a,b) in
-		help_intern (x+1) p1 p2
+	      help_intern (x+1) p1 p2
 	    else a+b = tiles
-	  in let bool = help_intern 0 0 0 in
-	    if bool then true else helper (y+1)
+	  in
+          help_intern 0 0 0 || helper (y+1)
 	  )
     else false
   in helper 0
@@ -258,38 +272,36 @@ let count_odd_threats board threats =
   let rec helper x oddpnt =
     if x < groups then
       let y = odd_threat board x in
-	if y = (-1) then helper (x+1) oddpnt
-	else
-	  (
+	if y = -1 then helper (x+1) oddpnt
+	else (
 	    threats.(oddpnt) <- y;
 	    helper (x+1) (oddpnt + 1)
 	  )
     else oddpnt
-  in helper 0
+  in helper 0 0
 
 let both_groups board q1 q2 =
-  let p1 = board.solvable_groups.sqpnt.(q1)
-  and p2 = board.solvable_groups.sqpnt.(q2) in
-  for x=0 to p1-1 do
-    for y=0 to p2-1 do
-      let g1=board.solvable_groups.squar.(q1).(x)
-      and g2=board.solvable_groups.squar.(q2).(y) in
-	if g1=g2 && board.intgp.tgroups.(g1) then
-	  (
-	    board.solution.(board.sp).solgroups.
-	      (board.solution.(board.sp).solgroupsnumb) <- g1;
-	    board.solution.(board.sp).solgroupsnumb <-
-	      board.solution.(board.sp).solgroupsnumb +1
-	  )
+  let sg1 = board.solvable_groups.(q1)
+  and sg2 = board.solvable_groups.(q2) in
+  let sol = board.solution.(board.sp) in
+  for x=0 to Array.length sg1 - 1 do
+    for y=0 to Array.length sg2 - 1 do
+      let g1 = sg1.(x)
+      and g2 = sg2.(y) in
+      if g1 = g2 && board.intgp.tgroups.(g1) then (
+        sol.solgroups.(sol.solgroupsnumb) <- g1;
+        sol.solgroupsnumb <- sol.solgroupsnumb + 1
+      )
     done;
   done
 
 let rec recurse_groups board cols cl gp =
-  let p = board.solvable_groups.sqpnt.(cl.(0)) in
+  let sg = board.solvable_groups.(cl.(0)) in
+  let len_sg = Array.length sg in
   let rec helper i =
-    if i<p then
-      let g1 = board.solvable_groups.squar.(cl.(0)).(i) in
-	if g1<>gp then helper (i+1)
+    if i < len_sg then
+      let g1 = sg.(i) in
+	if g1 <> gp then helper (i+1)
 	else if cols=1
 	  || recurse_groups board (cols-1) (int_to_tab cl.(1)) g1 then
 	    true
@@ -299,23 +311,23 @@ let rec recurse_groups board cols cl gp =
 
 let both_many_groups board cols cl =
   if cols <> 0 then
-    let p = board.solvable_groups.sqpnt.(cl.(0)) in
+    let sg = board.solvable_groups.(cl.(0)) in
+    let len_sg = Array.length sg in
+    let sol = board.solution.(board.sp) in
     let rec helper i =
-      if i<p then
-	let g1 = board.solvable_groups.squar.(cl.(0)).(i) in
-	  if (not board.intgp.tgroups.(g1)) then helper (i+1)
-	  else if cols=1 || recurse_groups board (cols-1)
-	    (int_to_tab cl.(1)) g1 then
-	    (
-	    board.solution.(board.sp).solgroups.
-	      (board.solution.(board.sp).solgroupsnumb) <- g1;
-	    board.solution.(board.sp).solgroupsnumb <-
-	      board.solution.(board.sp).solgroupsnumb +1
-	    )
-	  else helper (i+1)
+      if i < len_sg then
+        let g1 = sg.(i) in
+        if not board.intgp.tgroups.(g1) then helper (i+1)
+        else if cols=1 || recurse_groups board (cols-1) (int_to_tab cl.(1)) g1
+        then (
+          sol.solgroups.(sol.solgroupsnumb) <- g1;
+          sol.solgroupsnumb <- sol.solgroupsnumb + 1
+        )
+        else helper (i+1)
     in helper 0
 
 let solve_columns board cl cols =
+  let sol = board.solution.(board.sp) in
   let rec helper i =
     if (not board.intgp.tgroups.(i)) then helper (i+1)
     else
@@ -333,65 +345,59 @@ let solve_columns board cl cols =
 	      j := !j+1
 	  done;
 	  if !j = cl && !answer then
-	    if board.solution.(board.sp).solgroupsnumb = 0 then
-	      (
-		board.solution.(board.sp).sqinvnumb <- 2*cl;
+            if sol.solgroupsnumb = 0 then (
+              sol.sqinvnumb <- 2 * cl;
 		for t=0 to cl-1 do
 		  let tx = elx cols.(t) and ty = ely cols.(t) in
-		    board.solution.(board.sp).sqinv.(t) <- elm tx (ty-1);
-		    board.solution.(board.sp).sqinv.(t+cl) <- elm tx ty;
+                  sol.sqinv.(t) <- elm tx (ty-1);
+                  sol.sqinv.(t+cl) <- elm tx ty;
 		done;
-		board.solution.(board.sp).solgroups.
-		  (board.solution.(board.sp).solgroupsnumb) <- i;
-		board.solution.(board.sp).solgroupsnumb <-
-		  board.solution.(board.sp).solgroupsnumb +1
+                sol.solgroups.(sol.solgroupsnumb) <- i;
+                sol.solgroupsnumb <- sol.solgroupsnumb +1
 	      )
       )
   in helper 0
 
 let check_claim board cl =
   let px = elx cl.(1) and py = elx cl.(1) in
-    if py<boardY && (py land 1 = 1) then
-	 (
-	   board.solution.(board.sp).solgroupsnumb <- 0;
-	   board.solution.(board.sp).solname <- baseinverse_;
-	   board.solution.(board.sp).sqinv.(0) <- cl.(0);
-	   board.solution.(board.sp).sqinv.(1) <- cl.(1);
-	   board.solution.(board.sp).sqinv.(2) <- cl.(2);
-	   board.solution.(board.sp).sqinv.(3) <- elm px py;
-	   board.solution.(board.sp).sqinvnumb <- 4;
-	   board.solution.(board.sp).solpoint.(0) <- cl.(0);
-	   board.solution.(board.sp).solpoint.(1) <- elm px py;
-	   both_groups board cl.(0) (elm px py);
-	   board.instances.(baseclaim_) <-
-	     board.instances.(baseclaim_) + 1;
-	   if board.solution.(board.sp).solgroupsnumb > 0 then
-	       (
+  if py < boardY && (py land 1 = 1) then (
+    let sol = board.solution.(board.sp) in
+    sol.solgroupsnumb <- 0;
+    sol.solname <- BASEINVERSE;
+    sol.sqinv.(0) <- cl.(0);
+    sol.sqinv.(1) <- cl.(1);
+    sol.sqinv.(2) <- cl.(2);
+    sol.sqinv.(3) <- elm px py;
+    sol.sqinvnumb <- 4;
+    sol.solpoint.(0) <- cl.(0);
+    sol.solpoint.(1) <- elm px py;
+    both_groups board cl.(0) (elm px py);
+    Rule.incr board.instances BASECLAIM;
+    if sol.solgroupsnumb > 0 then (
 		 both_groups board cl.(1) cl.(2);
 		 board.sp <- board.sp + 1
-	       );
-	   board.solution.(board.sp).solgroupsnumb <- 0;
-	   board.solution.(board.sp).solname <- baseinverse_;
-	   board.solution.(board.sp).sqinv.(0) <- cl.(0);
-	   board.solution.(board.sp).sqinv.(1) <- cl.(1);
-	   board.solution.(board.sp).sqinv.(2) <- cl.(2);
-	   board.solution.(board.sp).sqinv.(3) <- elm px py;
-	   board.solution.(board.sp).sqinvnumb <- 4;
-	   board.solution.(board.sp).solpoint.(0) <- elm px py;
-	   board.solution.(board.sp).solpoint.(1) <- cl.(2);
-	   both_groups board (elm px py) cl.(2);
-	   board.instances.(baseclaim_) <-
-	     board.instances.(baseclaim_) + 1;
-	   if board.solution.(board.sp).solgroupsnumb > 0 then
-	     (
+    );
+    let sol = board.solution.(board.sp) in
+    sol.solgroupsnumb <- 0;
+    sol.solname <- BASEINVERSE;
+    sol.sqinv.(0) <- cl.(0);
+    sol.sqinv.(1) <- cl.(1);
+    sol.sqinv.(2) <- cl.(2);
+    sol.sqinv.(3) <- elm px py;
+    sol.sqinvnumb <- 4;
+    sol.solpoint.(0) <- elm px py;
+    sol.solpoint.(1) <- cl.(2);
+    both_groups board (elm px py) cl.(2);
+    Rule.incr board.instances BASECLAIM;
+    if sol.solgroupsnumb > 0 then (
 	       both_groups board cl.(0) cl.(1);
 	       board.sp <- board.sp + 1
-	     )
-	 )
+    )
+  )
 
 let generate_all_other_before_instances board cols cl j =
   let step = 128 lsr cols
-  and gc = Array.init 4 (fun j -> (Array.init 3 (fun i -> 0))) in
+  and gc = Array.make_matrix 4 3  0 in
     for x=0 to cols - 1 do
       let px = elx cl.(x)
       and py = ely cl.(x) in
@@ -400,7 +406,7 @@ let generate_all_other_before_instances board cols cl j =
 	if board.stack.(px)<py-2 then gc.(x).(0) <- elm px (py-2)
 	else gc.(x).(0) <- -1
     done;
-    let rec helper cnt =
+  let rec helper cnt =
       if cnt < 128 then
 	(
 	  let pn = Array.init 4 (fun i -> (cnt lsr 6) land 1)
@@ -422,19 +428,18 @@ let generate_all_other_before_instances board cols cl j =
 	      done;
 	      j := !j+1
 	    done;
-	    if !flag then
-	      (
-		board.solution.(board.sp).solgroupsnumb <- 0;
-		board.solution.(board.sp).solname <- before_;
-		board.solution.(board.sp).solpoint.(0) <-
-		  elm board.xplace.(!j).(0) board.yplace.(!j).(0);
-		board.solution.(board.sp).solpoint.(1) <-
-		  elm board.xplace.(!j).(3) board.yplace.(!j).(3);
-		board.solution.(board.sp).sqinvnumb <- 2*cols;
-		for x=0 to (2*cols)-1 do
- 		  board.solution.(board.sp).sqinv.(x)<-
-		    sl.(x lsr 1).(x land 1)
-		done;
+            if !flag then (
+              let sol = board.solution.(board.sp) in
+              sol.solgroupsnumb <- 0;
+              sol.solname <- BEFORE;
+              sol.solpoint.(0) <-
+                elm board.xplace.(!j).(0) board.yplace.(!j).(0);
+              sol.solpoint.(1) <-
+                elm board.xplace.(!j).(3) board.yplace.(!j).(3);
+              sol.sqinvnumb <- 2 * cols;
+              for x=0 to 2 * cols -1 do
+                sol.sqinv.(x) <- sl.(x lsr 1).(x land 1)
+              done;
 		for x = 0 to cols-1 do
 		  let py2 = ely sl.(x).(1) in
 		    if py2 land 1 = 1 then
@@ -442,8 +447,8 @@ let generate_all_other_before_instances board cols cl j =
 		    else both_groups board sl.(x).(0) sl.(x).(1)
 		done;
 		both_many_groups board cols cl;
-		board.instances.(before_) <- board.instances.(before_)+1;
-		if board.solution.(board.sp).solgroupsnumb>0 then
+                Rule.incr board.instances BEFORE;
+                if sol.solgroupsnumb > 0 then
 		  board.sp <- board.sp + 1
 	      );
 	    helper (cnt+step)
@@ -452,16 +457,16 @@ let generate_all_other_before_instances board cols cl j =
 
 let check_double_threat board x y tch pnt =
   let pq = elm x y in
-    for j=0 to board.solvable_groups.sqpnt.(pq)-2 do
-      for k=(j+1) to board.solvable_groups.sqpnt.(pq)-1 do
-	let jg = board.solvable_groups.squar.(pq).(j)
-	and kg = board.solvable_groups.squar.(pq).(k) in
-	let w1 = check_men board jg 1
-	and w2 = check_men board kg 1
+  let sg = board.solvable_groups.(pq) in
+  for j=0 to Array.length sg - 2 do
+    for k = j+1 to Array.length sg - 1 do
+        let jg = sg.(j)
+        and kg = sg.(k) in
+        let w1 = check_men board jg 1
+        and w2 = check_men board kg 1
 	and g1 = ref 0
 	and g2 = ref 0 in
-	  if (w1=2 && w2=2) then
-	    (
+        if w1=2 && w2=2 then (
 	      for wx=0 to tiles-1 do
 		let px = board.xplace.(jg).(wx)
 		and py = board.yplace.(jg).(wx) in
@@ -511,22 +516,19 @@ let threat_combo board tc =
 
 let wipe_many_groups board cols cl =
   if cols <> 0 then
-    let p=board.solvable_groups.sqpnt.(cl.(0)) in
-      for i=0 to p-1 do
-	let g1=board.solvable_groups.squar.(cl.(0)).(i) in
-	  if board.usablegroup.(g1) then
-	    if cols=1 || (recurse_groups board (cols-1)
-			    (int_to_tab cl.(1)) g1)
-	    then board.usablegroup.(g1) <- false
-      done
+    let g = board.solvable_groups.(cl.(0)) in
+    for i = 0 to Array.length g - 1 do
+      let gi = g.(i) in
+      if board.usablegroup.(gi) then
+        if cols = 1 || recurse_groups board (cols-1) (int_to_tab cl.(1)) gi
+        then board.usablegroup.(gi) <- false
+    done
 
 let handle_even_above_odd board tc =
   (*Rule one*)
-
   wipe_odd board (tc.cross);
 
   (*Rule two*)
-
   let cl = Array.make 2 0
   and px = elx (tc.cross)
   and py = (ely (tc.cross)) + 1
@@ -614,56 +616,38 @@ let handle_odd_before_even board tc =
 (*Regles de la these*)
 let claimeven board =
   let rec helper y1 =
-    if y1<boardY then
-      (
-	for x1=0 to boardX-1 do
-	  if board.sqused.(elm x1 y1) then
-	    (
-	      board.solution.(board.sp).solgroupsnumb <- 0;
-	      let q1=elm x1 y1 and q2=elm x1 (y1-1) in
-		if !(board.square.(q1)) = 0 && !(board.square.(q2)) = 0
-		  && board.sqused.(q2) then
-		    (
-		      let sln = board.solvable_groups.sqpnt.(q1)
-		      and grp = board.solvable_groups.squar.(q1) in
-			for j=0 to sln-1 do
-			  if board.intgp.tgroups.(grp.(j)) then
-			    (
-			      if board.solution.(board.sp).
-				solgroupsnumb=0
-			      then
-				(
-				  board.solution.(board.sp).
-				    solname <- claimeven_;
-				  board.solution.(board.sp).
-				    solpoint.(0) <- q1;
-				  board.solution.(board.sp).
-				    solpoint.(1) <- q2;
-				  board.solution.(board.sp).
-				    sqinv.(0) <- q1;
-				  board.solution.(board.sp).
-				    sqinv.(1) <- q2;
-				  board.solution.(board.sp).
-				    sqinvnumb <- 2;
-				  board.instances.(claimeven_)
-				  <- board.instances.(claimeven_) + 1
-				);
-			      board.solution.(board.sp).solgroups.
-				(board.solution.(board.sp).solgroupsnumb)
-			      <- grp.(j);
-			      board.solution.(board.sp).solgroupsnumb <-
-				board.solution.(board.sp).solgroupsnumb+1
-			    );
-			done;
-		    );
-		if board.solution.(board.sp).solgroupsnumb > 0 then
-		  board.sp <- board.sp + 1;
-	    );
-	done;
-	helper (y1+2)
-      )
+    if y1<boardY then (
+      for x1=0 to boardX-1 do
+        if board.sqused.(elm x1 y1) then (
+          let sol = board.solution.(board.sp) in
+          sol.solgroupsnumb <- 0;
+          let q1 = elm x1 y1 and q2 = elm x1 (y1-1) in
+          if !(board.square.(q1)) = 0 && !(board.square.(q2)) = 0
+            && board.sqused.(q2) then (
+              let grp = board.solvable_groups.(q1) in
+              for j=0 to Array.length grp - 1 do
+                if board.intgp.tgroups.(grp.(j)) then (
+                  if sol.solgroupsnumb = 0 then (
+                    sol.solname <- CLAIMEVEN;
+                    sol.solpoint.(0) <- q1;
+                    sol.solpoint.(1) <- q2;
+                    sol.sqinv.(0) <- q1;
+                    sol.sqinv.(1) <- q2;
+                    sol.sqinvnumb <- 2;
+                    Rule.incr board.instances CLAIMEVEN;
+                  );
+                  sol.solgroups.(sol.solgroupsnumb) <- grp.(j);
+                  sol.solgroupsnumb <- sol.solgroupsnumb + 1
+                );
+              done;
+            );
+          if sol.solgroupsnumb > 0 then
+            board.sp <- board.sp + 1;
+        );
+      done;
+      helper (y1+2)
+    )
   in helper 1
-
 
 
 let baseinverse board =
@@ -675,9 +659,8 @@ let baseinverse board =
 	    if board.stack.(x1) = y1 then
 	      (
 		memset set true 64;
-		let sln = board.solvable_groups.sqpnt.(q1)
-		and grp = board.solvable_groups.squar.(q1) in
-		  for j=0 to sln-1 do
+                let grp = board.solvable_groups.(q1) in
+                for j=0 to Array.length grp - 1 do
 		    if board.intgp.tgroups.(grp.(j)) then
 		      for x=0 to tiles-1 do
 			let wx = board.xplace.(grp.(j)).(x)
@@ -686,21 +669,18 @@ let baseinverse board =
 			    set.(elm wx wy) && board.sqused.(elm wx wy)
 			  then (
 			    set.(elm wx wy) <- false;
-			    board.solution.(board.sp).solgroupsnumb <- 0;
-			    board.solution.(board.sp).solname
-			    <- baseinverse_;
-			    board.solution.(board.sp).solpoint.(0) <- q1;
-			    board.solution.(board.sp).solpoint.(1)
-			    <- elm wx wy;
-			    board.solution.(board.sp).sqinv.(0) <- q1;
-			    board.solution.(board.sp).sqinv.(1)
-			    <- elm wx wy;
-			    board.solution.(board.sp).sqinvnumb <- 2;
+                            let sol = board.solution.(board.sp) in
+                            sol.solgroupsnumb <- 0;
+                            sol.solname <- BASEINVERSE;
+                            sol.solpoint.(0) <- q1;
+                            sol.solpoint.(1) <- elm wx wy;
+                            sol.sqinv.(0) <- q1;
+                            sol.sqinv.(1) <- elm wx wy;
+                            sol.sqinvnumb <- 2;
 			    both_groups board q1 (elm wx wy);
-			    board.instances.(baseinverse_)
-			    <- board.instances.(baseinverse_) + 1;
-			    if board.solution.(board.sp).solgroupsnumb>0
-			    then board.sp <- board.sp + 1;
+                            Rule.incr board.instances BASEINVERSE;
+                            if sol.solgroupsnumb > 0 then
+                              board.sp <- board.sp + 1;
 			  )
 		      done;
 		  done;
@@ -712,16 +692,15 @@ let baseinverse board =
 
 let vertical board =
   let set = Array.make 64 true in
-    for y1=0 to boardY-1 do
+  for y1 = 0 to boardY - 1 do
       for x1=0 to boardX-1 do
 	let q1=elm x1 y1 in
 	  if board.sqused.(q1) then
 	    if !(board.square.(q1)) = 0 then
 	      (
 		memset set true 64;
-		let sln=board.solvable_groups.sqpnt.(q1)
-		and grp=board.solvable_groups.squar.(q1) in
-		  for j=0 to sln-1 do
+                let grp = board.solvable_groups.(q1) in
+                for j=0 to Array.length grp - 1 do
 		    if board.intgp.tgroups.(grp.(j)) &&
 		      board.xplace.(grp.(j)).(0)=
 		      board.xplace.(grp.(j)).(3) then
@@ -732,25 +711,17 @@ let vertical board =
 			      && board.sqused.(elm x1 wy)
 			    then (
 			      set.(elm x1 wy)<-false;
-			      board.solution.(board.sp).solgroupsnumb
-			      <- 0;
-			      board.solution.(board.sp).solname
-			      <- vertical_;
-			      board.solution.(board.sp).solpoint.(0)
-			      <- q1;
-			      board.solution.(board.sp).solpoint.(1)
-			      <- elm x1 wy;
-			      board.solution.(board.sp).sqinv.(0)
-			      <- q1;
-			      board.solution.(board.sp).sqinv.(1)
-			      <- elm x1 wy;
-			      board.solution.(board.sp).sqinvnumb
-			      <- 2;
+                              let sol = board.solution.(board.sp) in
+                              sol.solgroupsnumb <- 0;
+                              sol.solname <- VERTICAL;
+                              sol.solpoint.(0) <- q1;
+                              sol.solpoint.(1) <- elm x1 wy;
+                              sol.sqinv.(0) <- q1;
+                              sol.sqinv.(1) <- elm x1 wy;
+                              sol.sqinvnumb <- 2;
 			      both_groups board q1 (elm x1 wy);
-			      board.instances.(vertical_)
-			      <- board.instances.(vertical_) + 1;
-			      if board.solution.(board.sp).
-				solgroupsnumb>0 then
+                              Rule.incr board.instances VERTICAL;
+                              if sol.solgroupsnumb > 0 then
 				  board.sp <- board.sp+1
 			    )
 			done;
@@ -764,15 +735,13 @@ let vertical board =
 let aftereven board =
   let cl = Array.make 4 0 in
   let rec helper y1 =
-    if y1<boardY then
-      (
+    if y1<boardY then (
 	for x1=0 to boardX-1 do
 	  let q1=elm x1 y1 in
 	    if board.sqused.(q1) then
 	      (
-		let sln = board.solvable_groups.sqpnt.(q1)
-		and grp = board.solvable_groups.squar.(q1) in
-		  for j=0 to sln-1 do
+                let grp = board.solvable_groups.(q1) in
+                for j = 0 to Array.length grp - 1 do
 		    if board.intgp.mygroups.(grp.(j)) &&
 		      x1=board.xplace.(grp.(j)).(0) &&
 		      x1<board.xplace.(grp.(j)).(3) then
@@ -795,27 +764,23 @@ let aftereven board =
 				else after := false;
 			      x := !x+1
 			  done;
-			  if !after && !cols>0 then
-			    (
-			      board.solution.(board.sp).solgroupsnumb<-0;
-			      board.solution.(board.sp).solname
-			      <-aftereven_;
-			      board.solution.(board.sp).solpoint.(0)<-q1;
-			      board.solution.(board.sp).solpoint.(1)
-			      <-elm (board.xplace.(grp.(j)).(3))
-				       (board.yplace.(grp.(j)).(3));
-			      board.instances.(aftereven_)
-			      <- board.instances.(aftereven_)+1;
-			      board.solution.(board.sp).sqinvnumb
-			      <- !cols;
-			      for pj=0 to !cols-1 do
-				board.solution.(board.sp).sqinv.(pj)
-				  <-cl.(pj)
-			      done;
-			      solve_columns board !cols cl;
-			      if board.solution.(board.sp).solgroupsnumb
-				> 0 then board.sp <- board.sp+1
-			    )
+                          if !after && !cols>0 then (
+                            let sol = board.solution.(board.sp) in
+                            sol.solgroupsnumb <- 0;
+                            sol.solname <- AFTEREVEN;
+                            sol.solpoint.(0) <- q1;
+                            sol.solpoint.(1) <-
+                              elm (board.xplace.(grp.(j)).(3))
+                              (board.yplace.(grp.(j)).(3));
+                            Rule.incr board.instances AFTEREVEN;
+                            sol.sqinvnumb <- !cols;
+                            for pj=0 to !cols-1 do
+                              sol.sqinv.(pj) <-cl.(pj)
+                            done;
+                            solve_columns board !cols cl;
+                            if sol.solgroupsnumb > 0 then
+                              board.sp <- board.sp+1
+                          )
 		  done
 	      )
 	done;
@@ -836,9 +801,8 @@ let lowinverse board =
 	      if board.stack.(x1)<y1 then
 		(
 		  memset set true 64;
-		  let sln = board.solvable_groups.sqpnt.(q1)
-		  and grp = board.solvable_groups.squar.(q1) in
-		    for j=0 to sln-1 do
+                  let grp = board.solvable_groups.(q1) in
+                  for j = 0 to Array.length grp - 1 do
 		      if board.intgp.tgroups.(grp.(j)) &&
 			board.xplace.(grp.(j)).(0) <>
 			board.xplace.(grp.(j)).(3) then
@@ -850,33 +814,23 @@ let lowinverse board =
 				board.sqused.(elm wx wy) then
 				  (
 				    set.(elm wx wy)<-false;
-				    board.solution.(board.sp)
-				      .solgroupsnumb <- 0;
-				    board.solution.(board.sp).solname
-				    <- lowinverse_;
-				    board.solution.(board.sp)
-				      .solpoint.(0) <- q1;
-				    board.solution.(board.sp)
-				      .solpoint.(1) <- elm wx wy;
-				    board.solution.(board.sp).sqinv.(0)
-				    <- q1;
-				    board.solution.(board.sp).sqinv.(1)
-				    <- elm wx wy;
-				    board.solution.(board.sp).sqinv.(2)
-				    <- elm x1 (y1-1);
-				    board.solution.(board.sp).sqinv.(3)
-				    <- elm wx (wy-1);
-				    board.solution.(board.sp).sqinvnumb
-				    <- 4;
+                                    let sol = board.solution.(board.sp) in
+                                    sol.solgroupsnumb <- 0;
+                                    sol.solname <- LOWINVERSE;
+                                    sol.solpoint.(0) <- q1;
+                                    sol.solpoint.(1) <- elm wx wy;
+                                    sol.sqinv.(0) <- q1;
+                                    sol.sqinv.(1) <- elm wx wy;
+                                    sol.sqinv.(2) <- elm x1 (y1-1);
+                                    sol.sqinv.(3) <- elm wx (wy-1);
+                                    sol.sqinvnumb <- 4;
 				    both_groups board q1 (elm wx wy);
 				    both_groups board q1 (elm x1 (y1-1));
 				    both_groups board (elm wx wy)
 				      (elm wx (wy-1));
-				    board.instances.(lowinverse_)
-				    <- board.instances.(lowinverse_)+1;
-				    if board.solution.(board.sp)
-				      .solgroupsnumb>0 then board.sp
-					<- board.sp + 1;
+                                    Rule.incr board.instances LOWINVERSE;
+                                    if sol.solgroupsnumb > 0 then
+                                      board.sp <- board.sp + 1;
 				  )
 			  done;
 		    done
@@ -897,9 +851,8 @@ let highinverse board =
 	    if board.sqused.(q1) then
 	      (
 		memset set true 64;
-		let sln = board.solvable_groups.sqpnt.(q1)
-		and grp = board.solvable_groups.squar.(q1) in
-		  for j=0 to sln-1 do
+                let grp = board.solvable_groups.(q1) in
+                for j = 0 to Array.length grp - 1 do
 		    if board.intgp.tgroups.(grp.(j)) &&
 		      board.xplace.(grp.(j)).(0)
 		      <> board.yplace.(grp.(j)).(3) then
@@ -912,34 +865,22 @@ let highinverse board =
 			      board.sqused.(elm wx wy) then
 				(
 				  set.(elm wx wy)<-false;
-				  board.solution.(board.sp)
-				    .solgroupsnumb<-0;
-				  board.solution.(board.sp).solname
-				  <- highinverse_;
-				  board.solution.(board.sp)
-				    .solpoint.(0) <- q1;
-				  board.solution.(board.sp)
-				    .solpoint.(1) <- elm wx wy;
-				  board.solution.(board.sp).sqinv.(0)
-				  <- q1;
-				  board.solution.(board.sp).sqinv.(1)
-				  <- elm wx wy;
-				  board.solution.(board.sp).sqinv.(2)
-				  <- elm x1 (y1-1);
-				  board.solution.(board.sp).sqinv.(3)
-				  <- elm wx (wy-1);
-				  board.solution.(board.sp).sqinv.(4)
-				  <- elm x1 (y1+1);
-				  board.solution.(board.sp).sqinv.(5)
-				  <- elm wx (wy+1);
-				  board.solution.(board.sp)
-				    .sqinvnumb <- 6;
-				  board.instances.(highinverse_)
-				  <- board.instances.(highinverse_)+1;
-
+                                  let sol = board.solution.(board.sp) in
+                                  sol.solgroupsnumb<-0;
+                                  sol.solname <- HIGHINVERSE;
+                                  sol.solpoint.(0) <- q1;
+                                  sol.solpoint.(1) <- elm wx wy;
+                                  sol.sqinv.(0) <- q1;
+                                  sol.sqinv.(1) <- elm wx wy;
+                                  sol.sqinv.(2) <- elm x1 (y1-1);
+                                  sol.sqinv.(3) <- elm wx (wy-1);
+                                  sol.sqinv.(4) <- elm x1 (y1+1);
+                                  sol.sqinv.(5) <- elm wx (wy+1);
+                                  sol.sqinvnumb <- 6;
+                                  Rule.incr board.instances HIGHINVERSE;
 				  (*Upper and middle Squares*)
 				  both_groups board (elm x1 (y1+1))
-				    (elm wx (wy+1));
+                                    (elm wx (wy+1));
 				  both_groups board q1 (elm wx wy);
 
 				  (*Vertical groups*)
@@ -959,9 +900,7 @@ let highinverse board =
 				  if board.stack.(wx)=wy-1 then
 				    both_groups board (elm x1 (y1+1))
 				      (elm wx (wy-1));
-
-				  if board.solution.(board.sp)
-				    .solgroupsnumb > 0 then
+                                  if sol.solgroupsnumb > 0 then
 				      board.sp <- board.sp + 1
 				)
 			done;
@@ -982,11 +921,10 @@ let baseclaim board =
 	if board.sqused.(elm x1 y1) then
 	  (
 	    let q1 = elm x1 y1 in
-	    let sln = board.solvable_groups.sqpnt.(q1)
-	    and grp = board.solvable_groups.squar.(q1) in
-	      for j=0 to sln-1 do
+            let grp = board.solvable_groups.(q1) in
+            for j = 0 to Array.length grp - 1 do
 		if board.intgp.tgroups.(grp.(j)) &&
-		  board.xplace.(grp.(j)).(0)<>board.yplace.(grp.(j)).(3)
+                  board.xplace.(grp.(j)).(0) <> board.yplace.(grp.(j)).(3)
 		then
 		  (
 		    cols := 0;
@@ -1081,141 +1019,143 @@ let anypentas board =
 
 
 
+(* Adjacency Matrix *)
+module Adjacency =
+struct
 
+  let rulecombo = [|[|1; 1; 1; 1; 3; 3; 1; 1; 1|];
+                    [|1; 1; 1; 1; 1; 1; 1; 1; 1|];
+                    [|1; 1; 1; 1; 1; 1; 1; 1; 1|];
+                    [|1; 1; 1; 4; 3; 3; 1; 4;12|];
+                    [|3; 1; 1; 3; 8; 8; 3; 6; 6|];
+                    [|3; 1; 1; 3; 8; 8; 3; 3; 3|];
+                    [|1; 1; 1; 1; 3; 3; 1; 1; 1|];
+                    [|1; 1; 1; 4; 6; 3; 1; 4; 4|];
+                    [|1; 1; 1;12; 6; 3; 1; 4; 4|]|]
 
-
-(*Adjacent Matrix*)
-
-let rulecombo = [|[|1;1;1;1;3;3;1;1;1|];
-		     [|1;1;1;1;1;1;1;1;1|];
-		     [|1;1;1;1;1;1;1;1;1|];
-		     [|1;1;1;4;3;3;1;4;12|];
-		     [|3;1;1;3;8;8;3;6;6|];
-		     [|3;1;1;3;8;8;3;3;3|];
-		     [|1;1;1;1;3;3;1;1;1|];
-		     [|1;1;1;4;6;3;1;4;4|];
-		     [|1;1;1;12;6;3;1;4;4|]|]
-
-exception Combinaison_error
-
-
-let overlap board p1 p2 =
-  let temp = Array.make ((boardX+1)*(boardY+2)) false
-  and bol = ref false in
-    for x=0 to board.solution.(p2).sqinvnumb - 1 do
+  let overlap board p1 p2 =
+    let temp = Array.make ((boardX+1)*(boardY+2)) false in
+    for x = 0 to board.solution.(p2).sqinvnumb - 1 do
       temp.(board.solution.(p2).sqinv.(x)) <- true
     done;
+    let bol = ref false in
     for x=0 to board.solution.(p1).sqinvnumb - 1 do
       if temp.(board.solution.(p1).sqinv.(x)) then bol := true ;
     done;
     !bol
 
 
-let claimeven_below board p1 p2 =
-  let name = board.solution.(p1).solname
-  and bol = ref true in
-  let (q1,q2) = if name <> highinverse_ && name <> lowinverse_ then (p2,p1)
-  else (p1,p2) in
-    if board.solution.(q2).solname = aftereven_ then
-      let solcheck = board.solution.(q2).sqinvnumb / 2 in
-	for x=0 to 1 do
-	  let q1x = elx board.solution.(q1).sqinv.(x+2)
-	  and q1y = ely board.solution.(q1).sqinv.(x+2) in
-	    for y=0 to solcheck-1 do
-	      let q2x = elx board.solution.(q2).sqinv.(solcheck+y)
-	      and q2y = ely board.solution.(q2).sqinv.(solcheck+y) in
-		if q1x=q2x && q1y>q2y && (q2y land 1 = 1) then bol:=true
-	    done
-	done;
-    else if board.solution.(q2).solname = before_ &&
-      board.solution.(q2).solname = specialbefore_ then
-	let solcheck = board.solution.(q2).sqinvnumb/2 in
-	  for x=0 to 1 do
-	    let q1x = elx board.solution.(q1).sqinv.(x+2)
-	    and q1y = ely board.solution.(q1).sqinv.(x+2) in
-	      for y=0 to solcheck do
-		let q2x = elx board.solution.(q2).sqinv.(1+(y lsl 1))
-		and q2y = ely board.solution.(q2).sqinv.(1+(y lsl 1)) in
-		  if q1x=q2x && q1y>q2y && (q2y land 1=1) then bol:=true
-	      done
-	  done;
-    else if board.solution.(q2).solname = claimeven_ then
-      for x=0 to 1 do
-	let q1x = elx board.solution.(q1).sqinv.(x+2)
-	and q1y = elx board.solution.(q1).sqinv.(x+2)
-	and q2x = elx board.solution.(q2).sqinv.(0)
-	and q2y = ely board.solution.(q2).sqinv.(0) in
-	  if (q1x=q2x &&q1y>q2y) then bol := true
-      done
-    else if board.solution.(q2).solname = baseclaim_ then
-      for x=0 to 1 do
-	let q1x = elx board.solution.(q1).sqinv.(x+2)
-	and q1y = elx board.solution.(q1).sqinv.(x+2)
-	and q2x = elx board.solution.(q2).sqinv.(0)
-	and q2y = ely board.solution.(q2).sqinv.(0) in
-	  if (q1x=q2x &&q1y>q2y) then bol := true
-      done
-    else raise Combinaison_error
+  let claimeven_below board p1 p2 =
+    let name = board.solution.(p1).solname in
+    let (q1,q2) = (if name <> HIGHINVERSE && name <> LOWINVERSE then (p2,p1)
+                   else (p1,p2)) in
+    assert(let name = board.solution.(q1).solname in
+           name = HIGHINVERSE || name = LOWINVERSE);
+    let bol = ref true in
+    match board.solution.(q2).solname with
+    | AFTEREVEN ->
+        let solcheck = board.solution.(q2).sqinvnumb / 2 in
+        for x = 0 to 1 do
+          let q1x = elx board.solution.(q1).sqinv.(x+2)
+          and q1y = ely board.solution.(q1).sqinv.(x+2) in
+          for y=0 to solcheck-1 do
+            let q2x = elx board.solution.(q2).sqinv.(solcheck+y)
+            and q2y = ely board.solution.(q2).sqinv.(solcheck+y) in
+            if q1x=q2x && q1y>q2y && (q2y land 1 = 1) then bol:=true
+          done
+        done;
+        !bol
+    | BEFORE | SPECIALBEFORE ->
+        let solcheck = board.solution.(q2).sqinvnumb / 2 in
+        for x=0 to 1 do
+          let q1x = elx board.solution.(q1).sqinv.(x+2)
+          and q1y = ely board.solution.(q1).sqinv.(x+2) in
+          for y=0 to solcheck - 1 do
+            let q2x = elx board.solution.(q2).sqinv.(1+(y lsl 1))
+            and q2y = ely board.solution.(q2).sqinv.(1+(y lsl 1)) in
+            if q1x=q2x && q1y>q2y && (q2y land 1=1) then bol:=true
+          done
+        done;
+        !bol
+    | CLAIMEVEN ->
+        for x=0 to 1 do
+          let q1x = elx board.solution.(q1).sqinv.(x+2)
+          and q1y = elx board.solution.(q1).sqinv.(x+2)
+          and q2x = elx board.solution.(q2).sqinv.(0)
+          and q2y = ely board.solution.(q2).sqinv.(0) in
+          if q1x=q2x && q1y>q2y then bol := true
+        done;
+        !bol
+    | BASECLAIM ->
+        for x=0 to 1 do
+          let q1x = elx board.solution.(q1).sqinv.(x+2)
+          and q1y = elx board.solution.(q1).sqinv.(x+2)
+          and q2x = elx board.solution.(q2).sqinv.(3)
+          and q2y = ely board.solution.(q2).sqinv.(3) in
+          if q1x=q2x && q1y>q2y then bol := true
+        done;
+        !bol
+    | HIGHINVERSE | LOWINVERSE | VERTICAL | BASEINVERSE -> assert false
 
 
-let column_wdoe board p1 p2 =
-  let joinmtrx = Array.make ((boardX+1)*(boardY+2)) false in
+  let column_wdoe board p1 p2 =
+    let joinmtrx = Array.make ((boardX+1)*(boardY+2)) false in
+    assert(match board.solution.(p1).solname with
+           | SPECIALBEFORE | BEFORE | AFTEREVEN | LOWINVERSE -> true
+           | _ -> false);
+    assert(match board.solution.(p2).solname with
+           | SPECIALBEFORE | BEFORE | AFTEREVEN | LOWINVERSE -> true
+           | _ -> false);
     for x=0 to board.solution.(p1).sqinvnumb - 1 do
       joinmtrx.(board.solution.(p1).sqinv.(x)) <- true
     done;
     for x=0 to board.solution.(p2).sqinvnumb - 1 do
       joinmtrx.(board.solution.(p2).sqinv.(x)) <- true
     done;
-    let x = ref 0 and answer = ref true and cnt = ref 0 in
-      while !x< boardX && !answer do
-	for y = 0 to boardY-1 do
-	if joinmtrx.(elm !x y) then cnt := !cnt + 1
-	done;
-	if !cnt land 1 = 1 then answer := false
+    let x = ref 0 and answer = ref true in
+    while !x < boardX && !answer do
+      let cnt = ref 0 in
+      for y = 0 to boardY - 1 do
+        if joinmtrx.(elm !x y) then incr cnt
       done;
-      !answer
+      if !cnt land 1 = 1 then answer := false;
+      incr x
+    done;
+    !answer
 
 
-
-let comp_rules board p1 p2 =
-  let c1 = board.solution.(p1).solname - 1
-  and c2 = board.solution.(p2).solname - 1
-  and bol = ref true in
-  let way = rulecombo.(c1).(c2) in
-    if way land 9 <> 0 then
-      (
-	board.rules.(0) <- board.rules.(0) + 1;
-	if overlap board p1 p2 then bol := false
-      )
-    else if way land 2 <> 0 then
-      (
-	board.rules.(1) <- board.rules.(1) + 1;
-	if overlap board p1 p2 then bol := false
-      )
-    else if way land 4 <> 0 then
-      (
-	board.rules.(2) <- board.rules.(2) + 1;
-	if not (column_wdoe board p1 p2) then bol := false
-      );
-    !bol
+  let comp_rules board p1 p2 =
+    let c1 = Rule.to_int board.solution.(p1).solname
+    and c2 = Rule.to_int board.solution.(p2).solname in
+    let way = rulecombo.(c1).(c2) in
+    if way land 9 <> 0 then (
+      board.rules.(0) <- board.rules.(0) + 1;
+      not(overlap board p1 p2)
+    )
+    else if way land 2 <> 0 then (
+      board.rules.(1) <- board.rules.(1) + 1;
+      not(claimeven_below board p1 p2)
+    )
+    else if way land 4 <> 0 then (
+      board.rules.(2) <- board.rules.(2) + 1;
+      column_wdoe board p1 p2
+    )
+    else true
 
 
-
-let build_adjacency_matrix board =
-  let matrix = Array.init board.sp
-    (fun i -> Array.init board.sp (fun j -> false)) in
-    for x=0 to board.sp-1 do
-      for y=x to board.sp-1 do
-	if comp_rules board x y then matrix.(y).(x) <- true
+  let make_matrix board =
+    let matrix = Array.make_matrix board.sp board.sp false in
+    for x = 0 to board.sp - 1 do
+      for y = x to board.sp - 1 do
+        if comp_rules board x y then matrix.(y).(x) <- true
       done
     done;
     matrix
-
+end
 
 (*Problem Solver*)
 
 let wside = [|"none";"yellow";"red"|]
-and rules_name = [|"CLAIMEVEN";"BASEINVERSE";"VERTICAL";"LOWINVERSE";"HIGHINVERSE";"BASECLAIM";"BEFORE";"SPECIALBEFORE"|]
 and tempsolused = ref 0
 exception No_problem_found
 
@@ -1240,12 +1180,12 @@ type up_solution = {
   mutable wprobs : int array
 }
 
-let make_problem group_ solved_ solnumb_ =
+let make_problem group solved solnumb =
   {
-    group = group_;
-    solved = solved_;
+    group = group;
+    solved = solved;
     solutions = Array.make 621 0;
-    solnumb = solnumb_
+    solnumb = solnumb
   }
 
 
@@ -1433,9 +1373,9 @@ let evaluate_black board =
   else if board.sp = 0 then false
   else
     (
-      let matrix = build_adjacency_matrix board in
+      let matrix = Adjacency.make_matrix board in
       let oracle = problem_solver board matrix in
-	oracle
+      oracle
     )
 
 
@@ -1512,7 +1452,7 @@ let evaluate_white board =
 	      if board.intgp.j = 0 then oracle := true
 	      else if board.sp = 0 then oracle := false
 	      else
-		let matrix = build_adjacency_matrix board in
+		let matrix = Adjacency.make_matrix board in
 		  oracle := problem_solver board matrix
 	    done
 	  done
@@ -1527,12 +1467,87 @@ let evaluation_function board =
   else evaluate_white board
 
 
+let init_board board =
+  let i = ref 0 in
+  (* Step one. Horizontal lines. *)
+  for y=0 to boardY - 1 do
+    for x=0 to boardX - 4 do
+      for k = 0 to 3 do
+        board.groups.(!i).(k) <- board.square.(elm (x+k) y);
+        board.xplace.(!i).(k) <- x+k;
+        board.yplace.(!i).(k) <- y
+      done;
+      incr i
+    done
+  done;
+  (* Step two. Vertical lines *)
+  for y=0 to boardY - 4 do
+    for x=0 to boardX - 1 do
+      for k = 0 to 3 do
+        board.groups.(!i).(k) <- board.square.(elm x (y+k));
+        board.xplace.(!i).(k) <- x;
+        board.yplace.(!i).(k) <- y+k
+      done;
+      incr i
+    done
+  done;
+  (* Step three. Diagonal (north east) lines *)
+  for y=0 to boardY - 4 do
+    for x=0 to boardX - 4 do
+      for k = 0 to 3 do
+        board.groups.(!i).(k) <- board.square.(elm (x+k) (y+k));
+        board.xplace.(!i).(k) <- x+k;
+        board.yplace.(!i).(k) <- y+k
+      done;
+      incr i
+    done
+  done;
+  (* Step four. Diagonal (south east) lines *)
+  for y=3 to boardY - 1 do
+    for x=0 to boardX - 4 do
+      for k = 0 to 3 do
+        board.groups.(!i).(k) <- (board.square.(elm (x+k) (y-k)));
+        board.xplace.(!i).(k) <- x+k;
+        board.yplace.(!i).(k) <- y-k
+      done;
+      incr i
+    done
+  done;
+  assert(!i = groups);
+
+  for x=0 to boardX - 1 do
+    for y=0 to boardY - 1 do
+      board.square.(elm x y) := elm x y
+    done
+  done;
+
+  let sqpnt = Array.make 64 0 in
+  let solv = board.solvable_groups in
+  for i=0 to groups - 1 do
+    for j=0 to tiles - 1 do
+      let p = !(board.groups.(i).(j)) in
+      solv.(p).(sqpnt.(p)) <- i;
+      sqpnt.(p) <- sqpnt.(p) + 1
+    done
+  done;
+  (* Resize the solvable groups to their max number of elements: *)
+  for p = 0 to 64 do solv.(p) <- Array.sub solv.(p) 0 sqpnt.(p) done;
+
+  (* Here we set all out squares to a default value to detect problems *)
+  for i=0 to 7 do
+    board.square.(elm 7 i) := -1;
+    board.square.(elm i 6) := -1
+  done;
+  board.stack.(7) <- -1;
+  for y=0 to boardY - 1 do
+    for x=0 to boardX - 1 do
+      board.square.(elm x y) := 0
+    done
+  done
+
+(* Return a fully initialized board *)
 let make_board() =
-  let solv =
-    {
-      squar = Array.init 64 (fun i -> Array.init 16 (fun j -> 0));
-      sqpnt = Array.make 64 0
-    }
+  let solv = Array.make_matrix 64 16 0
   and intg =
     {
       tgroups = Array.make groups true;
@@ -1543,16 +1558,15 @@ let make_board() =
   and sol =
     {
       valid = true;
-      solname = -1;
-      solpoint = Array.init 2 (fun i -> 0);
-      sqinv = Array.init (2*tiles) (fun i -> 0);
+      solname = CLAIMEVEN;  (* any will do *)
+      solpoint = Array.make 2 0;
+      sqinv = Array.make (2*tiles) 0;
       sqinvnumb = 0;
-      solgroups = Array.init groups (fun i -> 0);
+      solgroups = Array.make groups 0;
       solgroupsnumb = 0
     } in
-  let board =
-    {
-      wins = Array.init 2 (fun i -> 0);
+  let board = {
+      wins = Array.make 2 0;
       draws = 0;
       lastguess = 0;
       bestguess = maxmen;
@@ -1560,119 +1574,40 @@ let make_board() =
       white_lev = 0;
       black_lev = 0;
       autotest = 0;
-      rules = Array.init 3 (fun i -> 0);
+      rules = Array.make 3 0;
       oracle_guesses = 0;
-      instances = Array.init 10 (fun i -> 0);
+      instances = Rule.vec 10 0;
       turn = 1;
       filled = 0;
       cpu = 1;
       bbposit =0;
       groups = Array.init 69 (fun i -> (Array.init 4 (fun j -> ref 0)));
-      xplace = Array.init 69 (fun i -> (Array.init 4 (fun j -> 0)));
-      yplace = Array.init 69 (fun i -> (Array.init 4 (fun j -> 0)));
+      xplace = Array.make_matrix 69 4 0;
+      yplace = Array.make_matrix 69 4 0;
       square = Array.init ((boardX+1)*(boardY+2)) (fun i -> ref 0);
-      wipesq = Array.init ((boardX+1)*(boardY+2)) (fun i -> 0);
-      usablegroup = Array.init groups (fun i -> true);
-      sqused = Array.init ((boardX+1)*(boardY+2)) (fun i -> false);
-      stack = Array.init (boardX+1) (fun i -> 0);
-      moves = Array.init maxmen (fun i -> 0);
+      wipesq = Array.make ((boardX+1)*(boardY+2)) 0;
+      usablegroup = Array.make groups true;
+      sqused = Array.make ((boardX+1)*(boardY+2)) false;
+      stack = Array.make (boardX+1) 0;
+      moves = Array.make maxmen 0;
       solvable_groups = solv;
-      choices = Array.init maxmen (fun i -> 0);
-      mlist = Array.init maxmen (fun i -> 0);
+      choices = Array.make maxmen 0;
+      mlist = Array.make maxmen 0;
       intgp = intg;
       solution = Array.init alloc_solutions (fun i -> sol);
       sp = -1;
       problem_solved = 0;
       solused = -1;
-      oracle = Array.init 2 (fun i -> 0);
+      oracle = Array.make 2 0;
       nodes_visited = 0;
       maxtreedepth = 0;
-      white_book = Array.init 1 (fun i -> 0);
-      black_book = Array.init 1 (fun i -> 0);
+      white_book = Array.make 1 0;
+      black_book = Array.make 1 0;
       wbposit = 0;
       lastob = 0
-    }
-  in board
-
-
-
-let initboard board =
-    let i = ref 0 in
-      for y=0 to boardY-1 do
-	for x=0 to boardX-4 do
-	  for k=0 to 3 do
-	    board.groups.(!i).(k) <- board.square.(elm (x+k) y);
-	    board.xplace.(!i).(k) <- x+k;
-	    board.yplace.(!i).(k) <- y
-	  done;
-	    i:=!i+1
-	done
-      done;
-
-      for y=0 to boardY-4 do
-	for x=0 to boardX-1 do
-	  for k=0 to 3 do
-	    board.groups.(!i).(k) <- (board.square.(elm x (y+k)));
-	    board.xplace.(!i).(k) <- x;
-	    board.yplace.(!i).(k) <- y+k
-	  done;
-	    i:=!i+1
-	done
-      done;
-
-      for y=0 to boardY-4 do
-	for x=0 to boardX-4 do
-	  for k=0 to 3 do
-	    board.groups.(!i).(k) <- (board.square.(elm (x+k) (y+k)));
-	    board.xplace.(!i).(k) <- x+k;
-	    board.yplace.(!i).(k) <- y+k
-	  done;
-	    i:=!i+1
-	done
-      done;
-
-      for y=3 to boardY-1 do
-	for x=0 to boardX-4 do
-	  for k=0 to 3 do
-	    board.groups.(!i).(k) <- (board.square.(elm (x+k) (y-k)));
-	    board.xplace.(!i).(k) <- x+k;
-	    board.yplace.(!i).(k) <- y-k
-	  done;
-	  i:=!i+1
-	done
-      done;
-
-      for x=0 to 63 do
-	board.solvable_groups.sqpnt.(x) <- 0;
-	for y=0 to 15 do
-	  board.solvable_groups.squar.(x).(y) <- -1
-	done
-      done;
-
-      for x=0 to boardX-1 do
-	for y=0 to boardY-1 do
-	  board.square.(elm x y) := elm x y
-	done
-      done;
-
-	for i=0 to groups-1 do
-	  for j=0 to tiles-1 do
-	    let p = !(board.groups.(i).(j)) in
-	      board.solvable_groups.squar.(p).(board.solvable_groups.sqpnt.(p))<-i;
-	      board.solvable_groups.sqpnt.(p)
-	      <- board.solvable_groups.sqpnt.(p) + 1
-	  done
-	done;
-      for i=0 to 7 do
-	board.square.(elm 7 i) := -1;
-	board.square.(elm i 6) := -1
-      done;
-      board.stack.(7) <- -1;
-      for y=0 to boardY-1 do
-	for x=0 to boardX-1 do
-	  board.square.(elm x y) := 0
-	done
-      done
+  } in
+  init_board board;
+  board
 
 
 (*IA*)
@@ -1680,7 +1615,7 @@ let initboard board =
 let blstrsize = 14
 let goodmove = 16384
 let badmove = -16384
-let switch a = a lxor 3
+let switch a = a lxor 3;;
 let and_type = 1
 let or_type = 1
 
@@ -1756,6 +1691,7 @@ let gen_odd_threat board x side =
     else -1
 
 
+
 let check_double board group pos side =
   let rec helper x =
     if x<groups then
@@ -1770,53 +1706,7 @@ let group_eval board =
   let t1 = board.turn in
   let t2 = switch t1
   and score = ref 0 in
-    for x = 0 to groups-1 do
-      let p1 = ref 0
-      and p2 = ref 0 in
-	for i = 0 to 3 do
-	  if !(board.groups.(x).(i)) = t1 then p1 := !p1+1
-	  else if !(board.groups.(x).(i)) = t2 then p2 := !p2+1
-	done;
-	if !p1 = 4 then score := !score + goodmove
-	else if !p2 = 4 then score := !score + badmove
-	else if !p1 = 3 && !p2 = 0 then
-	  (
-	    score := !score + 100;
-	    let z = gen_odd_threat board x t1 in
-	      if z <> -1 then
-		let f = check_double board x z t1 in
-		  if not f then
-		    if t1 = 1 then score := !score + 200
-		    else score := !score + 150
-		  else if t1 = 1 then score := !score +750
-		  else score := !score + 500
-	  )
-	else if !p2 = 3 && !p1 = 0 then
-	  (
-	    score := !score - 100;
-	    let z = gen_odd_threat board x t2 in
-	      if z <> -1 then
-		let f = check_double board x z t2 in
-		  if not f then
-		    if t1 = 2 then score := !score - 200
-		    else score := !score - 150
-		  else if t1 = 2 then score := !score - 750
-		  else score := !score - 500
-	  )
-	else if !p1 = 2 && !p2 = 0 then score := !score +10
-	else if !p2 = 2 && !p1 = 0 then score := !score - 10;
-
-	if check_pentas board 1 then
-	  if t1 = 1 then score := !score + 800
-	  else score := !score - 800
-    done;
-    !score
-
-let groupeval board =
-  let t1 = board.turn in
-  let t2 = switch t1
-  and score = ref 0 in
-    for x = 0 to groups-1 do
+     for x = 0 to groups - 1 do
       let p1 = ref 0
       and p2 = ref 0 in
 	for i = 0 to 3 do
@@ -1833,7 +1723,7 @@ let groupeval board =
 		let f = check_double board x z t1 in
 		  if not f then
 		    if t1 = 1 then score := !score + 200
-		    else score := !score + 150
+		    else score := !score +150
 		  else if t1 = 1 then score := !score +750
 		  else score := !score + 500
 	  )
@@ -1855,7 +1745,7 @@ let groupeval board =
 	if check_pentas board 1 then
 	  if t1 = 1 then score := !score + 800
 	  else score := !score - 800
-    done;
+     done;
     !score
 
 
@@ -1901,30 +1791,28 @@ let connected board move =
   and v = verti (board.stack.(move)-1) 1 in
     max (max h v) (max d_ne d_nw)
 
-
 let opponent_connected board move =
   board.turn <- switch board.turn;
   let connect = connected board move in
-    board.turn <- switch board.turn;
-    connect
+  board.turn <- switch board.turn;
+  connect
 
 
 let get_game_result board =
   let answer = ref (-1) and i = ref 0 in
-    while !i<groups do
-      if !(board.groups.(!i).(0)) <> 0 &&
-	!(board.groups.(!i).(0)) = !(board.groups.(!i).(1)) &&
-	!(board.groups.(!i).(0)) = !(board.groups.(!i).(2)) &&
-	!(board.groups.(!i).(0)) = !(board.groups.(!i).(3)) then
-	  (
-	    answer := !(board.groups.(!i).(0));
-	    i := groups
-	  )
-      else i:= !i+1
-    done;
-    if !answer = -1 && board.filled = maxsquares then 0
-    else !answer
-
+  while !i<groups do
+    if !(board.groups.(!i).(0)) <> 0 &&
+      !(board.groups.(!i).(0)) = !(board.groups.(!i).(1)) &&
+      !(board.groups.(!i).(0)) = !(board.groups.(!i).(2)) &&
+      !(board.groups.(!i).(0)) = !(board.groups.(!i).(3)) then
+        (
+          answer := !(board.groups.(!i).(0));
+          i := groups
+        )
+    else i:= !i+1
+  done;
+  if !answer = -1 && board.filled = maxsquares then 0
+  else !answer
 
 
 let makemove board move =
@@ -1953,7 +1841,6 @@ let undomove board move =
       true
     )
 
-
 (* let bb = make_board() in *)
 (*   initboard bb; *)
 (*   let _ = makemove bb 0 *)
@@ -1962,8 +1849,6 @@ let undomove board move =
 (*   and _ = makemove bb 1 *)
 (*   and _ = makemove bb 0 in *)
 (*   groupeval bb *)
-
-
 
 
 
@@ -2037,15 +1922,16 @@ let fast_init_bin_tree node =
   in root
 
 let fast_set_node root node =
-  let child =
     {
       parent = Some root;
       lson = None;
       rson = None;
       node = node
     }
-  in child
 
+
+
+(*Binary Tree*)
 
 let bin_compare c1 c2 =
   let rec helper x =
@@ -2055,8 +1941,6 @@ let bin_compare c1 c2 =
       else helper (x+1)
     else 0 in
     helper 0
-
-
 
 let her_generate_all_children node =
   for x=0 to boardX-1 do
@@ -2347,4 +2231,3 @@ let heuristic_play_best board maxnodenum =
 	else if issymm then boardX-1-info.bestmove
 	else info.bestmove in
 	mymove
-
