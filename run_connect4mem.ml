@@ -45,7 +45,7 @@ let rec step game col =
   else (
     (*on cherche la colonne a jouer*)
     let _, col_to_play = Alphabetamem.alphabeta game 9 Gamemem.groupeval in
-    Printf.printf "%i\n%!" col_to_play;
+    Printf.printf "col_to_play = %i\n%!" col_to_play;
     Gamemem.makemove game col_to_play;
     Board.add_piece_to_board Graphics.yellow col_to_play;
     (*la pince va mettre la piece dans la colonne a jouer

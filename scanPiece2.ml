@@ -322,22 +322,16 @@ struct
 
     if(diff_line = 0 && diff_col = 0) then
       scan_light f
-    else
-      (
-        (*on fait les deux mouvements en meme temps*)
-        if (diff_line > 0) then (*on va vers le haut*)
-          (
-            let speed_vert, speed_m1, speed_m2 = speed_up.(diff_line).
-              (abs(diff_col)) in
-            (match (Robot.read meas_vert) with
-             |Some m_v  ->
-                (
-                  Motor.set C.conn_scan motor_captor_vert (Motor.speed
-                                                             speed_vert);
-                  wait_up angle_v f
-                )
-             |None -> assert false);
-
+    else (
+      (*on fait les deux mouvements en meme temps*)
+      if (diff_line > 0) then ( (*on va vers le haut*)
+        let speed_vert, speed_m1, speed_m2 =
+          speed_up.(diff_line).(abs(diff_col)) in
+        (match (Robot.read meas_vert) with
+         | Some m_v  ->
+             Motor.set C.conn_scan motor_captor_vert (Motor.speed speed_vert);
+             wait_up angle_v f
+         | None -> assert false);
 
             if (diff_col >= 0) then (*on va vers la gauche*)
               (

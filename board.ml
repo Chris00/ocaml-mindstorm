@@ -57,7 +57,7 @@ let gameboard () =
   synchronize()
 
 let red_success () =
-  set_color red;
+  set_color black;
   let winner = "Le joueur ROUGE gagne!!!" in
   let (n_xw, n_yw) = text_size winner in
   let xw = (w - n_xw)/2
@@ -66,7 +66,7 @@ let red_success () =
   draw_string winner
 
 let yellow_success () =
-  set_color yellow;
+  set_color black;
   let winner = "Le joueur Jaune gagne!!!" in
   let (n_xw, n_yw) = text_size winner in
   let xw = (w - n_xw)/2
