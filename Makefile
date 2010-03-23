@@ -15,16 +15,18 @@ LIBS_CMXA=$(LIBS_CMA:.cma=.cmxa)
 
 all: byte native
 
-SOURCES = game.ml alphabeta.ml board.ml scanPiece.ml pincer.ml \
+SOURCES = game.ml alphabeta.ml board.ml scanPiece.ml pincer.ml evaluate.ml \
 	scanPiece2.ml gamemem.ml alphabetamem.ml
-byte: run_connect4.exe run_connect4mem.exe
-native: run_connect4.com run_connect4mem.com
+byte: run_connect4.exe run_connect4mem.exe test.exe
+native: run_connect4.com run_connect4mem.com test.com
 
 run_connect4.exe : robot.cma $(SOURCES:.ml=.cmo)
 run_connect4mem.exe : robot.cma $(SOURCES:.ml=.cmo)
+test.exe : robot.cma $(SOURCES:.ml=.cmo)
 scanPiece2.com: robot.cmxa
 run_connect4.com : robot.cmxa $(SOURCES:.ml=.cmx)
 run_connect4mem.com : robot.cmxa $(SOURCES:.ml=.cmx)
+test.com : robot.cmxa $(SOURCES:.ml=.cmx)
 
 # General "event" library
 robot.cma: robot.cmo
@@ -39,7 +41,6 @@ test_alphabeta.com: game.cmx alphabeta.cmx
 test_pincer.com: pincer.cmx
 test_scanPiece.com: scanPiece.cmx
 test_scanPiece2.com: scanPiece2.cmx
-
 
 # Generate HTML documentation
 MAKE_DOC = $(OCAMLDOC) -colorize-code -stars -html $(PACKAGES)

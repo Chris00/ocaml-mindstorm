@@ -1845,9 +1845,10 @@ let undomove board move =
 
 let fast_try_to_win board =
   let rec win x =
-    if x<boardX then
+    if x<boardX-1 then
+    (Printf.printf "%s%!%i%!" "\nJe suis la " x;
       if board.stack.(x)<boardY && connected board x >= 4 then x
-      else win (x+1)
+      else win (x+1))
     else -1 in
     win 0
 
@@ -2169,11 +2170,13 @@ let her_evaluate node =
       )
     else
       let bestmove = fast_try_to_win auxboard in
-	if bestmove <> -1 then
-	  if node.typed = or_type then node.value <- proved
-	  else node.value <- disproved
-	else node.value <- unknown;
-	bestmove
+        (
+           if bestmove <> -1 then
+	     if node.typed = or_type then node.value <- proved
+	     else node.value <- disproved
+	   else node.value <- unknown;
+	   bestmove
+	 )
 
 let her_set_pdv_according_to_children node =
   let children = ref 0 in
