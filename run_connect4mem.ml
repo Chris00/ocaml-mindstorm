@@ -1,9 +1,6 @@
 open Alphabetamem
 open Board
 
-
-
-
 let bt_pincer = ref "00:16:53:0C:84:49"
 and bt_scan = ref "00:16:53:0A:F3:3C"
 and if_computer = ref true
@@ -62,7 +59,7 @@ let rec step game col =
           else Board.yellow_success();
           P.put_piece col_to_play S.return_init_pos;
           Printf.printf"LE ROBOT GAGNE\n%!";
-          Board.close_when_cliked()
+          Board.close_when_clicked()
         )
     )
   else
@@ -70,7 +67,7 @@ let rec step game col =
       if Gamemem.draw game then Board.draw()
       else Board.red_success();
       S.return_init_pos ();
-      Board.close_when_cliked()
+      Board.close_when_clicked()
     )
 let () =
   Board.gameboard ();
