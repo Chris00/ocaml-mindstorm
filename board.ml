@@ -27,21 +27,21 @@ let add_piece_to_board color col =
   add_piece col
 
 let write_player_turn color =
-  moveto (w/9) (h/9);
   set_font "12x24kana";
+  moveto (w/9) (h/9);
   let text_red = "C'est au tour du joueur rouge à jouer"
   and text_yellow = "C'est au tour du joueur jaune à jouer" in
   set_color white;
   if color = red then
     (
       draw_string text_yellow;
-      set_font black;
+      set_color black;
       draw_string text_red
     )
   else
     (
       draw_string text_red;
-      set_font black;
+      set_color black;
       draw_string text_yellow
     )
 
