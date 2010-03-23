@@ -118,23 +118,16 @@ struct
     )
 
   (*ajuste la position du capteur couleur*)
-  and adj_l_l angle_l f =
-    Motor.set C.conn_scan motor_captor_l (Motor.speed (-5));
-    Robot.event meas_left (when_some (fun d -> d <= angle_l))
-      (fun _ -> scan_light f)
-
-  and adj_l_r angle_l f =
-    Motor.set C.conn_scan motor_captor_l (Motor.speed (5));
-    Robot.event meas_left (when_some (fun d -> d >= angle_l))
-      (fun _ -> scan_light f)
-
   and adj_l angle_l f _ =
     Motor.set C.conn_scan motor_captor_l (Motor.speed 0);
     Motor.set C.conn_scan motor_captor_r (Motor.speed 0);
     match Robot.read meas_left with
     | Some m ->
-        if m <= angle_l then adj_l_r angle_l f
-        else adj_l_l angle_l f
+        let speed, good_angle =
+          if m <= angle_l then 5, (fun a -> a >= angle_l)
+          else -5, (fun a -> a <= angle_l) in
+        Motor.set C.conn_scan motor_captor_l (Motor.speed speed);
+        Robot.event meas_left (when_some good_angle) (fun _ -> scan_light f)
     | None -> assert false
 
   and adj_r_r angle_r angle_l f =
