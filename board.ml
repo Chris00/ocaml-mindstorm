@@ -2,13 +2,12 @@ open Graphics
 open Printf
 
 
-let expo_10 = [| 1; 10; 100; 1000; 10000; 100000; 1000000|]
-let game_cur = ref 0
+let number_piece = Array.make 7 0
   (*nombre représentant le nombre de pion dans chaque colonne*)
-let get_line game col =
-  (game/expo_10.(6-col)) mod 10
-let add_piece col game =
-  game_cur := game + expo_10.(6-col)
+let get_line col =
+  number_piece.(col)
+let add_piece col =
+  number_piece.(col) <- number_piece.(col) + 1
 
 let w = 1000 and h = 720
 
@@ -23,9 +22,9 @@ let color_circle color x_center y_center =
 (*methode qui trace un disque de la couleur color, en position (raw, line)
   raw va de 0 à 6 et line de 0 à 5*)
 let add_piece_to_board color col =
-  let line = get_line !game_cur col in
+  let line = get_line col in
   color_circle color (w/6 + col*w/9) (2*h/9 + h/18 + line*h/9);
-  add_piece col !game_cur
+  add_piece col
 
 let gameboard () =
   open_graph(sprintf " %ix%i" w h);

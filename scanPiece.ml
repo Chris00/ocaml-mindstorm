@@ -67,7 +67,6 @@ struct
 
 
   (*methode retournant le nbre de pions ds la col [col] du jeu [game]*)
-
   let piece_in_col col = number_piece.(col)
 
   (*methode ajoutant une piece au jeu [game] en colonne [col]*)

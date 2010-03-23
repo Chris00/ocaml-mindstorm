@@ -88,11 +88,12 @@ let rec step game color col =
         else
           (
             Printf.printf"c fini, on stoppe après avoir ajouter la piece\n%!";
-            P.put_piece col_to_play S.return_init_pos;
+            P.put_piece col_to_play
+              (fun () -> S.return_init_pos Board.close_when_clicked);
             Printf.printf"LE ROBOT GAGNE\n%!"
           )
       )
-  else S.return_init_pos ()
+  else S.return_init_pos S.stop
 let () =
   Board.gameboard ();
   (* Board.close_when_clicked(); *)
