@@ -1,13 +1,10 @@
-
-
-(*http://www.ce.unipr.it/~gbe/velsrc.html*)
-
-
+(* Inspired by http://www.ce.unipr.it/~gbe/velsrc.html *)
 
 (*Constantes et petites fonctions*)
 
 let boardX = 7
 and boardY = 6
+let maxsquares = boardX*boardY
 and groups = 69
 and maxsols = 700
 and maxgroups = 50
@@ -110,7 +107,7 @@ type solvable_groups = int array array
 
 type solution = {
   mutable valid : bool;
-  mutable solname : rule_t;
+  mutable solname : Rule.t;
   solpoint : int array;
   sqinv : int array;
   mutable sqinvnumb : int;
@@ -165,13 +162,13 @@ type board = {
   mutable cpu : int;
   white_lev : int;
   black_lev : int;
-}   
+}
 
 (*Utilitaire*)
 let show_square_used board =
   for j=0 to boardY - 1 do
     for i=0 to boardX - 1 do
-      if board.sqused.(elm i (boardY-j-1)) then 
+      if board.sqused.(elm i (boardY-j-1)) then
 	Printf.printf "*"
       else Printf.printf "."
     done;
@@ -225,10 +222,10 @@ let wiped_group board group =
   in helper 0 0
 
 let check_threat board px i side =
-  let sq = board.solvable_groups.(elm px i) in
+  let sg = board.solvable_groups.(elm px i) in
   let rec helper y =
-    if y < Array.length sq then
-      let j = sq.(y) in
+    if y < Array.length sg then
+      let j = sg.(y) in
 	if board.xplace.(j).(0) = board.xplace.(j).(3) then
 	  helper (y+1)
 	else (
@@ -236,7 +233,7 @@ let check_threat board px i side =
 	    if x < tiles then
 	      let fx = board.xplace.(j).(x)
 	      and fy = board.yplace.(j).(x) in
-	      let (p1,p2) = 
+	      let (p1,p2) =
 		if !(board.square.(elm fx fy)) = side then (a+1,b)
 		else if !(board.square.(elm fx fy)) = 0 then (a,b+1)
 		else (a,b) in
@@ -247,7 +244,7 @@ let check_threat board px i side =
 	  )
     else false
   in helper 0
-		  
+
 let check_men board group side =
   let rec helper x a b =
     if x < tiles then
@@ -284,13 +281,13 @@ let count_odd_threats board threats =
   in helper 0 0
 
 let both_groups board q1 q2 =
-  let q1 = board.solvable_groups.(q1)
-  and q2 = board.solvable_groups.(q2) in
+  let sg1 = board.solvable_groups.(q1)
+  and sg2 = board.solvable_groups.(q2) in
   let sol = board.solution.(board.sp) in
-  for x=0 to Array.length q1 - 1 do
-    for y=0 to Array.length q2 - 1 do
-      let g1 = q1.(x)
-      and g2 = q2.(y) in
+  for x=0 to Array.length sg1 - 1 do
+    for y=0 to Array.length sg2 - 1 do
+      let g1 = sg1.(x)
+      and g2 = sg2.(y) in
       if g1 = g2 && board.intgp.tgroups.(g1) then (
         sol.solgroups.(sol.solgroupsnumb) <- g1;
         sol.solgroupsnumb <- sol.solgroupsnumb + 1
@@ -299,11 +296,11 @@ let both_groups board q1 q2 =
   done
 
 let rec recurse_groups board cols cl gp =
-  let q = board.solvable_groups.(cl.(0)) in
-  let len_q = Array.length q in
+  let sg = board.solvable_groups.(cl.(0)) in
+  let len_sg = Array.length sg in
   let rec helper i =
-    if i < len_q then
-      let g1 = q.(i) in
+    if i < len_sg then
+      let g1 = sg.(i) in
 	if g1 <> gp then helper (i+1)
 	else if cols=1
 	  || recurse_groups board (cols-1) (Array.sub cl 1 ((Array.length cl)-1)) g1 then
@@ -314,12 +311,12 @@ let rec recurse_groups board cols cl gp =
 
 let both_many_groups board cols cl =
   if cols <> 0 then
-    let q = board.solvable_groups.(cl.(0)) in
-    let len_q = Array.length q in
+    let sg = board.solvable_groups.(cl.(0)) in
+    let len_sg = Array.length sg in
     let sol = board.solution.(board.sp) in
     let rec helper i =
-      if i < len_q then
-        let g1 = q.(i) in
+      if i < len_sg then
+        let g1 = sg.(i) in
         if not board.intgp.tgroups.(g1) then helper (i+1)
         else if cols=1 || recurse_groups board (cols-1)
 	(Array.sub cl 1 ((Array.length cl)-1)) g1
@@ -362,7 +359,7 @@ let solve_columns board cl cols =
       )
   in helper 0
 
-let check_claim board cl = 
+let check_claim board cl =
   let px = elx cl.(1) and py = elx cl.(1) in
   if py < boardY && (py land 1 = 1) then (
     let sol = board.solution.(board.sp) in
@@ -462,11 +459,11 @@ let generate_all_other_before_instances board cols cl j =
 
 let check_double_threat board x y tch pnt =
   let pq = elm x y in
-  let g = board.solvable_groups.(pq) in
-  for j=0 to -2 do
-    for k = j+1 to Array.length g - 1 do
-        let jg = g.(j)
-        and kg = g.(k) in
+  let sg = board.solvable_groups.(pq) in
+  for j=0 to Array.length sg - 2 do
+    for k = j+1 to Array.length sg - 1 do
+        let jg = sg.(j)
+        and kg = sg.(k) in
         let w1 = check_men board jg 1
         and w2 = check_men board kg 1
 	and g1 = ref 0
@@ -483,11 +480,11 @@ let check_double_threat board x y tch pnt =
 		and py = board.yplace.(kg).(wx) in
 		  if !(board.groups.(jg).(wx)) = 0 && (px<>x || py<>y) then
 		    g2 := elm px py
-	      done; 
+	      done;
 	      if elx !g1 = elx !g2 &&
 		(ely !g1 - ely !g2 = 1 || ely !g1-ely !g2= -1) then
 		  (
-		  tch.(!pnt).cross <- pq; 
+		  tch.(!pnt).cross <- pq;
 		  if (ely !g1) land 1 = 1 then
 		    (
 		      tch.(!pnt).even <- !g1;
@@ -505,8 +502,8 @@ let check_double_threat board x y tch pnt =
 	    )
       done;
     done
-      
-let threat_combo board tc = 
+
+let threat_combo board tc =
   let z = ref 0 in
   let rec helper y =
     if y<boardY then
@@ -547,13 +544,13 @@ let handle_even_above_odd board tc =
 	wipe_many_groups board 2 cl
       done;
     done;
-    
+
     (*Rule three*)
-    
+
     cl.(0)<-tc.odd;
     cl.(1)<-elm (elx (tc.cross)) ((ely (tc.cross)) + 1);
-    wipe_many_groups board 2 cl;    
-    
+    wipe_many_groups board 2 cl;
+
     (*Rule four*)
 
     if board.stack.(qx)=ely (tc.odd) then
@@ -562,16 +559,16 @@ let handle_even_above_odd board tc =
 	  wipe_above board (elm sx sy)
       );
     (*Rule five*)
-    
+
     if board.stack.(px) land 1 = 0 && board.stack.(qx) < qy - 1 then
       (
 	cl.(0) <- elm px (board.stack.(px));
 	cl.(1) <- elm qx (board.stack.(qx));
 	wipe_many_groups board 2 cl
       );
-    
+
     (*Rule Six*)
-    
+
     let qx = elx (tc.odd) and qy = board.stack.(qx) in
       for y=qy to boardY-1 do
 	cl.(0)<-elm qx y;
@@ -587,7 +584,7 @@ let handle_odd_before_even board tc =
 
   (*Rule two*)
 
-  let cl = Array.make 2 0 
+  let cl = Array.make 2 0
   and px = elx (tc.cross)
   and py = (ely (tc.cross)) + 1
   and qx = elx (tc.even)
@@ -713,7 +710,7 @@ let vertical board =
 			for x=0 to tiles-1 do
 			  let wy=board.yplace.(grp.(j)).(x) in
 			    if wy>0 && (wy land 1)=0 && y1=wy-1
-			      && set.(elm x1 wy) 
+			      && set.(elm x1 wy)
 			      && board.sqused.(elm x1 wy)
 			    then (
 			      set.(elm x1 wy)<-false;
@@ -735,7 +732,7 @@ let vertical board =
 	      )
       done;
     done
-      
+
 
 
 let aftereven board =
@@ -752,7 +749,7 @@ let aftereven board =
 		      x1=board.xplace.(grp.(j)).(0) &&
 		      x1<board.xplace.(grp.(j)).(3) then
 			let after = ref true
-			and cols = ref 0 
+			and cols = ref 0
 			and x = ref 0 in
 			  memset cl 0xffff 4;
 			  while !after && !x<tiles do
@@ -793,6 +790,8 @@ let aftereven board =
 	helper (y1+2)
       )
   in helper 1
+
+
 
 let lowinverse board =
   let set = Array.make 64 true in
@@ -886,19 +885,19 @@ let highinverse board =
 				  both_groups board (elm x1 (y1+1))
                                     (elm wx (wy+1));
 				  both_groups board q1 (elm wx wy);
-				  
+
 				  (*Vertical groups*)
 				  both_groups board (elm x1 y1)
 				    (elm x1 (y1+1));
 				  both_groups board (elm wx wy)
 				    (elm wx (wy+1));
-				  
+
 				  (*Lower 1st and Upper 2nd if lower
 				    is playable*)
 				  if board.stack.(x1)=y1-1 then
 				    both_groups board (elm x1 (y1-1))
 				      (elm  wx (wy+1));
-				  
+
 				  (*Upper 1st and Lower 2nd if lower
 				    is playable*)
 				  if board.stack.(wx)=wy-1 then
@@ -917,7 +916,7 @@ let highinverse board =
 
 
 let baseclaim board =
-  let set = Array.make 64 true 
+  let set = Array.make 64 true
   and cl = Array.make 6 0
   and cols = ref 0 in
     for y1=0 to boardY-1 do
@@ -960,7 +959,7 @@ let baseclaim board =
 
 
 let before board =
-  let cl = Array.make tiles 0 
+  let cl = Array.make tiles 0
   and cols = ref 0 and befo = ref true in
     for j=0 to groups-1 do
       if board.intgp.mygroups.(j) && board.xplace.(j).(0)
@@ -1004,10 +1003,10 @@ let check_early_win board =
   !(board.square.(sq_f2)) = 0
 
 
-let anypentas board = 
+let anypentas board =
   let a = ref 0 in
     if !(board.square.(sq_c1)) <> 1 && !(board.square.(sq_e1)) <> 1 then 0
-    else 
+    else
       (
 	if !(board.square.(sq_b3)) = 1 && !(board.square.(sq_d3)) = 1 &&
 	  (!(board.square.(sq_b2)) = 1 || !(board.square.(sq_d2)) = 1) &&
@@ -1239,7 +1238,7 @@ let build_problem_list board =
 	  )
       else pblist.pointer.(i) <- -1
     done;
-    
+
     for x=0 to board.sp-1 do
       board.solution.(x).valid <- true;
       for y=0 to board.solution.(x).solgroupsnumb-1 do
@@ -1252,10 +1251,10 @@ let build_problem_list board =
     pblist
 
 
-let remove_solutions pblist board matrix psol = 
+let remove_solutions pblist board matrix psol =
   let temp = Array.make maxsols 0
-  and tprobs = Array.make groups 0 
-  and probs = ref 0 
+  and tprobs = Array.make groups 0
+  and probs = ref 0
   and tsol = ref 0 in
   let update = {
     howmany = 0;
@@ -1288,7 +1287,7 @@ let remove_solutions pblist board matrix psol =
     update.hmprobs <- !probs;
     if !probs > 0 then update.wprobs <- Array.copy tprobs;
     update
-   
+
 
 
 let restore_solutions update pblist board =
@@ -1391,15 +1390,15 @@ let evaluate_white board =
     odd = 0;
     gp1 = 0;
     gp2 = 0
-    
-  } 
+
+  }
   and anythreat = ref 0 in
   let tc = Array.make groups threat in
   let combo = threat_combo board tc in
-  let thnum = count_odd_threats board threats 
+  let thnum = count_odd_threats board threats
   and oracle = ref false in
     if thnum + combo = 0 then oracle := false
-    else 
+    else
       while !anythreat < thnum + combo && not !oracle do
 	board.usablegroup <- Array.make groups true;
 	board.sqused <- Array.make ((boardX+1)*(boardY+2)) true;
@@ -1455,7 +1454,7 @@ let evaluate_white board =
 	      before board;
 	      if board.intgp.j = 0 then oracle := true
 	      else if board.sp = 0 then oracle := false
-	      else 
+	      else
 		let matrix = Adjacency.make_matrix board in
 		  oracle := problem_solver board matrix
 	    done
@@ -1463,7 +1462,7 @@ let evaluate_white board =
 	done;
       done;
     !oracle
-      
+
 
 
 let evaluation_function board =
@@ -1618,6 +1617,8 @@ let blstrsize = 14
 let goodmove = 16384
 let badmove = -16384
 let switch a = a lxor 3;;
+let and_type = 1
+let or_type = 1
 
 let get_black_best_move board =
   let black_str = [|4;4;4;4;4;2;2;2;2;6;6;6;6;6|] in
@@ -1640,7 +1641,7 @@ let reverse_board board =
 	board.square.(elm (boardX-x-1) y) := z
     done
   done;
-  
+
   for x=0 to boardX/2 -1 do
     let z = board.stack.(x) in
       board.stack.(x) <- board.stack.(boardX-x-1);
@@ -1689,7 +1690,7 @@ let gen_odd_threat board x side =
     if !empty=1 && !fill=3 && (!py land 1) = 0 && board.stack.(!px) < !py then
       emp.(0)
     else -1
-   
+
 
 
 let check_double board group pos side =
@@ -1700,13 +1701,13 @@ let check_double board group pos side =
       else helper (x+1)
     else false
   in helper (group+1)
-       
+
 
 let group_eval board =
   let t1 = board.turn in
   let t2 = switch t1
   and score = ref 0 in
-     for x = 0 to groups do
+     for x = 0 to groups - 1 do
       let p1 = ref 0
       and p2 = ref 0 in
 	for i = 0 to 3 do
@@ -1717,7 +1718,7 @@ let group_eval board =
 	else if !p2 = 4 then score := !score + badmove
 	else if !p1 = 3 && !p2 = 0 then
 	  (
-	    score := !score + 100;
+	    score := !score + 1;
 	    let z = gen_odd_threat board x t1 in
 	      if z <> -1 then
 		let f = check_double board x z t1 in
@@ -1729,7 +1730,7 @@ let group_eval board =
 	  )
 	else if !p2 = 3 && !p1 = 0 then
 	  (
-	    score := !score - 100;
+	    score := !score - 1;
 	    let z = gen_odd_threat board x t2 in
 	      if z <> -1 then
 		let f = check_double board x z t2 in
@@ -1741,7 +1742,7 @@ let group_eval board =
 	  )
 	else if !p1 = 2 && !p2 = 0 then score := !score +10
 	else if !p2 = 2 && !p1 = 0 then score := !score - 10;
-	
+
 	if check_pentas board 1 then
 	  if t1 = 1 then score := !score + 800
 	  else score := !score - 800
@@ -1764,11 +1765,11 @@ let connected board move =
   let rec hori_right x connect =
     let py = board.stack.(move) in
       if x>=0 && !(board.square.(elm x py)) = board.turn then
-	hori_right (x+1) (connect+1) 
+	hori_right (x+1) (connect+1)
       else connect in
   let rec diago_NW_left x y connect =
     if x>=0 && y<boardY && !(board.square.(elm x y)) = board.turn then
-      diago_NW_left (x-1) (y+1) (connect+1) 
+      diago_NW_left (x-1) (y+1) (connect+1)
     else connect in
   let rec diago_NW_right x y connect =
     if x<boardX && y>=0 && !(board.square.(elm x y)) = board.turn then
@@ -1783,7 +1784,7 @@ let connected board move =
       diago_NE_right (x+1) (y+1) (connect+1)
     else connect in
   let h_l = hori_left (move-1) 1
-  and d_nw_l = diago_NW_left (move-1) (board.stack.(move)+1) 1 
+  and d_nw_l = diago_NW_left (move-1) (board.stack.(move)+1) 1
   and d_ne_l = diago_NE_left (move-1) (board.stack.(move)-1) 1 in
   let h = hori_right (move+1) h_l 
   and d_nw = diago_NW_right (move+1) (board.stack.(move)-1) d_nw_l
@@ -1791,7 +1792,30 @@ let connected board move =
   and v = verti (board.stack.(move)-1) 1 in
     max (max h v) (max d_ne d_nw)
 
-      
+let opponent_connected board move =
+  board.turn <- switch board.turn;
+  let connect = connected board move in
+  board.turn <- switch board.turn;
+  connect
+
+
+let get_game_result board =
+  let answer = ref (-1) and i = ref 0 in
+  while !i<groups do
+    if !(board.groups.(!i).(0)) <> 0 &&
+      !(board.groups.(!i).(0)) = !(board.groups.(!i).(1)) &&
+      !(board.groups.(!i).(0)) = !(board.groups.(!i).(2)) &&
+      !(board.groups.(!i).(0)) = !(board.groups.(!i).(3)) then
+        (
+          answer := !(board.groups.(!i).(0));
+          i := groups
+        )
+    else i:= !i+1
+  done;
+  if !answer = -1 && board.filled = maxsquares then 0
+  else !answer
+
+
 let makemove board move =
   if board.stack.(move) >= 6 then false
   else
@@ -1841,7 +1865,8 @@ type info =
       mutable max_tree_depth : int;
       mutable bestmove : int
     }
-      
+
+
 type node =
     {
       squaree : int array;
@@ -1894,6 +1919,7 @@ let make_node() =
       symmetric = Array.make boardX 0
   }
 
+
 let rootnode = ref (make_node())
 let streeroot = ref
   {
@@ -1903,9 +1929,11 @@ let streeroot = ref
     node = (make_node())
   }
 let her_node_not_expanded = ref 0
+
 let her_node_expanded = ref 0
+
 let nodeseq = [|3;2;4;5;1;0;6|]
-      
+
 let fast_init_bin_tree node =
   let root =
     {
@@ -1917,15 +1945,12 @@ let fast_init_bin_tree node =
   in root
 
 let fast_set_node root node =
-  let child =
     {
       parent = Some root;
       lson = None;
       rson = None;
       node = node
     }
-  in child
-	  
 
 let bin_compare c1 c2 =
   let rec helper x =
@@ -2019,6 +2044,7 @@ let her_generate_all_children node =
 		   symmetric = Array.make boardX 0
 		 } in
 		 for y1=0 to boardY-1 do
+		   symm.squaree.(elm boardX y1) <- no.squaree.(elm boardX y1);
 		   for x1 = 0 to boardX-1 do
 		     symm.squaree.(elm x1 y1)
 		     <- no.squaree.(elm (boardX-x1-1) y1)
@@ -2049,6 +2075,23 @@ let her_generate_all_children node =
       )
     else node.child.(x) <- None
   done
+
+let rec fast_check_node root node =
+  match root with
+    |Some tree ->
+       (
+	 let cmp = bin_compare tree.node.squaree node.squaree in
+	   if cmp<0 then
+	     match tree.lson with
+	       |None -> (tree.lson <- Some (fast_set_node tree node); None)
+	       |Some lson -> fast_check_node (Some lson) node;
+	   else if cmp>0 then
+	     match tree.rson with
+	       |None -> (tree.rson <- Some (fast_set_node tree node); None)
+	       |Some rson -> fast_check_node (Some rson) node;
+	   else Some (tree.node)
+       )
+    |None -> let _ = fast_init_bin_tree node in (Some node)
 
 
 let rec explore_tree board side depth =
@@ -2119,7 +2162,7 @@ let her_evaluate node =
       (
         if !rootnode.tur = 1 then
 	  if !rootnode.typed = or_type then node.value <- proved
-	   else node.value <- disproved
+          else node.value <- disproved
 	 else if !rootnode.typed = or_type then node.value <- disproved
 	 else node.value <- proved;
 	 -1
@@ -2131,8 +2174,7 @@ let her_evaluate node =
 	  else node.value <- disproved
 	else node.value <- unknown;
 	bestmove
-      
-	
+
 let her_set_pdv_according_to_children node =
   let children = ref 0 in
     for x=0 to boardX-1 do
@@ -2188,13 +2230,10 @@ let her_set_proof_and_disproof_numbers node =
 	node.disproof <- 0
       )
     else her_set_pdv_according_to_children node
-	
 
 
 let her_ressources_available maxnodes =
-  if her_node_expanded > maxnodes then false
-  else true
-
+  her_node_expanded <= maxnodes
 
 let her_select_most_proving_node node info =
   let depth = ref 0
@@ -2248,6 +2287,7 @@ let rec her_update_ancestors node =
 	done
       )
     
+
 let her_pn_search root maxnodes info =
   info.max_tree_depth <- 1;
   info.bestmove <- her_evaluate root;
@@ -2261,7 +2301,6 @@ let her_pn_search root maxnodes info =
   if root.proof = 0 then root.value <- proved
   else if root.disproof = 0 then root.value <- disproved
   else root.value <- unknown
-  
 
 
 let heuristic_play_best board maxnodenum =
@@ -2298,8 +2337,9 @@ let heuristic_play_best board maxnodenum =
       symmetric = Array.make boardX 0;
       direct = 0
     } in
-her_develop_node rootnode_;
-her_develop_node symmetric;
+
+  her_develop_node rootnode_;
+  her_develop_node symmetric;
     for y=0 to boardY-1 do
       rootnode_.squaree.(elm boardX y) <-
 	!(board.square.(elm boardX y));
@@ -2312,7 +2352,6 @@ her_develop_node symmetric;
 	  !(board.square.(elm (boardX-1-x) y))
       done
     done;
-
     rootnode_.stac.(boardX) <- board.stack.(boardX);
     symmetric.stac.(boardX) <- board.stack.(boardX);
     rootnode := if bin_compare symmetric.squaree rootnode_.squaree > 0

@@ -363,37 +363,37 @@ let groupeval board =
 	else if !p2 = 4 then score := !score +. badmove
 	else if !p1 = 3 && !p2 = 0 then
 	  (
-	    score := !score +. 1.;
+	    score := !score +. 100.;
 	    let z = gen_odd_threat board x t1 in
 	      if z <> -1 then
 		let f = check_double board x z t1 in
 		  if not f then
-		    if t1 = 1 then score := !score +. 200.
-		    else score := !score +. 150.
-		  else if t1 = 1 then score := !score +. 750.
-		  else score := !score +. 500.
+		    if t1 = 1 then score := !score +. (200./.(float) (ely z))
+		    else score := !score +. (150./.(float) (ely z))
+		  else if t1 = 1 then score := !score +.(750./.(float) (ely z))
+		  else score := !score +.(500./.(float) (ely z))
 	  )
 	else if !p2 = 3 && !p1 = 0 then
 	  (
-	    score := !score -. 1.;
+	    score := !score -. 100.;
 	    let z = gen_odd_threat board x t2 in
 	      if z <> -1 then
 		let f = check_double board x z t2 in
 		  if not f then
-		    if t1 = 2 then score := !score -. 200.
-		    else score := !score -. 150.
-		  else if t1 = 2 then score := !score -. 750.
-		  else score := !score -. 500.
+		    if t1 = 2 then score := !score -. (200./. (float) (ely z))
+		    else score := !score -. (150./.(float) (ely z))
+		  else if t1 = 2 then score := !score-.(750./.(float) (ely z))
+		  else score := !score -. (500./.(float) (ely z))
 	  )
 	else if !p1 = 2 && !p2 = 0 then score := !score +. 10.
 	else if !p2 = 2 && !p1 = 0 then score := !score -. 10.;
-	
+
 	if check_pentas board 1 then
 	  if t1 = 1 then score := !score +. 800.
 	  else score := !score -. 800.
     done;
     !score
-      
+ 
 
 
 let connected board move =
