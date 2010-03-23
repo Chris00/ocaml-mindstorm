@@ -26,6 +26,7 @@ and ely z = z lsr 3
 and int_to_tab z =
    [|(z lsr 8) land 0xFF;z land 0xFF|]
 and memset tab a n =
+
   for i=0 to n - 1 do
     tab.(i) <- a
   done
@@ -362,7 +363,7 @@ let groupeval board =
 	else if !p2 = 4 then score := !score +. badmove
 	else if !p1 = 3 && !p2 = 0 then
 	  (
-	    score := !score +. 100.;
+	    score := !score +. 11.;
 	    let z = gen_odd_threat board x t1 in
 	      if z <> -1 then
 		let f = check_double board x z t1 in
@@ -374,7 +375,7 @@ let groupeval board =
 	  )
 	else if !p2 = 3 && !p1 = 0 then
 	  (
-	    score := !score -. 100.;
+	    score := !score -. 50.;
 	    let z = gen_odd_threat board x t2 in
 	      if z <> -1 then
 		let f = check_double board x z t2 in
@@ -396,6 +397,7 @@ let groupeval board =
 
 
 let connected board move =
+  board.turn <- switch board.turn;
   let rec verti y connect =
     let px = move in
       if y>=0 && !(board.square.(elm px y)) = board.turn then
@@ -408,12 +410,12 @@ let connected board move =
       else connect in
   let rec hori_right x connect =
     let py = board.stack.(move) in
-      if x>=0 && !(board.square.(elm x py)) = board.turn then
-	hori_right (x+1) (connect+1) 
+      if x<boardX && !(board.square.(elm x py)) = board.turn then
+	hori_right (x+1) (connect+1)
       else connect in
   let rec diago_NW_left x y connect =
     if x>=0 && y<boardY && !(board.square.(elm x y)) = board.turn then
-      diago_NW_left (x-1) (y+1) (connect+1) 
+      diago_NW_left (x-1) (y+1) (connect+1)
     else connect in
   let rec diago_NW_right x y connect =
     if x<boardX && y>=0 && !(board.square.(elm x y)) = board.turn then
@@ -428,13 +430,14 @@ let connected board move =
       diago_NE_right (x+1) (y+1) (connect+1)
     else connect in
   let h_l = hori_left (move-1) 1
-  and d_nw_l = diago_NW_left (move-1) (board.stack.(move)+1) 1 
+  and d_nw_l = diago_NW_left (move-1) (board.stack.(move)+1) 1
   and d_ne_l = diago_NE_left (move-1) (board.stack.(move)-1) 1 in
-  let h = hori_right (move+1) h_l 
-  and d_nw = diago_NW_right (move+1) (board.stack.(move)-1) d_nw_l
-  and d_ne = diago_NE_right (move+1) (board.stack.(move)+1) d_ne_l
+  let h = hori_right (move+1) h_l
+  and d_ne = diago_NW_right (move+1) (board.stack.(move)-1) d_nw_l
+  and d_nw = diago_NE_right (move+1) (board.stack.(move)+1) d_ne_l
   and v = verti (board.stack.(move)-1) 1 in
-    max (max h v) (max d_ne d_nw)
+  board.turn <- switch board.turn;
+  max (max h v) (max d_ne d_nw)
 
 
 let opponent_connected board move =
