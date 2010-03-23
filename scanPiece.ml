@@ -122,6 +122,49 @@ struct
   let pieces_per_col() =
     String.concat "; " (Array.to_list (Array.map string_of_int number_piece))
 
+
+  (*ajuste la position du capteur couleur*)
+  let adj_l angle_l f _ =
+    Motor.set C.conn_scan motor_captor_l (Motor.speed 0);
+    Motor.set C.conn_scan motor_captor_r (Motor.speed 0);
+    match Robot.read meas_left with
+    | Some m ->
+        let speed, good_angle =
+          if m <= angle_l then 5, (fun a -> a >= angle_l)
+          else -5, (fun a -> a <= angle_l) in
+        Motor.set C.conn_scan motor_captor_l (Motor.speed speed);
+        Robot.event meas_left (when_some good_angle) f
+    | None -> assert false
+
+  let adj_r angle_r angle_l f _ =
+    Motor.set C.conn_scan Motor.all (Motor.speed 0);
+    match Robot.read meas_right with
+    | Some m  ->
+        let speed_r, good_angle =
+          if m < angle_r then 5, (fun a -> a >= angle_r)
+          else -5, (fun a -> a <= angle_r) in
+        Motor.set C.conn_scan motor_captor_r (Motor.speed speed_r);
+        Motor.set C.conn_scan motor_captor_l (Motor.speed (- speed_r));
+        Robot.event meas_right (when_some good_angle) (adj_l angle_l f)
+    | None -> assert false
+
+  (*ajustement de la position du capteur*)
+  (*on ajuste d'abord le moteur vert à petite vitesse puis le r puis le l*)
+  let adjustment line col f =
+    let angle_v = rot_v line and
+        angle_r = rot_r line col and
+        angle_l = rot_l line col in
+    match Robot.read meas_vert with
+    | Some m  ->
+        let speed_vert, speed, good_angle =
+          if m <= angle_v then 5, 7, (fun a -> a >= angle_v) (* go up *)
+          else -5, -7, (fun a -> a <= angle_v) in
+        Motor.set C.conn_scan motor_captor_vert (Motor.speed speed_vert);
+        Motor.set C.conn_scan motor_captor_l (Motor.speed speed);
+        Motor.set C.conn_scan motor_captor_r (Motor.speed speed);
+        Robot.event meas_vert (when_some good_angle) (adj_r angle_r angle_l f)
+    | None -> assert false
+
   (*scanne la case, si c'est une piece (couleur jaune ou rouge), il rescanne
     une 2ème fois pr etre sur du résultat, si c'est bleu, il se réajuste,
     sinon il continue*)
@@ -140,7 +183,7 @@ struct
                    prochaine case*)
         | `Blue ->
             printf "Ajustement\n%!";
-            adjustment !current_line !current_col f
+            adjustment !current_line !current_col (fun _ -> scan_light f)
         | `Yellow | `Red ->
             (*il a trouvé une piece*)
             if count = 0 then scan_light ~count:1 f
@@ -175,49 +218,6 @@ struct
         f ()
       )
 
-
-  (*ajuste la position du capteur couleur*)
-  and adj_l angle_l f _ =
-    Motor.set C.conn_scan motor_captor_l (Motor.speed 0);
-    Motor.set C.conn_scan motor_captor_r (Motor.speed 0);
-    match Robot.read meas_left with
-    | Some m ->
-        let speed, good_angle =
-          if m <= angle_l then 5, (fun a -> a >= angle_l)
-          else -5, (fun a -> a <= angle_l) in
-        Motor.set C.conn_scan motor_captor_l (Motor.speed speed);
-        Robot.event meas_left (when_some good_angle) (fun _ -> scan_light f)
-    | None -> assert false
-
-  and adj_r angle_r angle_l f _ =
-    Motor.set C.conn_scan Motor.all (Motor.speed 0);
-    match Robot.read meas_right with
-    | Some m  ->
-        let speed_r, good_angle =
-          if m < angle_r then 5, (fun a -> a >= angle_r)
-          else -5, (fun a -> a <= angle_r) in
-        Motor.set C.conn_scan motor_captor_r (Motor.speed speed_r);
-        Motor.set C.conn_scan motor_captor_l (Motor.speed (- speed_r));
-        Robot.event meas_right (when_some good_angle) (adj_l angle_l f)
-    | None -> assert false
-
- 
-  (*ajustement de la position du capteur*)
-  (*on ajuste d'abord le moteur vert à petite vitesse puis le r puis le l*)
-  and adjustment line col f =
-    let angle_v = rot_v line and
-        angle_r = rot_r line col and
-        angle_l = rot_l line col in
-    match Robot.read meas_vert with
-    | Some m  ->
-        let speed_vert, speed, good_angle =
-          if m <= angle_v then 5, 7, (fun a -> a >= angle_v) (* go up *)
-          else -5, -7, (fun a -> a <= angle_v) in
-        Motor.set C.conn_scan motor_captor_vert (Motor.speed speed_vert);
-        Motor.set C.conn_scan motor_captor_l (Motor.speed speed);
-        Motor.set C.conn_scan motor_captor_r (Motor.speed speed);
-        Robot.event meas_vert (when_some good_angle) (adj_r angle_r angle_l f)
-    | None -> assert false
 
 
 
@@ -283,7 +283,7 @@ struct
       (fun _ -> scan_light f)
 
 
-  let rec scan_case new_pos_line new_pos_col f =
+  let scan_case new_pos_line new_pos_col f =
     let diff_line = new_pos_line - !current_line and
         diff_col = new_pos_col - !current_col and
         angle_v = rot_v new_pos_line and
