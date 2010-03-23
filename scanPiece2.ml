@@ -124,7 +124,7 @@ struct
   let pieces_per_col() =
     String.concat "; " (Array.to_list (Array.map string_of_int number_piece))
 
-   (*scanne la case, si c'est une piece (couleur jaune ou rouge), il rescanne
+  (*scanne la case, si c'est une piece (couleur jaune ou rouge), il rescanne
     une 2ème fois pr etre sur du résultat, si c'est bleu, il se réajuste,
     sinon il continue*)
   let rec scan_light ?(count = 0) f =
