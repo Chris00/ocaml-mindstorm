@@ -33,11 +33,15 @@ let move game col = ignore(Gamemem.makemove game col)
   on lance donc alphabeta puis la pince et enfin le scan*)
 let rec computer_play game =
   (* On cherche la colonne a jouer *)
+  Printf.printf "écrit c'est au joueur jaune\n%!";
   Board.write_player_turn Graphics.yellow;
+  Printf.printf "lance alphabeta\n%!";
   let _, col_to_play = Alphabetamem.alphabeta game 9 Gamemem.groupeval in
   Printf.printf "col_to_play = %i\n%!" col_to_play;
   move game col_to_play;
+  Printf.printf "ajoute le pion jaune à l'interface\n%!";
   Board.add_piece_to_board Graphics.yellow col_to_play;
+  Printf.printf "test si on a gagné ou match nul\n%!";
   (*la pince va mettre la piece dans la colonne a jouer
     et on va scanner pour voir si le joueur a joue*)
   if Gamemem.get_game_result game = Gamemem.WIN || Gamemem.draw game then (
@@ -49,15 +53,21 @@ let rec computer_play game =
       (fun () -> S.return_init_pos Board.close_when_clicked)
   )
   else
+    Printf.printf "ajoute une piece en col_to_play\n%!";
     P.put_piece col_to_play (fun () ->
                                S.add_piece col_to_play;
                                human_play game)
 
 and human_play game =
+  Printf.printf "écrit c'est au joueur rouge\n%!";
   Board.write_player_turn Graphics.red;
+  Printf.printf "lance scan\n%!";
   S.scan begin fun col ->
+    Printf.printf "lance mouve ds human_play\n%!";
     move game col;
+    Printf.printf "ajoute le pion rouge\n%!";
     Board.add_piece_to_board Graphics.red col;
+    Printf.printf "test si fini\n%!";
     (* On verifie que le jeu n'est pas gagné ou match nul *)
     if Gamemem.get_game_result game = Gamemem.WIN || Gamemem.draw game then (
       if Gamemem.draw game then Board.draw()
@@ -65,7 +75,11 @@ and human_play game =
       Printf.printf "L'HUMAIN A GAGNE\n%!";
       S.return_init_pos Board.close_when_clicked
     )
-    else computer_play game
+    else
+      (
+        Printf.printf "lance computer_play\n%!";
+        computer_play game
+      )
   end
 
 let () =
