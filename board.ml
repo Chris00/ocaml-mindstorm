@@ -35,13 +35,13 @@ let write_player_turn color =
   if color = red then
     (
       draw_string text_yellow;
-      set_font black;
+      set_color black;
       draw_string text_red
     )
   else
     (
       draw_string text_red;
-      set_font black;
+      set_color black;
       draw_string text_yellow
     )
 

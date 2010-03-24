@@ -35,28 +35,27 @@ let bt_pincer = ref "00:16:53:0C:84:49"
 and bt_scan = ref "00:16:53:0A:F3:3C"
 and if_computer = ref true
 
-let spec = Arg.align ["--pince", Arg.Set_string bt_pincer,
-                      "<bt_address>set the bluetooth address of the brick
-which uses the pincer";
-                      "--scan", Arg.Set_string bt_scan,
-                      "<bt_address>set the bluetooth address of the brick
-which uses the scan";
-                      "--computer_first", Arg.Set if_computer,
-                      " set first player"]
-let () = Arg.parse spec (fun _ -> raise (Arg.Bad "no anonymous arg"))
-  "run_connect4 <option>"
+let spec = Arg.align [
+  "--pince", Arg.Set_string bt_pincer,
+  "<bt_address>set the bluetooth address of the brick which uses the pincer";
+  "--scan", Arg.Set_string bt_scan,
+  "<bt_address>set the bluetooth address of the brick which uses the scan";
+  "--human_first", Arg.Clear if_computer,
+  " set the humas as first player"]
+let () =
+  Arg.parse spec (fun _ -> raise (Arg.Bad "no anonymous arg"))
+    "run_connect4 <option>"
 
 module Conn =
 struct
   let r = Robot.make()
-  let conn_pincer, conn_scan, fst_computer =
-    Mindstorm.connect_bluetooth !bt_pincer,
-    Mindstorm.connect_bluetooth !bt_scan,
-    !if_computer
+  let conn_pincer = Mindstorm.connect_bluetooth !bt_pincer
+  and conn_scan = Mindstorm.connect_bluetooth !bt_scan
+  and fst_computer = !if_computer
 end
 
 module P = Pincer.Run(Conn)
-module S = ScanPiece2.Run(Conn)
+module S = ScanPiece.Run(Conn)
 
 (*si fst_player est vrai, ca veut dire que c'est a l'ordi de commencer,
   on lance donc alphabeta puis la pince et enfin le scan*)
@@ -84,7 +83,9 @@ let rec step game color col =
         if not(Game.is_winning game col_to_play) && not(Game.is_draw game)
         then
           P.put_piece col_to_play
-            (fun () -> S.scan col_to_play (fun c -> step game color c))
+            (fun () ->
+               S.add_piece col_to_play;
+               S.scan (fun c -> step game color c))
         else
           (
             Printf.printf"c fini, on stoppe après avoir ajouter la piece\n%!";
@@ -99,6 +100,6 @@ let () =
   (* Board.close_when_clicked(); *)
   let game = Game.make() in
   if Conn.fst_computer then step game Game.Yellow (-1)
-  else S.scan (-1) (fun c -> step game Game.Yellow c);
+  else S.scan (fun c -> step game Game.Yellow c);
   Robot.run Conn.r
 
