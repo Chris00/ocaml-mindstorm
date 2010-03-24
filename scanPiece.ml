@@ -131,7 +131,10 @@ struct
           if m <= angle_l then 5, (fun a -> a >= angle_l)
           else -5, (fun a -> a <= angle_l) in
         Motor.set C.conn_scan motor_captor_l (Motor.speed speed);
-        Robot.event meas_left (when_some good_angle) f
+        Robot.event meas_left (when_some good_angle)
+          (fun _ ->
+             Motor.set C.conn_scan Motor.all (Motor.speed 0);
+             f())
     | None -> assert false
 
   let adj_r angle_r angle_l f _ =
@@ -167,7 +170,6 @@ struct
     une 2ème fois pr etre sur du résultat, si c'est bleu, il se réajuste,
     sinon il continue*)
   let rec scan_light ?(count = 0) f =
-    Motor.set C.conn_scan Motor.all (Motor.speed 0);
     Mindstorm.Sensor.set C.conn_scan color_port `Color_full `Pct_full_scale;
     usleep 0.25;
     let data  = Mindstorm.Sensor.get C.conn_scan color_port in
@@ -209,7 +211,10 @@ struct
   let wait_up angle_v f =
     Robot.event meas_vert (function
                            |None -> false
-                           |Some d -> d >= angle_v) (fun _ -> f())
+                           |Some d -> d >= angle_v)
+      (fun _ ->
+         Motor.set C.conn_scan Motor.all (Motor.speed 0);
+         f())
       (* (wait_up_end angle_v f) *)
 
 
@@ -227,7 +232,10 @@ struct
   let wait_down_right angle_r f =
     Robot.event meas_right (function
                             |None -> false
-                            |Some d -> d <= angle_r) (fun _ -> f())
+                            |Some d -> d <= angle_r)
+      (fun _ ->
+         Motor.set C.conn_scan Motor.all (Motor.speed 0);
+         f())
       (* (wait_down_right_end angle_r f) *)
 
 
@@ -246,7 +254,10 @@ struct
   let wait_down_left angle_l f =
     Robot.event meas_left (function
                            |None -> false
-                           |Some d -> d <= angle_l) (fun _ -> f())
+                           |Some d -> d <= angle_l)
+      (fun _ ->
+         Motor.set C.conn_scan Motor.all (Motor.speed 0);
+         f())
       (* (wait_down_left_end angle_l f) *)
 
 
