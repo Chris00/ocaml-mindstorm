@@ -53,10 +53,12 @@ let rec computer_play game =
       (fun () -> S.return_init_pos Board.close_when_clicked)
   )
   else
-    Printf.printf "ajoute une piece en col_to_play\n%!";
-    P.put_piece col_to_play (fun () ->
-                               S.add_piece col_to_play;
-                               human_play game)
+    (
+      Printf.printf "ajoute une piece en col_to_play\n%!";
+      P.put_piece col_to_play (fun () ->
+                                 S.add_piece col_to_play;
+                                 human_play game)
+    )
 
 and human_play game =
   Printf.printf "écrit c'est au joueur rouge\n%!";
