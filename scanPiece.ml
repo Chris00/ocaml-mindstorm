@@ -128,8 +128,8 @@ struct
     match Robot.read meas_left with
     | Some m ->
         let speed, good_angle =
-          if m <= angle_l then 5, (fun a -> a >= angle_l)
-          else -5, (fun a -> a <= angle_l) in
+          if m <= angle_l then 8, (fun a -> a >= angle_l)
+          else -8, (fun a -> a <= angle_l) in
         Motor.set C.conn_scan motor_captor_l (Motor.speed speed);
         Robot.event meas_left (when_some good_angle) (stop_motors_and_do f)
     | None -> assert false
@@ -139,8 +139,8 @@ struct
     match Robot.read meas_right with
     | Some m  ->
         let speed_r, good_angle =
-          if m < angle_r then 5, (fun a -> a >= angle_r)
-          else -5, (fun a -> a <= angle_r) in
+          if m < angle_r then 8, (fun a -> a >= angle_r)
+          else -8, (fun a -> a <= angle_r) in
         Motor.set C.conn_scan motor_captor_r (Motor.speed speed_r);
         Motor.set C.conn_scan motor_captor_l (Motor.speed (- speed_r));
         Robot.event meas_right (when_some good_angle) (adj_l angle_l f)
@@ -155,8 +155,8 @@ struct
     match Robot.read meas_vert with
     | Some m  ->
         let speed_vert, speed, good_angle =
-          if m <= angle_v then 5, 7, (fun a -> a >= angle_v) (* go up *)
-          else -5, -7, (fun a -> a <= angle_v) in
+          if m <= angle_v then 6, 8, (fun a -> a >= angle_v) (* go up *)
+          else -6, -8, (fun a -> a <= angle_v) in
         Motor.set C.conn_scan motor_captor_vert (Motor.speed speed_vert);
         Motor.set C.conn_scan motor_captor_l (Motor.speed speed);
         Motor.set C.conn_scan motor_captor_r (Motor.speed speed);
