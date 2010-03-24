@@ -37,7 +37,7 @@ let add_piece_to_board color col =
 let write_player_turn color =
   set_font "12x24kana";
   set_color white;
-  draw_rect x_rect y_rect w_rect h_rect;
+  fill_rect x_rect y_rect w_rect h_rect;
 
   if color = red then
     (
@@ -105,7 +105,7 @@ let yellow_success () =
   let xw = (w - n_xw)/2
   and yw = (h/9)-(n_yw/2)in
   moveto xw yw;
-  draw_string winner
+  draw_string winner;
 
 let draw () =
   set_color white;

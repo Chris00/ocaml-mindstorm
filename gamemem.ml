@@ -148,7 +148,9 @@ type board = {
   mutable cpu : int;
   white_lev : int;
   black_lev : int;
-} 
+}
+
+type result = DRAW | WIN | UNDECIDED
 
 let make_board() =
   let solv =
@@ -162,18 +164,8 @@ let make_board() =
       j = 0;
       k = 0;
       mygroups = Array.make groups true
-    } 
-  and sol =
-    {
-      valid = true;
-      solname = -1;
-      solpoint = Array.init 2 (fun i -> 0);
-      sqinv = Array.init (2*tiles) (fun i -> 0);
-      sqinvnumb = 0;
-      solgroups = Array.init groups (fun i -> 0);
-      solgroupsnumb = 0
-    } in
-  let board =
+    }
+  in
     {
       wins = Array.init 2 (fun i -> 0);
       draws = 0;
@@ -203,7 +195,16 @@ let make_board() =
       choices = Array.init maxmen (fun i -> 0);
       mlist = Array.init maxmen (fun i -> 0);
       intgp = intg;
-      solution = Array.init alloc_solutions (fun i -> sol);
+      solution = Array.init alloc_solutions (fun i ->
+    {
+      valid = true;
+      solname = -1;
+      solpoint = Array.init 2 (fun i -> 0);
+      sqinv = Array.init (2*tiles) (fun i -> 0);
+      sqinvnumb = 0;
+      solgroups = Array.init groups (fun i -> 0);
+      solgroupsnumb = 0
+    } );
       sp = -1;
       problem_solved = 0;
       solused = -1;
@@ -215,8 +216,6 @@ let make_board() =
       wbposit = 0;
       lastob = 0
     }
-  in board
-
 
 let initboard board =
     let i = ref 0 in
@@ -363,117 +362,68 @@ let groupeval board =
 	else if !p2 = 4 then score := !score +. badmove
 	else if !p1 = 3 && !p2 = 0 then
 	  (
-	    score := !score +. 11.;
+            score := !score +. 11.;
 	    let z = gen_odd_threat board x t1 in
-	      if z <> -1 then
-		let f = check_double board x z t1 in
-		  if not f then
-		    if t1 = 1 then score := !score +. (200./.(float) (ely z))
-		    else score := !score +. (150./.(float) (ely z))
-		  else if t1 = 1 then score := !score +.(750./.(float) (ely z))
-		  else score := !score +.(500./.(float) (ely z))
+	    if z <> -1 then
+              (
+	        let f = check_double board x z t1 in
+	        if not f then
+                  if t1 = 1 then score := !score +. (200./.(float) (ely z))
+                  else score := !score +. (150./.(float) (ely z))
+	        else if t1 = 1 then score := !score +.(750./.(float) (ely z))
+	        else score := !score +.(500./.(float) (ely z))
+              )
 	  )
 	else if !p2 = 3 && !p1 = 0 then
 	  (
 	    score := !score -. 50.;
 	    let z = gen_odd_threat board x t2 in
-	      if z <> -1 then
+	    if z <> -1 then
+              (
 		let f = check_double board x z t2 in
-		  if not f then
-		    if t1 = 2 then score := !score -. (200./. (float) (ely z))
-		    else score := !score -. (150./.(float) (ely z))
-		  else if t1 = 2 then score := !score-.(750./.(float) (ely z))
-		  else score := !score -. (500./.(float) (ely z))
-	  )
+		if not f then
+		  if t1 = 2 then score := !score -. (200./. (float) (ely z))
+		  else score := !score -. (150./.(float) (ely z))
+		else if t1 = 2 then score := !score-.(750./.(float) (ely z))
+		else score := !score -. (500./.(float) (ely z))
+	      )
+          )
 	else if !p1 = 2 && !p2 = 0 then score := !score +. 10.
 	else if !p2 = 2 && !p1 = 0 then score := !score -. 10.;
-
 	if check_pentas board 1 then
 	  if t1 = 1 then score := !score +. 800.
 	  else score := !score -. 800.
     done;
     !score
- 
-
-
-let connected board move =
-  board.turn <- switch board.turn;
-  let rec verti y connect =
-    let px = move in
-      if y>=0 && !(board.square.(elm px y)) = board.turn then
-	verti (y-1) (connect+1)
-      else connect in
-  let rec hori_left x connect =
-    let py = board.stack.(move) in
-      if x>=0 && !(board.square.(elm x py)) = board.turn then
-	hori_left (x-1) (connect+1)
-      else connect in
-  let rec hori_right x connect =
-    let py = board.stack.(move) in
-      if x<boardX && !(board.square.(elm x py)) = board.turn then
-	hori_right (x+1) (connect+1)
-      else connect in
-  let rec diago_NW_left x y connect =
-    if x>=0 && y<boardY && !(board.square.(elm x y)) = board.turn then
-      diago_NW_left (x-1) (y+1) (connect+1)
-    else connect in
-  let rec diago_NW_right x y connect =
-    if x<boardX && y>=0 && !(board.square.(elm x y)) = board.turn then
-      diago_NW_right (x+1) (y-1) (connect+1)
-    else connect in
-  let rec diago_NE_left x y connect =
-    if x>=0 && y>=0 && !(board.square.(elm x y)) = board.turn then
-      diago_NE_left (x-1) (y-1) (connect+1)
-    else connect in
-  let rec diago_NE_right x y connect =
-    if x<boardX && y<boardY && !(board.square.(elm x y)) = board.turn then
-      diago_NE_right (x+1) (y+1) (connect+1)
-    else connect in
-  let h_l = hori_left (move-1) 1
-  and d_nw_l = diago_NW_left (move-1) (board.stack.(move)+1) 1
-  and d_ne_l = diago_NE_left (move-1) (board.stack.(move)-1) 1 in
-  let h = hori_right (move+1) h_l
-  and d_ne = diago_NW_right (move+1) (board.stack.(move)-1) d_nw_l
-  and d_nw = diago_NE_right (move+1) (board.stack.(move)+1) d_ne_l
-  and v = verti (board.stack.(move)-1) 1 in
-  board.turn <- switch board.turn;
-  max (max h v) (max d_ne d_nw)
-
-
-let opponent_connected board move =
-  board.turn <- switch board.turn;
-  let connect = connected board move in
-    board.turn <- switch board.turn;
-    connect
 
 let draw board =
   board.filled = 42
 
 let get_game_result board =
-  let answer = ref (-1) and i = ref 0 in
-    while !i<groups do
+  let answer = ref UNDECIDED and i = ref 0 in
+  while !i<groups do
       if !(board.groups.(!i).(0)) <> 0 &&
-	!(board.groups.(!i).(0)) = !(board.groups.(!i).(1)) &&
-	!(board.groups.(!i).(0)) = !(board.groups.(!i).(2)) &&
-	!(board.groups.(!i).(0)) = !(board.groups.(!i).(3)) then
-	  (
-	    answer := !(board.groups.(!i).(0));
-	    i := groups
-	  )
+        !(board.groups.(!i).(0)) = !(board.groups.(!i).(1)) &&
+        !(board.groups.(!i).(0)) = !(board.groups.(!i).(2)) &&
+        !(board.groups.(!i).(0)) = !(board.groups.(!i).(3)) then
+          (
+            answer := WIN;
+            i := groups
+          )
       else i:= !i+1
     done;
-    if !answer = -1 && board.filled = maxsquares then 0
-    else !answer
-    
+  if !answer = UNDECIDED && board.filled = maxsquares then DRAW
+  else !answer
 
-      
+
+
 let makemove board move =
   if board.stack.(move) >= 6 then false
   else
     (
       board.square.(elm move (board.stack.(move))) := board.turn;
       board.moves.(board.filled) <- move;
-      board.mlist.(board.filled) <- elm move (board.stack.(move));
+      board.mlist.(board.filled) <- elm board.stack.(move) move;
       board.turn <- switch board.turn;
       board.stack.(move) <- board.stack.(move)+1;
       board.filled <- board.filled + 1;
@@ -492,3 +442,14 @@ let undomove board move =
       board.filled <- board.filled - 1;
       true
     )
+
+
+let show_square_used board =
+  for j=0 to boardY - 1 do
+    for i=0 to boardX - 1 do
+      if board.sqused.(elm i (boardY-j-1)) then
+        Printf.printf "*"
+      else Printf.printf "."
+    done;
+    Printf.printf "\n"
+  done
