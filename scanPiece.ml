@@ -90,7 +90,6 @@ struct
   (* État du jeu *)
   let current_line = ref 0
   let current_col = ref 0
-  let col_had_play = ref 0
   let scan_right = ref true (*on commence par le scannage de droite à gauche*)
   let number_piece = Array.make 7 0
     (* Nombre de pièces par colonne.  Utile pour savoir où scanner. *)
@@ -176,7 +175,7 @@ struct
       Mindstorm.Sensor.set C.conn_scan color_port `No_sensor `Raw;
       match color with
       | `Black | `Green | `White ->
-          f false (*rappelle la fct [scan] qui appelera scan_case sur la
+          f None (*rappelle la fct [scan] qui appelera scan_case sur la
                     prochaine case*)
       | `Blue ->
           printf "Ajustement\n%!";
@@ -188,14 +187,13 @@ struct
             (
               add_piece !current_col;
               printf "%i\n%s\n%!" !current_col (pieces_per_col());
-              col_had_play := !current_col;
-              f true
+              f (Some !current_col)
             )
     with Invalid_argument msg ->
       printf "RAISED Invalid_argument(%S)\n%!" msg;
       if count = 3 then (
         Mindstorm.Sensor.set C.conn_scan color_port `No_sensor `Raw;
-        f false
+        f None
       )
       else scan_light ~count:(count + 1) f
 
@@ -362,17 +360,16 @@ struct
     printf "%i\n%!" next_col;
     scan_case (piece_in_col next_col) next_col
       (fun () ->
-         scan_light begin fun found ->
-           if found then
+         scan_light begin function
+         | None -> scan f
+         | Some col ->
+             (* Found piece in [col] *)
              go_closer_non_full_col begin fun () ->
-               printf "current_col après go_closer : ";
-               printf "%i\n%!" !current_col;
+               printf "current_col après go_closer : %i\n%!" !current_col;
                scan_right := (!current_col <= 3);
                printf "passe à next\n%!";
-               f !col_had_play
+               f col
              end
-           else
-             scan f
          end
       )
 
