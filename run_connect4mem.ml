@@ -39,7 +39,7 @@ let rec computer_play game =
   Board.add_piece_to_board Graphics.yellow col_to_play;
   (*la pince va mettre la piece dans la colonne a jouer
     et on va scanner pour voir si le joueur a joue*)
-  if Gamemem.connected game col_to_play >= 4 || Gamemem.draw game then (
+  if Gamemem.get_game_result game = Gamemem.WIN || Gamemem.draw game then (
     Printf.printf "c fini, on stoppe après avoir ajouter la piece\n%!";
     if Gamemem.draw game then Board.draw()
     else Board.yellow_success();
@@ -56,12 +56,8 @@ and human_play game =
   S.scan begin fun col ->
     move game col;
     Board.add_piece_to_board Graphics.red col;
-    Printf.printf "%s\n%!" "les connectés de l'ordi";
-    Printf.printf "%i\n%!" (Gamemem.connected game col);
-    Printf.printf "%s\n%!" "les connectés de l'humain";
-    Printf.printf "%i\n%!" (Gamemem.opponent_connected game col);
     (* On verifie que le jeu n'est pas gagné ou match nul *)
-    if Gamemem.connected game col >= 4 || Gamemem.draw game then (
+    if Gamemem.get_game_result game = Gamemem.WIN || Gamemem.draw game then (
       if Gamemem.draw game then Board.draw()
       else Board.red_success();
       Printf.printf "L'HUMAIN A GAGNE\n%!";
