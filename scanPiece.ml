@@ -175,7 +175,7 @@ struct
       Mindstorm.Sensor.set C.conn_scan color_port `No_sensor `Raw;
       match color with
       | `Black | `Green | `White ->
-          f None (*rappelle la fct [scan] qui appelera scan_case sur la
+          f None (*rappelle la fct [scan] qui appelera move_to sur la
                     prochaine case*)
       | `Blue ->
           printf "Ajustement\n%!";
@@ -254,7 +254,7 @@ struct
 
   (* Move to the desired position, update the (position) state, and
      execute [f]. *)
-  let scan_case new_pos_line new_pos_col f =
+  let move_to new_pos_line new_pos_col f =
     let diff_line = new_pos_line - !current_line and
         diff_col = new_pos_col - !current_col and
         angle_v = rot_v new_pos_line and
@@ -263,7 +263,7 @@ struct
 
     current_line := new_pos_line;
     current_col := new_pos_col;
-    printf "current_line et pos ds scan_case : ";
+    printf "current_line et pos ds move_to : ";
     printf "%i\n%!" !current_line;
     printf "%i\n%!" !current_col;
     if diff_line = 0 && diff_col = 0 then f()
@@ -337,14 +337,14 @@ struct
           if piece_in_col c < 6 then raise(Not_full c)
         done;
         f() (* all columns full *)
-      with Not_full c -> scan_case (piece_in_col c) c f
+      with Not_full c -> move_to (piece_in_col c) c f
     else
       try
         for c = 0 to 6 do
           if piece_in_col c < 6 then raise(Not_full c)
         done;
         f() (* all columns full *)
-      with Not_full c -> scan_case (piece_in_col c) c f
+      with Not_full c -> move_to (piece_in_col c) c f
 
   let rec next_col current_col =
     let col = (if !scan_right then
@@ -354,27 +354,30 @@ struct
     if piece_in_col col = 6 then next_col col
     else col
 
-  let rec scan f =
-    let next_col = next_col !current_col in
-    printf "next_col ds scan : ";
-    printf "%i\n%!" next_col;
-    scan_case (piece_in_col next_col) next_col
-      (fun () ->
-         scan_light begin function
-         | None -> scan f
-         | Some col ->
-             (* Found piece in [col] *)
-             go_closer_non_full_col begin fun () ->
-               printf "current_col après go_closer : %i\n%!" !current_col;
-               scan_right := (!current_col <= 3);
-               printf "passe à next\n%!";
-               f col
-             end
-         end
-      )
+  let rec scan_columns f =
+    scan_light begin function
+    | None ->
+        let next_col = next_col !current_col in
+        move_to (piece_in_col next_col) next_col (fun () -> scan_columns f)
+    | Some col ->
+        (* Found piece in [col] *)
+        go_closer_non_full_col begin fun () ->
+          scan_right := (!current_col <= 3);
+          printf "Pièce trouvée dans la colonne %i\n%!" col;
+          f col
+        end
+    end
+
+  let scan f =
+    (* Ajuster en hauteur si une pièce a été ajoutée par le robot.  Si
+       la colonne est pleine, on passe à la suivante. *)
+    let npieces = piece_in_col !current_col in
+    let col = if npieces < 6 then !current_col else next_col !current_col in
+    move_to (piece_in_col col) col (fun () -> scan_columns f)
+
 
   let return_init_pos f =
-    scan_case 0 0 f
+    move_to 0 0 f
 
 end
 
