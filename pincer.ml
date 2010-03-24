@@ -122,6 +122,7 @@ struct
 
   (*ouvre la pince et attend qu'elle soit assez ouverte*)
   let open_pincer col next _ =
+    Motor.set C.conn_pincer motor_pincer (Motor.speed 0);
     Motor.set C.conn_pincer motor_open_pincer (Motor.speed (open_speed));
     wait_pincer_opened col next
 
