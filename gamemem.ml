@@ -422,8 +422,6 @@ let makemove board move =
   else
     (
       board.square.(elm move (board.stack.(move))) := board.turn;
-      board.moves.(board.filled) <- move;
-      board.mlist.(board.filled) <- elm board.stack.(move) move;
       board.turn <- switch board.turn;
       board.stack.(move) <- board.stack.(move)+1;
       board.filled <- board.filled + 1;
@@ -431,25 +429,12 @@ let makemove board move =
     )
 
 let undomove board move =
-  if board.stack.(move)<1 then false
+  if board.stack.(move) < 1 then false
   else
     (
       board.stack.(move) <- board.stack.(move)-1;
       board.square.(elm move (board.stack.(move))) := 0;
-      board.moves.(board.filled) <- -1;
-      board.mlist.(board.filled) <- -1;
       board.turn <- switch board.turn;
       board.filled <- board.filled - 1;
       true
     )
-
-
-let show_square_used board =
-  for j=0 to boardY - 1 do
-    for i=0 to boardX - 1 do
-      if board.sqused.(elm i (boardY-j-1)) then
-        Printf.printf "*"
-      else Printf.printf "."
-    done;
-    Printf.printf "\n"
-  done
