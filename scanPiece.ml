@@ -110,7 +110,6 @@ struct
   let stop _ =
     Motor.set C.conn_scan Motor.all (Motor.speed 0)
 
-
  (*methode retournant le nbre de pions ds la col [col] du jeu [game]*)
   let piece_in_col col = number_piece.(col)
 
@@ -120,6 +119,9 @@ struct
   let pieces_per_col() =
     String.concat "; " (Array.to_list (Array.map string_of_int number_piece))
 
+  let stop_motors_and_do f _ =
+    Motor.set C.conn_scan Motor.all (Motor.speed 0);
+    f()
 
   (*ajuste la position du capteur couleur*)
   let adj_l angle_l f _ =
@@ -131,10 +133,7 @@ struct
           if m <= angle_l then 5, (fun a -> a >= angle_l)
           else -5, (fun a -> a <= angle_l) in
         Motor.set C.conn_scan motor_captor_l (Motor.speed speed);
-        Robot.event meas_left (when_some good_angle)
-          (fun _ ->
-             Motor.set C.conn_scan Motor.all (Motor.speed 0);
-             f())
+        Robot.event meas_left (when_some good_angle) (stop_motors_and_do f)
     | None -> assert false
 
   let adj_r angle_r angle_l f _ =
@@ -211,10 +210,7 @@ struct
   let wait_up angle_v f =
     Robot.event meas_vert (function
                            |None -> false
-                           |Some d -> d >= angle_v)
-      (fun _ ->
-         Motor.set C.conn_scan Motor.all (Motor.speed 0);
-         f())
+                           |Some d -> d >= angle_v) (stop_motors_and_do f)
       (* (wait_up_end angle_v f) *)
 
 
@@ -232,10 +228,7 @@ struct
   let wait_down_right angle_r f =
     Robot.event meas_right (function
                             |None -> false
-                            |Some d -> d <= angle_r)
-      (fun _ ->
-         Motor.set C.conn_scan Motor.all (Motor.speed 0);
-         f())
+                            |Some d -> d <= angle_r) (stop_motors_and_do f)
       (* (wait_down_right_end angle_r f) *)
 
 
@@ -254,10 +247,7 @@ struct
   let wait_down_left angle_l f =
     Robot.event meas_left (function
                            |None -> false
-                           |Some d -> d <= angle_l)
-      (fun _ ->
-         Motor.set C.conn_scan Motor.all (Motor.speed 0);
-         f())
+                           |Some d -> d <= angle_l) (stop_motors_and_do f)
       (* (wait_down_left_end angle_l f) *)
 
 
