@@ -110,7 +110,6 @@ struct
   let stop _ =
     Motor.set C.conn_scan Motor.all (Motor.speed 0)
 
-
  (*methode retournant le nbre de pions ds la col [col] du jeu [game]*)
   let piece_in_col col = number_piece.(col)
 
@@ -120,6 +119,9 @@ struct
   let pieces_per_col() =
     String.concat "; " (Array.to_list (Array.map string_of_int number_piece))
 
+  let stop_motors_and_do f _ =
+    Motor.set C.conn_scan Motor.all (Motor.speed 0);
+    f()
 
   (*ajuste la position du capteur couleur*)
   let adj_l angle_l f _ =
@@ -131,10 +133,7 @@ struct
           if m <= angle_l then 5, (fun a -> a >= angle_l)
           else -5, (fun a -> a <= angle_l) in
         Motor.set C.conn_scan motor_captor_l (Motor.speed speed);
-        Robot.event meas_left (when_some good_angle)
-          (fun _ ->
-             Motor.set C.conn_scan Motor.all (Motor.speed 0);
-             f())
+        Robot.event meas_left (when_some good_angle) (stop_motors_and_do f)
     | None -> assert false
 
   let adj_r angle_r angle_l f _ =
@@ -172,27 +171,29 @@ struct
   let rec scan_light ?(count = 0) f =
     Mindstorm.Sensor.set C.conn_scan color_port `Color_full `Pct_full_scale;
     usleep 0.25;
-    let data  = Mindstorm.Sensor.get C.conn_scan color_port in
-    let color = Sensor.color_of_data data in
-    Mindstorm.Sensor.set C.conn_scan color_port `No_sensor `Raw;
-    try match color with
-    | `Black | `Green | `White ->
-        f false (*rappelle la fct [scan] qui appelera scan_case sur la
-                  prochaine case*)
-    | `Blue ->
-        printf "Ajustement\n%!";
-        adjustment !current_line !current_col (fun _ -> scan_light f)
-    | `Yellow | `Red ->
-        (*il a trouvé une piece*)
-        if count = 0 then scan_light ~count:1 f
-        else
-          (
-            add_piece !current_col;
-            col_had_play := !current_col;
-            printf "%i\n%s\n%!" !col_had_play (pieces_per_col());
-            f true
-          )
-    with Invalid_argument _ ->
+    try
+      let data  = Mindstorm.Sensor.get C.conn_scan color_port in
+      let color = Sensor.color_of_data data in
+      Mindstorm.Sensor.set C.conn_scan color_port `No_sensor `Raw;
+      match color with
+      | `Black | `Green | `White ->
+          f false (*rappelle la fct [scan] qui appelera scan_case sur la
+                    prochaine case*)
+      | `Blue ->
+          printf "Ajustement\n%!";
+          adjustment !current_line !current_col (fun _ -> scan_light f)
+      | `Yellow | `Red ->
+          (*il a trouvé une piece*)
+          if count = 0 then scan_light ~count:1 f
+          else
+            (
+              add_piece !current_col;
+              col_had_play := !current_col;
+              printf "%i\n%s\n%!" !col_had_play (pieces_per_col());
+              f true
+            )
+    with Invalid_argument msg ->
+      printf "RAISED Invalid_argument(%S)\n%!" msg;
       if count = 3 then  f false
       else scan_light ~count:(count + 1) f
 
@@ -211,10 +212,7 @@ struct
   let wait_up angle_v f =
     Robot.event meas_vert (function
                            |None -> false
-                           |Some d -> d >= angle_v)
-      (fun _ ->
-         Motor.set C.conn_scan Motor.all (Motor.speed 0);
-         f())
+                           |Some d -> d >= angle_v) (stop_motors_and_do f)
       (* (wait_up_end angle_v f) *)
 
 
@@ -232,10 +230,7 @@ struct
   let wait_down_right angle_r f =
     Robot.event meas_right (function
                             |None -> false
-                            |Some d -> d <= angle_r)
-      (fun _ ->
-         Motor.set C.conn_scan Motor.all (Motor.speed 0);
-         f())
+                            |Some d -> d <= angle_r) (stop_motors_and_do f)
       (* (wait_down_right_end angle_r f) *)
 
 
@@ -254,10 +249,7 @@ struct
   let wait_down_left angle_l f =
     Robot.event meas_left (function
                            |None -> false
-                           |Some d -> d <= angle_l)
-      (fun _ ->
-         Motor.set C.conn_scan Motor.all (Motor.speed 0);
-         f())
+                           |Some d -> d <= angle_l) (stop_motors_and_do f)
       (* (wait_down_left_end angle_l f) *)
 
 
