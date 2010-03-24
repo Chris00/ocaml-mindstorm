@@ -252,7 +252,8 @@ struct
                            |Some d -> d <= angle_l) (stop_motors_and_do f)
       (* (wait_down_left_end angle_l f) *)
 
-
+  (* Move to the desired position, update the (position) state, and
+     execute [f]. *)
   let scan_case new_pos_line new_pos_col f =
     let diff_line = new_pos_line - !current_line and
         diff_col = new_pos_col - !current_col and
