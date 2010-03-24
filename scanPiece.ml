@@ -90,6 +90,7 @@ struct
   (* État du jeu *)
   let current_line = ref 0
   let current_col = ref 0
+  let col_had_play = ref 0
   let scan_right = ref true (*on commence par le scannage de droite à gauche*)
   let number_piece = Array.make 7 0
     (* Nombre de pièces par colonne.  Utile pour savoir où scanner. *)
@@ -187,6 +188,7 @@ struct
             (
               add_piece !current_col;
               printf "%i\n%s\n%!" !current_col (pieces_per_col());
+              col_had_play := !current_col;
               f true
             )
     with Invalid_argument msg ->
@@ -263,7 +265,9 @@ struct
 
     current_line := new_pos_line;
     current_col := new_pos_col;
-
+    printf "current_line et pos ds scan_case : ";
+    printf "%i\n%!" !current_line;
+    printf "%i\n%!" !current_col;
     if diff_line = 0 && diff_col = 0 then f()
     else (
       (*on fait les deux mouvements en meme temps*)
@@ -354,14 +358,18 @@ struct
 
   let rec scan f =
     let next_col = next_col !current_col in
+    printf "next_col ds scan : ";
+    printf "%i\n%!" next_col;
     scan_case (piece_in_col next_col) next_col
       (fun () ->
          scan_light begin fun found ->
            if found then
              go_closer_non_full_col begin fun () ->
+               printf "current_col après go_closer : ";
+               printf "%i\n%!" !current_col;
                scan_right := (!current_col <= 3);
                printf "passe à next\n%!";
-               f !current_col
+               f !col_had_play
              end
            else
              scan f

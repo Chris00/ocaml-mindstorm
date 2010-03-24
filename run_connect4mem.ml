@@ -37,11 +37,6 @@ let rec computer_play game =
   Printf.printf "col_to_play = %i\n%!" col_to_play;
   move game col_to_play;
   Board.add_piece_to_board Graphics.yellow col_to_play;
-  Printf.printf "%s\n%!" "les connectés de l'ordi";
-  Printf.printf "%i\n!" (Gamemem.connected game col_to_play);
-  Printf.printf "%s\n%!" "les connectés de l'humain";
-  Printf.printf "%i\n!" (Gamemem.opponent_connected game col_to_play);
-  Board.add_piece_to_board Graphics.yellow col_to_play;
   (*la pince va mettre la piece dans la colonne a jouer
     et on va scanner pour voir si le joueur a joue*)
   if Gamemem.connected game col_to_play >= 4 || Gamemem.draw game then (
