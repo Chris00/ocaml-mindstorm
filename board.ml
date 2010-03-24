@@ -37,7 +37,7 @@ let write_player_turn color =
   and w_rect = (max x_text_red x_text_yellow) + 2
   and h_rect = (max y_text_red y_text_yellow) + 2
   in
-  set_color white
+  set_color white;
   draw_rect x_rect y_rect w_rect h_rect;
 
   if color = red then
