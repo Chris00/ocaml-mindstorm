@@ -90,7 +90,6 @@ struct
   (* État du jeu *)
   let current_line = ref 0
   let current_col = ref 0
-  let col_had_play = ref 0 (*permet à la fct next de savoir où l'humain a joué*)
   let scan_right = ref true (*on commence par le scannage de droite à gauche*)
   let number_piece = Array.make 7 0
     (* Nombre de pièces par colonne.  Utile pour savoir où scanner. *)
@@ -187,8 +186,7 @@ struct
           else
             (
               add_piece !current_col;
-              col_had_play := !current_col;
-              printf "%i\n%s\n%!" !col_had_play (pieces_per_col());
+              printf "%i\n%s\n%!" !current_col (pieces_per_col());
               f true
             )
     with Invalid_argument msg ->
@@ -362,7 +360,7 @@ struct
              go_closer_non_full_col begin fun () ->
                scan_right := (!current_col <= 3);
                printf "passe à next\n%!";
-               f !col_had_play
+               f !current_col
              end
            else
              scan f
