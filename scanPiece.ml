@@ -194,7 +194,10 @@ struct
             )
     with Invalid_argument msg ->
       printf "RAISED Invalid_argument(%S)\n%!" msg;
-      if count = 3 then  f false
+      if count = 3 then (
+        Mindstorm.Sensor.set C.conn_scan color_port `No_sensor `Raw;
+        f false
+      )
       else scan_light ~count:(count + 1) f
 
 
