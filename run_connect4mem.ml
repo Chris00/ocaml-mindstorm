@@ -1,4 +1,3 @@
-open Alphabetamem
 open Board
 
 let bt_pincer = ref "00:16:53:0C:84:49"
@@ -27,7 +26,7 @@ end
 module P = Pincer.Run(Conn)
 module S = ScanPiece.Run(Conn)
 
-let move game col = ignore(Gamemem.makemove game col)
+let is_won_or_draw game = Velena.move_for (List.rev game) = None
 
 (*si fst_player est vrai, ca veut dire que c'est a l'ordi de commencer,
   on lance donc alphabeta puis la pince et enfin le scan*)
@@ -36,18 +35,19 @@ let rec computer_play game =
   Printf.printf "écrit c'est au joueur jaune\n%!";
   Board.write_player_turn Graphics.yellow;
   Printf.printf "lance alphabeta\n%!";
-  let _, col_to_play = Alphabetamem.alphabeta game 9 Gamemem.groupeval in
+  let col_to_play = match Velena.move_for (List.rev !game) with
+    | Some c -> c | None -> assert false in
   Printf.printf "col_to_play = %i\n%!" col_to_play;
-  move game col_to_play;
+  game := col_to_play :: !game;
   Printf.printf "ajoute le pion jaune à l'interface\n%!";
   Board.add_piece_to_board Graphics.yellow col_to_play;
   Printf.printf "test si on a gagné ou match nul\n%!";
   (*la pince va mettre la piece dans la colonne a jouer
     et on va scanner pour voir si le joueur a joue*)
-  if Gamemem.get_game_result game = Gamemem.WIN || Gamemem.draw game then (
+  if is_won_or_draw !game then (
     Printf.printf "c fini, on stoppe après avoir ajouter la piece\n%!";
-    if Gamemem.draw game then Board.draw()
-    else Board.yellow_success();
+    (* if Gamemem.draw game then Board.draw() *)
+    (* else Board.yellow_success(); *)
     Printf.printf "LE ROBOT GAGNE\n%!";
     P.put_piece col_to_play
       (fun () -> S.return_init_pos Board.close_when_clicked)
@@ -64,14 +64,14 @@ and human_play game =
   Printf.printf "lance scan\n%!";
   S.scan begin fun col ->
     Printf.printf "lance mouve ds human_play\n%!";
-    move game col;
+    game := col :: !game;
     Printf.printf "ajoute le pion rouge\n%!";
     Board.add_piece_to_board Graphics.red col;
     Printf.printf "test si fini\n%!";
     (* On verifie que le jeu n'est pas gagné ou match nul *)
-    if Gamemem.get_game_result game = Gamemem.WIN || Gamemem.draw game then (
-      if Gamemem.draw game then Board.draw()
-      else Board.red_success();
+    if is_won_or_draw !game then (
+      (* if Gamemem.draw game then Board.draw() *)
+      (* else Board.red_success(); *)
       Printf.printf "L'HUMAIN A GAGNE\n%!";
       S.return_init_pos Board.close_when_clicked
     )
@@ -84,8 +84,7 @@ and human_play game =
 
 let () =
   Board.gameboard ();
-  let game = Gamemem.make_board() in
-  Gamemem.initboard game;
+  let game = ref [] in
   (if Conn.fst_computer then computer_play else human_play) game;
   Robot.run Conn.r
 

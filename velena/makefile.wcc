@@ -1,0 +1,44 @@
+#
+#              Makefile for Velena Engine (Watcom C/C++ compilers)
+#
+
+##########################
+## User settable macros ##
+##########################
+
+Compiler = wcc386
+Compiler_Options = /5r /olrt
+
+Linker_options   = Option Stack=49152
+
+System       = dos4g
+
+Exe_file     = veleng.exe
+
+Object_files =  connect4.obj  &
+                error.obj     &
+                playgame.obj  &
+                ia_main.obj   &
+                evaluate.obj  &
+                adjmtrx.obj   &
+                pbsolver.obj  &
+                pnsearch.obj  &
+                bintree.obj   &
+                heurist.obj   &
+                database.obj  &
+                wc.obj        &
+                buildob.obj   &
+                dummy.obj     &
+                cmdline.obj
+
+####################
+## Makefile rules ##
+####################
+
+$(Exe_file): $(Object_files)
+             *wlink system $(System) $(Linker_Options) name $(Exe_file) &
+                    file {$(Object_files)}
+
+.c.obj:
+        *$(Compiler) $(Compiler_Options) $<
+

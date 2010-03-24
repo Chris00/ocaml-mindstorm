@@ -1,7 +1,7 @@
 # Compile in -custom mode so there is no problem with finding the
 # shared library dllmindstorm.so
 
-PACKAGES = -package mindstorm,bigarray,graphics
+PACKAGES = -package mindstorm,bigarray,graphics,str
 DOC_DIR=doc
 
 OCAMLC_FLAGS = -g -dtypes -custom $(PACKAGES)
@@ -16,9 +16,13 @@ LIBS_CMXA=$(LIBS_CMA:.cma=.cmxa)
 all: byte native
 
 SOURCES = game.ml alphabeta.ml board.ml scanPiece.ml pincer.ml \
-	gamemem.ml alphabetamem.ml
-byte: run_connect4.exe run_connect4mem.exe
-native: run_connect4.com run_connect4mem.com
+	gamemem.ml alphabetamem.ml velena.ml
+byte: run_connect4.exe run_connect4mem.exe velena/veleng
+native: run_connect4.com run_connect4mem.com velena/veleng
+velena/veleng:
+	$(MAKE) -C velena
+
+test_velena.com: velena.cmx
 
 run_connect4.exe : robot.cma $(SOURCES:.ml=.cmo)
 run_connect4mem.exe : robot.cma $(SOURCES:.ml=.cmo)
@@ -71,5 +75,4 @@ include Makefile.ocaml
 clean::
 	-$(RM) $(wildcard *.exe *.com *.obj *.lib)
 	-$(CD) $(DOC_DIR) && $(RM) *~ *.html *.css
-#	-$(CD) labyrinth/ &&  $(MAKE) clean
-#	-$(CD) rubik/ &&  $(MAKE) clean
+	$(MAKE) -C velena clean

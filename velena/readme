@@ -1,0 +1,82 @@
+
+Velena Engine Source Code V1.00  (written by Giuliano Bertoletti)
+Copyright (C) 1996-97 Giuliano Bertoletti & GBE 32241 Software PR
+
+Released 27/07/1997
+=========================================================================
+
+This is a Connect 4 AI core engine. Please download Velena for the whole 
+documentation.
+
+Velena can be found at the following adresses via Internet:
+
+http://www.ce.unipr.it/~gbe/velena.html  (official homepage)
+
+ftp://x2ftp.oulu.fi/pub/msdos/programming/ai/velenaXX.zip
+   where XX is the current version of Velena (now is 18).
+
+=========================================================================
+
+Acknoledgements
+
+Velena Engine Source Code is free software; you can redistribute it and/or 
+modify it under the following conditions:
+
+
+1 - If you make a derived work, the full source code must be distributed 
+    and placed in public domain.
+
+2 - You must not charge a fee for this software nor for any derived work 
+    in which this software is included.
+
+3 - You must not delete the copyright notices in the source code
+    (but of course you can make your own layout for graphics and copyright notices on
+    the screen, provided it's clearly expressed that you used the Velena Engine Source
+    Code and that's a derived work).
+
+
+
+Disclaimer
+
+This software is distributed in the hope that it will be useful, but 
+without any warranty; including but not limited to implied warranties 
+of merchantability or fitness for a particular purpose with respect to 
+the software and accompanying written materials.
+The author takes no responsibility for use or misuse of this software.
+Although every effort has been made to produce a solid and efficient product 
+the author cannot assure that the operation of the software will be 
+uninterrupted and error free. The user takes every risk. 
+
+Actually the source code has been tested under Watcom C/C++ V10.0 and
+Linux gcc compiler. The default makefile is for linux. If you want to
+compile the code under watcom use makefile.wcc
+
+
+
+Greetings
+
+During Velena development I have been helped by many persons:
+
+This program is based on the knowledged approach of L.Victor Allis which 
+designed and  implemented a sophisticated AI engine in a program called 
+Victor. Velena is basically the same, except that even newer concepts and 
+techniques were introduced in order to reduce the problem complexity (of 
+solving the game) to a more tractable factor of magnitude. Moreover Velena 
+is available to anyone, while Victor (currently) is not. I thank L.Victor 
+Allis for his support while I developed Velena and for the theory he made 
+for solving Connect Four. Without him this program wouldn't have come to light. 
+
+I also thank Filippo Ghilardi who helped me to build the opening book data base
+which took several days of work on his Pentium 133 computer, and Davide Mazza 
+who created the Velena intro logo (MSDOS version).
+
+===============================================================================
+
+                                                       The author:
+                                                       Giuliano Bertoletti
+                                                E-mail gbe@ce.unipr.it
+                                                       gbe@netsis.it
+
+
+
+
