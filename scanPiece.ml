@@ -168,33 +168,31 @@ struct
     sinon il continue*)
   let rec scan_light ?(count = 0) f =
     Motor.set C.conn_scan Motor.all (Motor.speed 0);
-        Mindstorm.Sensor.set C.conn_scan color_port `Color_full `Pct_full_scale;
-        usleep 0.25;
-        let data  = Mindstorm.Sensor.get C.conn_scan color_port in
-        let color = Sensor.color_of_data data in
-        Mindstorm.Sensor.set C.conn_scan color_port `No_sensor `Raw;
-        try match color with
-        | `Black | `Green | `White ->
-            f false (*rappelle la fct [scan] qui appelera scan_case sur la
-                   prochaine case*)
-        | `Blue ->
-            printf "Ajustement\n%!";
-            adjustment !current_line !current_col (fun _ -> scan_light f)
-        | `Yellow | `Red ->
-            (*il a trouvé une piece*)
-            if count = 0 then scan_light ~count:1 f
-            else
-              (
-                add_piece !current_col;
-                col_had_play := !current_col;
-                printf "%i\n%s\n%!" !col_had_play (pieces_per_col());
-                f true
-              )
-        with Failure "Invalid_argument" ->
-          if count = 3 then  f false
-          else scan_light ~count:(count + 1) f
-
-
+    Mindstorm.Sensor.set C.conn_scan color_port `Color_full `Pct_full_scale;
+    usleep 0.25;
+    let data  = Mindstorm.Sensor.get C.conn_scan color_port in
+    let color = Sensor.color_of_data data in
+    Mindstorm.Sensor.set C.conn_scan color_port `No_sensor `Raw;
+    try match color with
+    | `Black | `Green | `White ->
+        f false (*rappelle la fct [scan] qui appelera scan_case sur la
+                  prochaine case*)
+    | `Blue ->
+        printf "Ajustement\n%!";
+        adjustment !current_line !current_col (fun _ -> scan_light f)
+    | `Yellow | `Red ->
+        (*il a trouvé une piece*)
+        if count = 0 then scan_light ~count:1 f
+        else
+          (
+            add_piece !current_col;
+            col_had_play := !current_col;
+            printf "%i\n%s\n%!" !col_had_play (pieces_per_col());
+            f true
+          )
+    with Invalid_argument _ ->
+      if count = 3 then  f false
+      else scan_light ~count:(count + 1) f
 
 
   (*attend d'avoir fini de monter (avec ralenti) avant de scanner la case*)
