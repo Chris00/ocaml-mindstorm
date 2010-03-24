@@ -186,7 +186,6 @@ struct
           else
             (
               add_piece !current_col;
-              printf "%i\n%s\n%!" !current_col (pieces_per_col());
               f (Some !current_col)
             )
     with Invalid_argument msg ->
@@ -263,9 +262,6 @@ struct
 
     current_line := new_pos_line;
     current_col := new_pos_col;
-    printf "current_line et pos ds move_to : ";
-    printf "%i\n%!" !current_line;
-    printf "%i\n%!" !current_col;
     if diff_line = 0 && diff_col = 0 then f()
     else (
       (*on fait les deux mouvements en meme temps*)
