@@ -33,6 +33,7 @@ let move game col = ignore(Gamemem.makemove game col)
   on lance donc alphabeta puis la pince et enfin le scan*)
 let rec computer_play game =
   (* On cherche la colonne a jouer *)
+  Board.write_player_turn Graphics.yellow;
   let _, col_to_play = Alphabetamem.alphabeta game 9 Gamemem.groupeval in
   Printf.printf "col_to_play = %i\n%!" col_to_play;
   move game col_to_play;
@@ -53,6 +54,7 @@ let rec computer_play game =
                                human_play game)
 
 and human_play game =
+  Board.write_player_turn Graphics.red;
   S.scan begin fun col ->
     move game col;
     Board.add_piece_to_board Graphics.red col;
