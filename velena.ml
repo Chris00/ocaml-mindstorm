@@ -13,7 +13,7 @@ exception Play of int
 
 (* WARNING: Velena numbers the columns 1..7 but we use 0..6. *)
 
-let move_for ?(level=Strong) game =
+let rec move_for ?(level=Strong) game =
   let l = match level with Weak -> 'a' | Normal -> 'b' | Strong -> 'c' in
   let moves = List.map (fun c -> string_of_int(c+1)) game in
   let fh = Unix.open_process_in (sprintf "echo \"%c%s0\nq\" | ./velena/veleng"
@@ -29,6 +29,8 @@ let move_for ?(level=Strong) game =
         raise(Play 0)
     done;
     assert false
-  with Play c ->
-    if c = 0 then None else Some(c-1)
-
+  with
+  | Play c -> if c = 0 then None else Some(c-1)
+  | End_of_file ->
+      printf "End_of_file !! TRY AGAIN\n%!";
+      move_for ~level game

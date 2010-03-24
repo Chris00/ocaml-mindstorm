@@ -1,3 +1,4 @@
+open Printf
 open Board
 
 let bt_pincer = ref "00:16:53:0C:84:49"
@@ -32,61 +33,55 @@ let is_won_or_draw game = Velena.move_for (List.rev game) = None
   on lance donc alphabeta puis la pince et enfin le scan*)
 let rec computer_play game =
   (* On cherche la colonne a jouer *)
-  Printf.printf "Ècrit c'est au joueur jaune\n%!";
+  printf "COMPUTER\n%!";
   Board.write_player_turn Graphics.yellow;
-  Printf.printf "lance alphabeta\n%!";
+  printf "  Joue colonne : %!";
   let col_to_play = match Velena.move_for (List.rev !game) with
     | Some c -> c | None -> assert false in
-  Printf.printf "col_to_play = %i\n%!" col_to_play;
+  printf "%i\n%!" col_to_play;
   game := col_to_play :: !game;
-  Printf.printf "test si on a gagnÈ ou match nul\n%!";
   (*la pince va mettre la piece dans la colonne a jouer
     et on va scanner pour voir si le joueur a joue*)
   if is_won_or_draw !game then (
-    Printf.printf "c fini, on stoppe aprËs avoir ajouter la piece\n%!";
+    printf "  Le robot √† gagn√© (mettre le dernier pion)\n%!";
     (* if Gamemem.draw game then Board.draw() *)
     (* else Board.yellow_success(); *)
-    Printf.printf "LE ROBOT GAGNE\n%!";
     P.put_piece col_to_play
       (fun () ->
          Board.add_piece_to_board Graphics.yellow col_to_play;
          (* if Gamemem.draw game then Board.draw() *)
          (* else Board.yellow_success(); *)
-         Printf.printf "LE ROBOT GAGNE\n%!";
          S.return_init_pos Board.close_when_clicked)
   )
-  else
-    (
-      Printf.printf "ajoute une piece en col_to_play\n%!";
-      P.put_piece col_to_play begin fun () ->
-        Board.add_piece_to_board Graphics.yellow col_to_play;
-        S.add_piece col_to_play;
-        human_play game
-      end
-    )
+  else (
+    printf "  Ajoute pi√®ce en col %i\n%!" col_to_play;
+    P.put_piece col_to_play begin fun () ->
+      Board.add_piece_to_board Graphics.yellow col_to_play;
+      S.add_piece col_to_play;
+      human_play game
+    end
+  )
 
 and human_play game =
-  Printf.printf "Ècrit c'est au joueur rouge\n%!";
+  Printf.printf "HUMAN\n%!";
   Board.write_player_turn Graphics.red;
-  Printf.printf "lance scan\n%!";
+  Printf.printf "  scan\n%!";
   S.scan begin fun col ->
-    Printf.printf "lance mouve ds human_play\n%!";
+    printf "  Trouv√© pi√®ce en col %i\n%!" col;
     game := col :: !game;
-    Printf.printf "ajoute le pion rouge\n%!";
     Board.add_piece_to_board Graphics.red col;
-    Printf.printf "test si fini\n%!";
-    (* On verifie que le jeu n'est pas gagnÈ ou match nul *)
+    printf "  test si fini\n%!";
+    (* On verifie que le jeu n'est pas gagn√© ou match nul *)
     if is_won_or_draw !game then (
       (* if Gamemem.draw game then Board.draw() *)
       (* else Board.red_success(); *)
-      Printf.printf "L'HUMAIN A GAGNE\n%!";
+      printf "  L'HUMAIN A GAGNE\n%!";
       S.return_init_pos Board.close_when_clicked
     )
-    else
-      (
-        Printf.printf "lance computer_play\n%!";
-        computer_play game
-      )
+    else (
+      printf "  lance computer_play\n%!";
+      computer_play game
+    )
   end
 
 let () =
