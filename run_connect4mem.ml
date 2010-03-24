@@ -39,8 +39,6 @@ let rec computer_play game =
     | Some c -> c | None -> assert false in
   Printf.printf "col_to_play = %i\n%!" col_to_play;
   game := col_to_play :: !game;
-  Printf.printf "ajoute le pion jaune à l'interface\n%!";
-  Board.add_piece_to_board Graphics.yellow col_to_play;
   Printf.printf "test si on a gagné ou match nul\n%!";
   (*la pince va mettre la piece dans la colonne a jouer
     et on va scanner pour voir si le joueur a joue*)
@@ -50,13 +48,22 @@ let rec computer_play game =
     (* else Board.yellow_success(); *)
     Printf.printf "LE ROBOT GAGNE\n%!";
     P.put_piece col_to_play
-      (fun () -> S.return_init_pos Board.close_when_clicked)
+      (fun () ->
+         Board.add_piece_to_board Graphics.yellow col_to_play;
+         (* if Gamemem.draw game then Board.draw() *)
+         (* else Board.yellow_success(); *)
+         Printf.printf "LE ROBOT GAGNE\n%!";
+         S.return_init_pos Board.close_when_clicked)
   )
   else
-    Printf.printf "ajoute une piece en col_to_play\n%!";
-    P.put_piece col_to_play (fun () ->
-                               S.add_piece col_to_play;
-                               human_play game)
+    (
+      Printf.printf "ajoute une piece en col_to_play\n%!";
+      P.put_piece col_to_play begin fun () ->
+        Board.add_piece_to_board Graphics.yellow col_to_play;
+        S.add_piece col_to_play;
+        human_play game
+      end
+    )
 
 and human_play game =
   Printf.printf "écrit c'est au joueur rouge\n%!";

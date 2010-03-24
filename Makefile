@@ -18,7 +18,7 @@ all: byte native
 SOURCES = game.ml alphabeta.ml board.ml scanPiece.ml pincer.ml \
 	gamemem.ml alphabetamem.ml velena.ml
 byte: run_connect4.exe run_connect4mem.exe velena/veleng
-native: run_connect4.com run_connect4mem.com velena/veleng
+native: run_connect4.com run_connect4mem.com test.com velena/veleng
 velena/veleng:
 	$(MAKE) -C velena
 
@@ -29,6 +29,8 @@ run_connect4mem.exe : robot.cma $(SOURCES:.ml=.cmo)
 scanPiece2.com: robot.cmxa
 run_connect4.com : robot.cmxa $(SOURCES:.ml=.cmx)
 run_connect4mem.com : robot.cmxa $(SOURCES:.ml=.cmx)
+test.com : robot.cmxa $(SOURCES:.ml=.cmx)
+
 
 # General "event" library
 robot.cma: robot.cmo

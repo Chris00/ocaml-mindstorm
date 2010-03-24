@@ -28,8 +28,8 @@ let add_piece_to_board color col =
 
 let write_player_turn color =
   set_font "12x24kana";
-  let text_red = "C'est au tour de jouer du joueur rouge"
-  and text_yellow = "C'est au tour de jouer du joueur jaune" in
+  let text_red = "C'est au tour du joueur rouge"
+  and text_yellow = "C'est au tour du joueur jaune" in
   let (x_text_yellow, y_text_yellow) = text_size text_yellow in
   let x_rect = w/9 - 1
   and y_rect = (h/9) - (y_text_yellow)/2 - 1
@@ -85,7 +85,7 @@ let gameboard () =
 
 let red_success () =
   let (x_text_yellow, y_text_yellow) =
-    text_size "C'est au tour du jouer du joueur jaune" in
+    text_size "C'est au tour du joueur jaune" in
   let x_rect = w/9 - 1
   and y_rect = (h/9) - (y_text_yellow)/2 - 1
   and w_rect = (x_text_yellow) + 2
@@ -104,7 +104,7 @@ let red_success () =
 
 let yellow_success () =
   let (x_text_yellow, y_text_yellow) =
-    text_size "C'est au tour du jouer du joueur jaune" in
+    text_size "C'est au tour du joueur jaune" in
   let x_rect = w/9 - 1
   and y_rect = (h/9) - (y_text_yellow)/2 - 1
   and w_rect = (x_text_yellow) + 2
@@ -128,7 +128,7 @@ let yellow_success () =
 
 let draw () =
   let (x_text_yellow, y_text_yellow) =
-    text_size "C'est au tour du jouer du joueur jaune" in
+    text_size "C'est au tour du joueur jaune" in
   let x_rect = w/9 - 1
   and y_rect = (h/9) - (y_text_yellow)/2 - 1
   and w_rect = (x_text_yellow) + 2
