@@ -362,6 +362,7 @@ struct
              if found then
                go_closer_non_full_col begin fun () ->
                  scan_right := (!current_col <= 3);
+                 next_col := !current_col; (* for next scan *)
                  printf "passe à next\n%!";
                  f !col_had_play
                end
