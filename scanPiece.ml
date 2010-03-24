@@ -92,8 +92,6 @@ struct
   let current_col = ref 0
   let next_col = ref (-1)
   let col_had_play = ref 0 (*permet à la fct next de savoir où l'humain a joué*)
-  let light = ref true (*mettre à faux lorsqu'on veut juste remettre le capteur
-                         à droite*)
   let scan_right = ref true (*on commence par le scannage de droite à gauche*)
   let number_piece = Array.make 7 0
     (* Nombre de pièces par colonne.  Utile pour savoir où scanner. *)
@@ -170,8 +168,6 @@ struct
     sinon il continue*)
   let rec scan_light ?(count = 0) f =
     Motor.set C.conn_scan Motor.all (Motor.speed 0);
-    if !light then
-      (
         Mindstorm.Sensor.set C.conn_scan color_port `Color_full `Pct_full_scale;
         usleep 0.25;
         let data  = Mindstorm.Sensor.get C.conn_scan color_port in
@@ -179,7 +175,7 @@ struct
         Mindstorm.Sensor.set C.conn_scan color_port `No_sensor `Raw;
         try match color with
         | `Black | `Green | `White ->
-            f () (*rappelle la fct [scan] qui appelera scan_case sur la
+            f false (*rappelle la fct [scan] qui appelera scan_case sur la
                    prochaine case*)
         | `Blue ->
             printf "Ajustement\n%!";
@@ -192,35 +188,11 @@ struct
                 add_piece !current_col;
                 col_had_play := !current_col;
                 printf "%i\n%s\n%!" !col_had_play (pieces_per_col());
-                light := false; (*pr ne pas rescanner*)
-                if !current_col > 3 then
-                  (
-                    next_col := 7;
-                    scan_right := false
-                      (*pr que [game] renvoie le capteur à gauche du jeu*)
-                  )
-                else
-                  (
-                    next_col := -1;
-                    scan_right := true
-                      (*pr que [game] renvoie le capteur à droite du jeu*)
-                  );
-                f ()
+                f true
               )
         with Failure "Invalid_argument" ->
-          if count = 3 then  f ()
+          if count = 3 then  f false
           else scan_light ~count:(count + 1) f
-      )
-    else
-      (
-        if !current_col = 6 then next_col := 7
-        else next_col := -1;
-        f ()
-      )
-
-
-
-
 
 
 
@@ -239,9 +211,8 @@ struct
   let wait_up angle_v f =
     Robot.event meas_vert (function
                            |None -> false
-                           |Some d -> d >= angle_v)
+                           |Some d -> d >= angle_v) (fun _ -> f())
       (* (wait_up_end angle_v f) *)
-      (fun _ -> scan_light f)
 
 
   (*attend d'avoir fini ac le moteur r (ac ralenti) avant de scanner la case*)
@@ -258,9 +229,8 @@ struct
   let wait_down_right angle_r f =
     Robot.event meas_right (function
                             |None -> false
-                            |Some d -> d <= angle_r)
+                            |Some d -> d <= angle_r) (fun _ -> f())
       (* (wait_down_right_end angle_r f) *)
-     (fun _ -> scan_light f)
 
 
   (*attend d'avoir fini ac le moteur l (ac ralenti) avant de scanner la case*)
@@ -278,9 +248,8 @@ struct
   let wait_down_left angle_l f =
     Robot.event meas_left (function
                            |None -> false
-                           |Some d -> d <= angle_l)
+                           |Some d -> d <= angle_l) (fun _ -> f())
       (* (wait_down_left_end angle_l f) *)
-      (fun _ -> scan_light f)
 
 
   let scan_case new_pos_line new_pos_col f =
@@ -293,8 +262,7 @@ struct
     current_line := new_pos_line;
     current_col := new_pos_col;
 
-    if diff_line = 0 && diff_col = 0 then
-      scan_light f
+    if diff_line = 0 && diff_col = 0 then f()
     else (
       (*on fait les deux mouvements en meme temps*)
       if diff_line > 0 then ( (*on va vers le haut*)
@@ -356,28 +324,49 @@ struct
     )
 
 
-  let rec scan next go_to_next =
-    if go_to_next then (
-      light := true;
-      next_col := (if !scan_right then -1 else 7);
-      printf "passe à next\n%!";
-      next !col_had_play
-    )
-    else (
-      next_col := (if !scan_right then
-                     if !next_col < 6 then !next_col + 1 else 0
-                   else
-                     if !next_col > 0 then !next_col - 1 else 6);
+  exception Not_full of int
 
-      let next_line = piece_in_col !next_col in
-      if next_line = 6 then scan next go_to_next
-      else scan_case next_line !next_col (fun () -> scan next (not !light))
-    )
+  let go_closer_non_full_col f =
+    if !current_col > 3 then
+      try
+        for c = 6 downto 0 do
+          if piece_in_col c < 6 then raise(Not_full c)
+        done;
+        f() (* all columns full *)
+      with Not_full c -> scan_case (piece_in_col c) c f
+    else
+      try
+        for c = 0 to 6 do
+          if piece_in_col c < 6 then raise(Not_full c)
+        done;
+        f() (* all columns full *)
+      with Not_full c -> scan_case (piece_in_col c) c f
 
-  let scan next = scan next false
+
+  let rec scan f =
+    next_col := (if !scan_right then
+                   if !next_col < 6 then !next_col + 1 else 0
+                 else
+                   if !next_col > 0 then !next_col - 1 else 6);
+
+    let next_line = piece_in_col !next_col in
+    if next_line = 6 then scan f
+    else
+      scan_case next_line !next_col
+        (fun () ->
+           scan_light begin fun found ->
+             if found then
+               go_closer_non_full_col begin fun () ->
+                 scan_right := (!current_col <= 3);
+                 printf "passe à next\n%!";
+                 f !col_had_play
+               end
+             else
+               scan f
+           end
+        )
 
   let return_init_pos f =
-    light := false;
     scan_case 0 0 f
 
 end
