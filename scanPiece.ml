@@ -90,8 +90,6 @@ struct
   (* État du jeu *)
   let current_line = ref 0
   let current_col = ref 0
-  let next_col = ref (-1)
-  let col_had_play = ref 0 (*permet à la fct next de savoir où l'humain a joué*)
   let scan_right = ref true (*on commence par le scannage de droite à gauche*)
   let number_piece = Array.make 7 0
     (* Nombre de pièces par colonne.  Utile pour savoir où scanner. *)
@@ -188,13 +186,15 @@ struct
           else
             (
               add_piece !current_col;
-              col_had_play := !current_col;
-              printf "%i\n%s\n%!" !col_had_play (pieces_per_col());
+              printf "%i\n%s\n%!" !current_col (pieces_per_col());
               f true
             )
     with Invalid_argument msg ->
       printf "RAISED Invalid_argument(%S)\n%!" msg;
-      if count = 3 then  f false
+      if count = 3 then (
+        Mindstorm.Sensor.set C.conn_scan color_port `No_sensor `Raw;
+        f false
+      )
       else scan_light ~count:(count + 1) f
 
 
@@ -252,7 +252,8 @@ struct
                            |Some d -> d <= angle_l) (stop_motors_and_do f)
       (* (wait_down_left_end angle_l f) *)
 
-
+  (* Move to the desired position, update the (position) state, and
+     execute [f]. *)
   let scan_case new_pos_line new_pos_col f =
     let diff_line = new_pos_line - !current_line and
         diff_col = new_pos_col - !current_col and
@@ -343,29 +344,29 @@ struct
         f() (* all columns full *)
       with Not_full c -> scan_case (piece_in_col c) c f
 
+  let rec next_col current_col =
+    let col = (if !scan_right then
+                 if current_col < 6 then current_col + 1 else 0
+               else
+                 if current_col > 0 then current_col - 1 else 6) in
+    if piece_in_col col = 6 then next_col col
+    else col
 
   let rec scan f =
-    next_col := (if !scan_right then
-                   if !next_col < 6 then !next_col + 1 else 0
-                 else
-                   if !next_col > 0 then !next_col - 1 else 6);
-
-    let next_line = piece_in_col !next_col in
-    if next_line = 6 then scan f
-    else
-      scan_case next_line !next_col
-        (fun () ->
-           scan_light begin fun found ->
-             if found then
-               go_closer_non_full_col begin fun () ->
-                 scan_right := (!current_col <= 3);
-                 printf "passe à next\n%!";
-                 f !col_had_play
-               end
-             else
-               scan f
-           end
-        )
+    let next_col = next_col !current_col in
+    scan_case (piece_in_col next_col) next_col
+      (fun () ->
+         scan_light begin fun found ->
+           if found then
+             go_closer_non_full_col begin fun () ->
+               scan_right := (!current_col <= 3);
+               printf "passe à next\n%!";
+               f !current_col
+             end
+           else
+             scan f
+         end
+      )
 
   let return_init_pos f =
     scan_case 0 0 f
