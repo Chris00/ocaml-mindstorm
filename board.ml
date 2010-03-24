@@ -11,6 +11,14 @@ let add_piece col =
 
 let w = 1000 and h = 720
 
+let text_red = "C'est au tour du joueur rouge"
+and text_yellow = "C'est au tour du joueur jaune"
+let (x_text_yellow, y_text_yellow) = text_size text_yellow
+let x_rect = w/9 - 1
+and y_rect = (h/9) - (y_text_yellow)/2 - 1
+and w_rect = (x_text_yellow) + 2
+and h_rect = (y_text_yellow) + 2
+
 (*methode qui colorie les cercles dans la couleur color*)
 let color_circle color x_center y_center =
   let r_circle = 7*(min (w/9) (h/9))/16 in
@@ -28,27 +36,18 @@ let add_piece_to_board color col =
 
 let write_player_turn color =
   set_font "12x24kana";
-  let text_red = "C'est au tour du joueur rouge à jouer"
-  and text_yellow = "C'est au tour du joueur jaune à jouer" in
-  let (x_text_red, y_text_red) = text_size text_red
-  and (x_text_yellow, y_text_yellow) = text_size text_yellow in
-  let x_rect = w/9 - 1
-  and y_rect = (h/9) - (max y_text_red y_text_yellow)/2 - 1
-  and w_rect = (max x_text_red x_text_yellow) + 2
-  and h_rect = (max y_text_red y_text_yellow) + 2
-  in
   set_color white;
-  draw_rect x_rect y_rect w_rect h_rect;
+  fill_rect x_rect y_rect w_rect h_rect;
 
   if color = red then
     (
-      set_color black;
+      set_color red;
       moveto (x_rect+1) (y_rect+1);
       draw_string text_red
     )
   else
     (
-      set_color black;
+      set_color yellow;
       moveto (x_rect+1) (y_rect+1);
       draw_string text_yellow
     )
@@ -85,6 +84,8 @@ let gameboard () =
   synchronize()
 
 let red_success () =
+  set_color white;
+  fill_rect x_rect y_rect w_rect h_rect;
   set_font "12x24kana";
   set_color red;
   let winner = "Le joueur ROUGE gagne!!!" in
@@ -95,16 +96,20 @@ let red_success () =
   draw_string winner
 
 let yellow_success () =
+  set_color white;
+  fill_rect x_rect y_rect w_rect h_rect;
   set_font "12x24kana";
   set_color yellow;
-  let winner = "Le joueur Jaune gagne!!!" in
+  let winner = "Le joueur JAUNE gagne!!!" in
   let (n_xw, n_yw) = text_size winner in
   let xw = (w - n_xw)/2
   and yw = (h/9)-(n_yw/2)in
   moveto xw yw;
-  draw_string winner
+  draw_string winner;
 
 let draw () =
+  set_color white;
+  fill_rect x_rect y_rect w_rect h_rect;
   set_font "12x24kana";
   set_color black;
   let winner = "Match Nul" in

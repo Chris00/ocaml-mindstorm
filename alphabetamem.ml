@@ -15,7 +15,7 @@ let rec ab col game alpha beta mode depth heuristic =
           if Gamemem.makemove game j then
             let value, _ =
               ab j game alpha (min beta beta_p) Max (depth-1) heuristic in
-            Gamemem.undomove game j;
+            if not (Gamemem.undomove game j) then assert false;
 
             let (new_beta, new_col) =
               if beta_p > value then (value, j)
@@ -35,7 +35,7 @@ let rec ab col game alpha beta mode depth heuristic =
           if Gamemem.makemove game j then
             let value, _ =
               ab j game (max alpha alpha_p) beta Min (depth-1) heuristic in
-            Gamemem.undomove game j;
+            if not (Gamemem.undomove game j) then assert false;
 
             let (new_alpha, new_col) =
               if alpha_p < value then (value, j)
@@ -49,5 +49,14 @@ let rec ab col game alpha beta mode depth heuristic =
 
 
 let alphabeta game level heuristic =
+  Printf.printf "lance alphabeta, nbre pieces ds jeu = %i\n%!"
+    game.Gamemem.filled;
   if game.Gamemem.filled = 0 || game.Gamemem.filled = 1 then (0., 3)
-  else ab 0 game neg_infinity infinity Max level heuristic
+  else
+    let value, col =
+      ab 0 game neg_infinity infinity Max level heuristic in
+    let rec what_col_to_play g cost c =
+      let n = g.Gamemem.stack.(c) in
+      if n <> 6 then (cost, c)
+      else what_col_to_play g cost (c+1)
+    in what_col_to_play game value col
