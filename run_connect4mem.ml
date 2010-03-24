@@ -25,61 +25,60 @@ struct
 end
 
 module P = Pincer.Run(Conn)
-module S = ScanPiece2.Run(Conn)
+module S = ScanPiece.Run(Conn)
+
+let move game col = ignore(Gamemem.makemove game col)
 
 (*si fst_player est vrai, ca veut dire que c'est a l'ordi de commencer,
   on lance donc alphabeta puis la pince et enfin le scan*)
-let rec step game col =
-  if col <> -1 then
-    (
-        Gamemem.makemove game col;
-        Board.add_piece_to_board Graphics.red col;
-        Printf.printf "%s\n%!" "les connectés de l'ordi";
-        Printf.printf "%i\n%!" (Gamemem.connected game col);
-        Printf.printf "%s\n%!" "les connectés de l'humain";
-        Printf.printf "%i\n%!" (Gamemem.opponent_connected game col)
-    );
-  (*on verifie que le jeu n'est pas gagné ou match nul*)
-  if (col <> -1) &&
-    (Gamemem.opponent_connected game col >= 4 || Gamemem.draw game)
-  then (
+let rec computer_play game =
+  (* On cherche la colonne a jouer *)
+  let _, col_to_play = Alphabetamem.alphabeta game 9 Gamemem.groupeval in
+  Printf.printf "col_to_play = %i\n%!" col_to_play;
+  move game col_to_play;
+  Board.add_piece_to_board Graphics.yellow col_to_play;
+  Printf.printf "%s\n%!" "les connectés de l'ordi";
+  Printf.printf "%i\n!" (Gamemem.connected game col_to_play);
+  Printf.printf "%s\n%!" "les connectés de l'humain";
+  Printf.printf "%i\n!" (Gamemem.opponent_connected game col_to_play);
+  Board.add_piece_to_board Graphics.yellow col_to_play;
+  (*la pince va mettre la piece dans la colonne a jouer
+    et on va scanner pour voir si le joueur a joue*)
+  if Gamemem.connected game col_to_play >= 4 || Gamemem.draw game then (
+    Printf.printf "c fini, on stoppe après avoir ajouter la piece\n%!";
     if Gamemem.draw game then Board.draw()
-    else Board.red_success();
-    S.return_init_pos Board.close_when_clicked
+    else Board.yellow_success();
+    Printf.printf "LE ROBOT GAGNE\n%!";
+    P.put_piece col_to_play
+      (fun () -> S.return_init_pos Board.close_when_clicked)
   )
-  else (
-    (*on cherche la colonne a jouer*)
-    let _, col_to_play = Alphabetamem.alphabeta game 9 Gamemem.groupeval in
-    Printf.printf "col_to_play = %i\n%!" col_to_play;
-    Gamemem.makemove game col_to_play;
-    Board.add_piece_to_board Graphics.yellow col_to_play;
+  else
+    P.put_piece col_to_play (fun () ->
+                               S.add_piece col_to_play;
+                               human_play game)
+
+and human_play game =
+  S.scan begin fun col ->
+    move game col;
+    Board.add_piece_to_board Graphics.red col;
     Printf.printf "%s\n%!" "les connectés de l'ordi";
-    Printf.printf "%i\n!" (Gamemem.connected game col_to_play);
+    Printf.printf "%i\n%!" (Gamemem.connected game col);
     Printf.printf "%s\n%!" "les connectés de l'humain";
-    Printf.printf "%i\n!" (Gamemem.opponent_connected game col_to_play);
-    Board.add_piece_to_board Graphics.yellow col_to_play;
-    (*la pince va mettre la piece dans la colonne a jouer
-      et on va scanner pour voir si le joueur a joue*)
-    if Gamemem.connected game col_to_play >= 4 || Gamemem.draw game
-    then
-      (
-        Printf.printf "c fini, on stoppe après avoir ajouter la piece\n%!";
-        if Gamemem.draw game then Board.draw()
-        else Board.yellow_success();
-        Printf.printf "LE ROBOT GAGNE\n%!";
-        P.put_piece col_to_play
-          (fun () -> S.return_init_pos Board.close_when_clicked)
-      )
-    else
-      P.put_piece col_to_play
-        (fun () -> S.scan col_to_play (fun c -> step game c))
-  )
+    Printf.printf "%i\n%!" (Gamemem.opponent_connected game col);
+    (* On verifie que le jeu n'est pas gagné ou match nul *)
+    if Gamemem.connected game col >= 4 || Gamemem.draw game then (
+      if Gamemem.draw game then Board.draw()
+      else Board.red_success();
+      Printf.printf "L'HUMAIN A GAGNE\n%!";
+      S.return_init_pos Board.close_when_clicked
+    )
+    else computer_play game
+  end
 
 let () =
   Board.gameboard ();
   let game = Gamemem.make_board() in
   Gamemem.initboard game;
-  if Conn.fst_computer then step game (-1)
-  else S.scan (-1) (fun c -> step game c);
+  (if Conn.fst_computer then computer_play else human_play) game;
   Robot.run Conn.r
 
