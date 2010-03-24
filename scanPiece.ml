@@ -359,7 +359,6 @@ struct
         (* Found piece in [col] *)
         go_closer_non_full_col begin fun () ->
           scan_right := (!current_col <= 3);
-          printf "Pièce trouvée dans la colonne %i\n%!" col;
           f col
         end
     end

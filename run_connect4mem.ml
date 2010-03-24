@@ -79,7 +79,6 @@ and human_play game =
       S.return_init_pos Board.close_when_clicked
     )
     else (
-      printf "  lance computer_play\n%!";
       computer_play game
     )
   end

@@ -1,6 +1,7 @@
 open Graphics
 open Printf
 
+let yellow = 0xf8f656
 
 let number_piece = Array.make 7 0
   (*nombre repr�ntant le nombre de pion dans chaque colonne*)
