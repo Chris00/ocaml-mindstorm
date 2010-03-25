@@ -2,7 +2,7 @@ open Printf
 
 let test game =
   printf "Move for [%s]: %!" (String.concat "; " (List.map string_of_int game));
-  match Velena.move_for game with
+  match move_for game with
   | None -> printf "Victory or past victory\n"
   | Some c -> printf "%i\n" c
 
