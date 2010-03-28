@@ -40,7 +40,7 @@ copy the very same code (this is to forbid unwanted connections).
 {3 MacOS X}
 
 We follow here the instructions
-"{{:http://juju.org/articles/2006/10/22/bluetooth-serial-port-to-nxt-in-osx}Bluetooth
+"{{:http://tonybuser.com/bluetooth-serial-port-to-nxt-in-osx}Bluetooth
 Serial Port To NXT in OSX}":
 {ol 
 {- Turn on the NXT brick and make sure bluetooth is on (you should 
