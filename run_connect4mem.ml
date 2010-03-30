@@ -51,6 +51,7 @@ let rec computer_play game =
            if Gamemem.draw game then Board.draw()
            else Board.yellow_success();
            Printf.printf "LE ROBOT GAGNE\n%!";
+           Sys.command "aplay win.wav";
            S.return_init_pos Board.close_when_clicked)
     )
   else
@@ -76,6 +77,7 @@ and human_play game =
     if Gamemem.get_game_result game = Gamemem.WIN || Gamemem.draw game then (
       if Gamemem.draw game then Board.draw()
       else Board.red_success();
+      Sys.command "aplay Game_over.wav";
       Printf.printf "L'HUMAIN A GAGNE\n%!";
       S.return_init_pos Board.close_when_clicked
     )
