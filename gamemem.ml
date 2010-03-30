@@ -438,3 +438,17 @@ let undomove board move =
       board.filled <- board.filled - 1;
       true
     )
+
+let fast_try_to_win board =
+  let rec win x =
+    if x<boardX then
+      if makemove board x then
+	if get_game_result board = WIN then
+	  if undomove board x then x
+	  else assert false
+	else
+	  if undomove board x then win (x+1)
+	  else assert false
+      else win (x+1)
+    else -1
+  in win 0

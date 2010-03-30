@@ -14,7 +14,7 @@ let () =
     let f = Random.int(6) in
     Gamemem.makemove bb f;
     while Gamemem.get_game_result bb = Gamemem.UNDECIDED do
-      let _, b = Alphabetamem.alphabeta bb 7 Gamemem.groupeval in
+      let _, b = Alphabetamem.alphabeta bb 5 Gamemem.groupeval in
       Gamemem.makemove bb b
     done;
     if Gamemem.get_game_result bb <> Gamemem.WIN then
