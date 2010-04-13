@@ -152,12 +152,8 @@ let heuristic game color mode =
 
           )
       done;
-      if mode = Max then Useful.max_tab tab_value
-      else
-        (
-          let tab = Array.map (fun x -> (-.x)) tab_value in
-          Useful.min_tab tab
-        )
+      let h = Useful.max_tab tab_value in
+      if mode = Max then h else -. h
     )
 
 let rec ab nbr_token col game alpha beta mode depth color heuristic =
