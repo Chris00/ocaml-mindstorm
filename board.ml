@@ -58,7 +58,7 @@ let gameboard () =
   synchronize()
 
 let text_red = "C'est au tour du joueur rouge"
-and text_yellow = "C'est au tour du joueur jaune" in
+and text_yellow = "C'est au tour du joueur jaune"
 let (x_text_yellow, y_text_yellow) = text_size text_yellow
 
 let delete_the_left_text() =
@@ -67,7 +67,7 @@ let delete_the_left_text() =
   and w_rect = (x_text_yellow) + 2
   and h_rect = (y_text_yellow) + 2 in
   set_color white;
-  fill_rect x_rect y_rect w_rect h_rect;
+  fill_rect x_rect y_rect w_rect h_rect
 
 let write_player_turn color =
   delete_the_left_text();
@@ -105,7 +105,7 @@ let yellow_success () =
   let xw = (w - n_xw)/2
   and yw = (h/9)-(n_yw/2)in
   moveto xw yw;
-  draw_string winner;
+  draw_string winner
 
 let draw () =
   delete_the_left_text();
