@@ -85,80 +85,53 @@ let heuristic game color mode =
 
   if col_win_max < 7 then (infinity, col_win_max)
   else if col_win_min < 7 then (17., col_win_min)
-  else
-    (
-      let tab_value = [|0.; 0.; 0.; 0.; 0.; 0.; 0.|] in
-      for j = 0 to 6 do
-        let row = Game.nbr_token_in_col game j in
-        if row = 6 then tab_value.(j) <- 0.
-        else
-          (
-            let aline_horiz_max = Game.horizontal game color j
-            and aline_vert_max = Game.vertical game color j
-            and aline_diag_left_max = Game.left_diagonal game color j
-            and aline_diag_right_max = Game.right_diagonal game color j in
-            if fst aline_horiz_max >= 4 && snd aline_horiz_max >= 2 then
-              tab_value.(j) <- tab_value.(j) +. 4.;
-            if fst aline_vert_max >= 4 && snd aline_vert_max >= 2 then
-              tab_value.(j) <- tab_value.(j) +. 4.;
-            if fst aline_diag_left_max >= 4 && snd aline_diag_left_max >= 2
-            then
-              tab_value.(j) <- tab_value.(j) +. 6.;
-            if fst aline_diag_left_max >= 4 && snd aline_diag_left_max >= 2
-            then
-              tab_value.(j) <- tab_value.(j) +. 6.;
+  else (
+    let weight = [|0.; 0.; 0.; 0.; 0.; 0.; 0.|] in
+    for j = 0 to 6 do
+      let row = Game.nbr_token_in_col game j in
+      if row = 6 then weight.(j) <- 0.
+      else (
+        (* Max *)
+        let avail_horiz, filled_horiz = Game.horizontal game color j
+        and avail_vert, filled_vert = Game.vertical game color j
+        and avail_diag_l, filled_diag_l = Game.left_diagonal game color j
+        and avail_diag_r, filled_diag_r = Game.right_diagonal game color j in
+        if avail_horiz >= 4 then
+          if filled_horiz >= 2 then weight.(j) <- weight.(j) +. 4.
+          else if filled_horiz >= 1 then weight.(j) <- weight.(j) +. 2.;
+        if avail_vert >= 4 then
+          if filled_vert >= 2 then weight.(j) <- weight.(j) +. 4.
+          else if filled_vert >= 1 then weight.(j) <- weight.(j) +. 2.;
+        if avail_diag_l >= 4 then
+          if filled_diag_l >= 2 then weight.(j) <- weight.(j) +. 6.
+          else if filled_diag_l >= 1 then weight.(j) <- weight.(j) +. 3.;
+        if avail_diag_r >= 4 then
+          if filled_diag_r >= 2 then weight.(j) <- weight.(j) +. 6.
+          else if filled_diag_r >= 1 then weight.(j) <- weight.(j) +. 3.;
 
-            if fst aline_horiz_max >= 4 && snd aline_horiz_max >= 1 then
-              tab_value.(j) <- tab_value.(j) +. 2.;
-            if fst aline_vert_max >= 4 && snd aline_vert_max >= 1 then
-              tab_value.(j) <- tab_value.(j) +. 2.;
-            if fst aline_diag_left_max >= 4 && snd aline_diag_left_max >= 1
-            then
-              tab_value.(j) <- tab_value.(j) +. 3.;
-            if fst aline_diag_right_max >= 4 && snd aline_diag_right_max >= 1
-            then
-              tab_value.(j) <- tab_value.(j) +. 3.;
-
-            let aline_horiz_min =
-              Game.horizontal game (Game.color_invers color) j
-            and aline_vert_min =
-              Game.vertical game (Game.color_invers color) j
-            and aline_diag_left_min =
-              Game.left_diagonal game (Game.color_invers color) j
-            and aline_diag_right_min =
-              Game.right_diagonal game (Game.color_invers color) j in
-
-            if fst aline_horiz_min >= 4 && snd aline_horiz_min >= 2 then
-              tab_value.(j) <- tab_value.(j) +. 4.;
-            if fst aline_vert_min >= 4 && snd aline_vert_min >= 2 then
-              tab_value.(j) <- tab_value.(j) +. 4.;
-            if fst aline_diag_left_min >= 4 && snd aline_diag_left_min >= 2
-            then
-              tab_value.(j) <- tab_value.(j) +. 6.;
-            if fst aline_diag_right_min >= 4 && snd aline_diag_left_min >= 2
-            then
-              tab_value.(j) <- tab_value.(j) +. 6.;
-
-            if fst aline_horiz_min >= 4 && snd aline_horiz_min >= 1 then
-              tab_value.(j) <- tab_value.(j) +. 2.;
-            if fst aline_vert_min >= 4 && snd aline_vert_min >= 1 then
-              tab_value.(j) <- tab_value.(j) +. 2.;
-            if fst aline_diag_left_min >= 4 && snd aline_diag_left_min >= 1
-            then
-              tab_value.(j) <- tab_value.(j) +. 3.;
-            if fst aline_diag_right_min >= 4 && snd aline_diag_right_min >= 1
-            then
-              tab_value.(j) <- tab_value.(j) +. 3.;
-
-          )
-      done;
-      if mode = Max then Useful.max_tab tab_value
-      else
-        (
-          let tab = Array.map (fun x -> (-.x)) tab_value in
-          Useful.min_tab tab
-        )
-    )
+        (* Min *)
+        let icolor = Game.color_invers color in
+        let avail_horiz, filled_horiz = Game.horizontal game icolor j
+        and avail_vert, filled_vert = Game.vertical game icolor j
+        and avail_diag_l, filled_diag_l = Game.left_diagonal game icolor j
+        and avail_diag_r, filled_diag_r = Game.right_diagonal game icolor j in
+        if avail_horiz >= 4 then
+          if filled_horiz >= 2 then weight.(j) <- weight.(j) +. 4.
+          else if filled_horiz >= 1 then weight.(j) <- weight.(j) +. 2.;
+        if avail_vert >= 4 then
+          if filled_vert >= 2 then weight.(j) <- weight.(j) +. 4.
+          else if filled_vert >= 1 then weight.(j) <- weight.(j) +. 2.;
+        if avail_diag_l >= 4 then
+          if filled_diag_l >= 2 then weight.(j) <- weight.(j) +. 6.
+          else if filled_diag_l >= 1 then weight.(j) <- weight.(j) +. 3.;
+        if avail_diag_r >= 4 then
+          if filled_diag_r >= 2 then weight.(j) <- weight.(j) +. 6.
+          else if filled_diag_r >= 1 then weight.(j) <- weight.(j) +. 3.;
+      )
+    done;
+    let (max, imax) as h = Useful.max_tab weight in
+    if mode = Max then h else (-. max, imax)
+  )
 
 let rec ab nbr_token col game alpha beta mode depth color heuristic =
     if Game.is_winning game col then

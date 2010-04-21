@@ -37,11 +37,13 @@ and if_computer = ref true
 
 let spec = Arg.align [
   "--pince", Arg.Set_string bt_pincer,
-  "<bt_address>set the bluetooth address of the brick which uses the pincer";
+  ("<address> bluetooth address of the pincer brick (default: "
+   ^ !bt_pincer ^ ")");
   "--scan", Arg.Set_string bt_scan,
-  "<bt_address>set the bluetooth address of the brick which uses the scan";
+  ("<address> bluetooth address of the brick for the scan (default: "
+   ^ !bt_scan ^ ")");
   "--human_first", Arg.Clear if_computer,
-  " set the humas as first player"]
+  " set the human as first player"]
 let () =
   Arg.parse spec (fun _ -> raise (Arg.Bad "no anonymous arg"))
     "run_connect4 <option>"
