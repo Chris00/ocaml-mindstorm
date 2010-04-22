@@ -80,6 +80,16 @@ let writing_center text color =
   moveto xw yw;
   draw_string text
 
+let rec play () =
+  let clic = wait_next_event[Button_down] in
+  let pos_x = clic.mouse_x and pos_y = clic.mouse_y in
+  let col = pos_x/(w/9)-1 in
+  if ((pos_x > (w/9)) && (pos_x < (8*w/9))
+      && (pos_y > (2*h/9)) && (pos_y < (8*h/9)))
+  then col
+  else play ()
+
+
 let write_player_turn color =
   if color = red then writing_center "C'est au tour du joueur rouge" color
   else writing_center "C'est au tour du joueur jaune" color

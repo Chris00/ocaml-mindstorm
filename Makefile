@@ -39,9 +39,8 @@ $(TESTS:.ml=.com): robot.cmxa
 
 test_alphabeta.com: game.cmx alphabeta.cmx
 test_pincer.com: pincer.cmx
-test_scanPiece.com: scanPiece.cmx
+test_scanPiece.com : scanPiece.cmx
 test_scanPiece2.com: scanPiece2.cmx
-
 
 # Generate HTML documentation
 MAKE_DOC = $(OCAMLDOC) -colorize-code -stars -html $(PACKAGES)
