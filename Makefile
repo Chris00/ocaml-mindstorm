@@ -18,14 +18,14 @@ all: byte native
 SOURCES = game.ml alphabeta.ml board.ml scanPiece.ml pincer.ml \
 	gamemem.ml alphabetamem.ml
 byte: run_connect4.exe run_connect4mem.exe
-native: run_connect4.com run_connect4mem.com test.com
+native: run_connect4.com run_connect4mem.com test.com human_vs_computer.com
 
 run_connect4.exe : robot.cma $(SOURCES:.ml=.cmo)
 run_connect4mem.exe : robot.cma $(SOURCES:.ml=.cmo)
-scanPiece2.com: robot.cmxa
 run_connect4.com : robot.cmxa $(SOURCES:.ml=.cmx)
 run_connect4mem.com : robot.cmxa $(SOURCES:.ml=.cmx)
 test.com : robot.cmxa $(SOURCES:.ml=.cmx)
+human_vs_computer.com : robot.cmxa $(SOURCES:.ml=.cmx)
 
 
 # General "event" library

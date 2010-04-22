@@ -25,7 +25,7 @@ and human_play game =
     (
       if Gamemem.draw game then Board.draw()
       else Board.red_success();
-      Board.close_when_clicked
+      Board.close_when_clicked ()
     )
   else
     (
@@ -34,6 +34,7 @@ and human_play game =
 
 
 let () =
+  Board.gameboard();
   let game = Gamemem.make_board() in
   Gamemem.initboard game;
   computer_play game

@@ -9,6 +9,10 @@ val remove_piece_to_board : int -> unit
   (**[remove_piece_to_board col] retire la derniere piece de la colonne [col]
   de l'interface graphique *)
 
+val play : unit -> int
+  (**[play()] attend que le joueur humain clic sur une colonne du jeu et
+     retourne cette colonne *)
+
 val write_player_turn : Graphics.color -> unit
   (** [write_player_turn color] ecrit, sur l'interface graphique, le joueur
   qui doit jouer, dans la couleur [color] *)
