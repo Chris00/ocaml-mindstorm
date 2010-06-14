@@ -1,8 +1,8 @@
 open Alphabetamem
 open Board
 
-let bt_pincer = ref "00:16:53:0C:84:49"
-and bt_scan = ref "00:16:53:0A:F3:3C"
+let bt_pincer = ref "00:16:53:03:A5:32"
+and bt_scan = ref "00:16:53:0C:84:49"
 and if_computer = ref true
 
 let spec = Arg.align [
@@ -48,9 +48,10 @@ let rec computer_play game =
       P.put_piece col_to_play
         (fun () ->
            Board.add_piece_to_board Graphics.yellow col_to_play;
-           if Gamemem.draw game then Board.draw()
-           else Board.yellow_success();
+           (* if Gamemem.draw game then Board.draw() *)
+           (* else Board.yellow_success(); *)
            Printf.printf "LE ROBOT GAGNE\n%!";
+           Sys.command "aplay win.wav";
            S.return_init_pos Board.close_when_clicked)
     )
   else
@@ -74,14 +75,14 @@ and human_play game =
     Printf.printf "test si fini\n%!";
     (* On verifie que le jeu n'est pas gagné ou match nul *)
     if Gamemem.get_game_result game = Gamemem.WIN || Gamemem.draw game then (
-      if Gamemem.draw game then Board.draw()
-      else Board.red_success();
+      (* if Gamemem.draw game then Board.draw() *)
+      (* else Board.red_success(); *)
+      Sys.command "aplay Game_over.wav";
       Printf.printf "L'HUMAIN A GAGNE\n%!";
       S.return_init_pos Board.close_when_clicked
     )
     else
       (
-        Printf.printf "lance computer_play\n%!";
         computer_play game
       )
   end
