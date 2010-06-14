@@ -31,8 +31,8 @@ struct
 
 end*)
 
-let bt_pincer = ref "00:16:53:0C:84:49"
-and bt_scan = ref "00:16:53:0A:F3:3C"
+let bt_pincer = ref "00:16:53:03:A5:32"
+and bt_scan = ref "00:16:53:0C:84:49"
 and if_computer = ref true
 
 let spec = Arg.align [

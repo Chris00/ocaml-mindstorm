@@ -7,40 +7,40 @@ let rec ab col game alpha beta mode depth heuristic =
     else if depth = 0 then (heuristic game, col)
     else if mode = Min then
       let rec cut_beta beta_p good_col j =
-	if j > 6 then (beta_p, good_col)
-	else
+        if j > 6 then (beta_p, good_col)
+        else
           (
             if Gamemem.makemove game j then
               let value, _ =
-		ab j game alpha (min beta beta_p) Max (depth-1) heuristic in
-		if not (Gamemem.undomove game j) then assert false;
+                ab j game alpha (min beta beta_p) Max (depth-1) heuristic in
+                if not (Gamemem.undomove game j) then assert false;
 
-		let (new_beta, new_col) =
-		  if beta_p > value then (value, j)
-		  else (beta_p, good_col) in
+                let (new_beta, new_col) =
+                  if beta_p > value then (value, j)
+                  else (beta_p, good_col) in
 
-		  if alpha >= new_beta then (new_beta, new_col)
-		  else cut_beta new_beta new_col (j+1)
+                  if alpha >= new_beta then (new_beta, new_col)
+                  else cut_beta new_beta new_col (j+1)
             else cut_beta beta_p good_col (j+1)
           )
       in cut_beta infinity col 0
 
     else
       let rec cut_alpha alpha_p good_col j =
-	if j > 6 then (alpha_p, good_col)
-	else
+        if j > 6 then (alpha_p, good_col)
+        else
           (
             if Gamemem.makemove game j then
               let value, _ =
-		ab j game (max alpha alpha_p) beta Min (depth-1) heuristic in
-		if not (Gamemem.undomove game j) then assert false;
+                ab j game (max alpha alpha_p) beta Min (depth-1) heuristic in
+                if not (Gamemem.undomove game j) then assert false;
 
-		let (new_alpha, new_col) =
-		  if alpha_p < value then (value, j)
-		  else (alpha_p, good_col) in
+                let (new_alpha, new_col) =
+                  if alpha_p < value then (value, j)
+                  else (alpha_p, good_col) in
 
-		  if new_alpha >= beta then (new_alpha, new_col)
-		  else cut_alpha new_alpha new_col (j+1)
+                  if new_alpha >= beta then (new_alpha, new_col)
+                  else cut_alpha new_alpha new_col (j+1)
             else  cut_alpha alpha_p good_col (j+1)
           )
       in cut_alpha neg_infinity col 0

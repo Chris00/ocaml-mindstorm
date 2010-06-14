@@ -23,7 +23,7 @@ let close_speed = 10
 let rotation = [|1033; 902; 760; 627; 496; 365; 229|]
 
 (*ajuste l'angle de fermeture de la pince*)
-let adjust_speed = 20   
+let adjust_speed = 20
 
 
 
@@ -37,7 +37,7 @@ struct
   let meas_dist = Robot.meas C.r (fun () -> get_angle motor_dist)
 
   (*nous retourne l'angle courant du moteur déplaçant la pince*)
-  let meas_translation_pincer = Robot.meas C.r (fun () ->  get_angle 
+  let meas_translation_pincer = Robot.meas C.r (fun () ->  get_angle
     motor_pincer)
 
   (*nous retourne l'angle courant du moteur ouvrant la pince*)

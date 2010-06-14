@@ -220,79 +220,79 @@ let make_board() =
 let initboard board =
     let i = ref 0 in
       for y=0 to boardY-1 do
-	for x=0 to boardX-4 do
-	  for k=0 to 3 do
-	    board.groups.(!i).(k) <- board.square.(elm (x+k) y);
-	    board.xplace.(!i).(k) <- x+k;
-	    board.yplace.(!i).(k) <- y
-	  done;
-	    i:=!i+1
-	done
+    for x=0 to boardX-4 do
+      for k=0 to 3 do
+        board.groups.(!i).(k) <- board.square.(elm (x+k) y);
+        board.xplace.(!i).(k) <- x+k;
+        board.yplace.(!i).(k) <- y
+      done;
+        i:=!i+1
+    done
       done;
 
       for y=0 to boardY-4 do
-	for x=0 to boardX-1 do
-	  for k=0 to 3 do
-	    board.groups.(!i).(k) <- (board.square.(elm x (y+k)));
-	    board.xplace.(!i).(k) <- x;
-	    board.yplace.(!i).(k) <- y+k
-	  done;
-	    i:=!i+1
-	done
+    for x=0 to boardX-1 do
+      for k=0 to 3 do
+        board.groups.(!i).(k) <- (board.square.(elm x (y+k)));
+        board.xplace.(!i).(k) <- x;
+        board.yplace.(!i).(k) <- y+k
+      done;
+        i:=!i+1
+    done
       done;
 
       for y=0 to boardY-4 do
-	for x=0 to boardX-4 do
-	  for k=0 to 3 do
-	    board.groups.(!i).(k) <- (board.square.(elm (x+k) (y+k)));
-	    board.xplace.(!i).(k) <- x+k;
-	    board.yplace.(!i).(k) <- y+k
-	  done;
-	    i:=!i+1
-	done
+    for x=0 to boardX-4 do
+      for k=0 to 3 do
+        board.groups.(!i).(k) <- (board.square.(elm (x+k) (y+k)));
+        board.xplace.(!i).(k) <- x+k;
+        board.yplace.(!i).(k) <- y+k
+      done;
+        i:=!i+1
+    done
       done;
 
       for y=3 to boardY-1 do
-	for x=0 to boardX-4 do
-	  for k=0 to 3 do
-	    board.groups.(!i).(k) <- (board.square.(elm (x+k) (y-k)));
-	    board.xplace.(!i).(k) <- x+k;
-	    board.yplace.(!i).(k) <- y-k
-	  done;
-	  i:=!i+1
-	done
+    for x=0 to boardX-4 do
+      for k=0 to 3 do
+        board.groups.(!i).(k) <- (board.square.(elm (x+k) (y-k)));
+        board.xplace.(!i).(k) <- x+k;
+        board.yplace.(!i).(k) <- y-k
       done;
-	
-      for x=0 to 63 do
-	board.solvable_groups.sqpnt.(x) <- 0;
-	for y=0 to 15 do
-	  board.solvable_groups.squar.(x).(y) <- -1
-	done
-      done;
-	    
-      for x=0 to boardX-1 do
-	for y=0 to boardY-1 do
-	  board.square.(elm x y) := elm x y
-	done
+      i:=!i+1
+    done
       done;
 
-	for i=0 to groups-1 do
-	  for j=0 to tiles-1 do
-	    let p = !(board.groups.(i).(j)) in
-	      board.solvable_groups.squar.(p).(board.solvable_groups.sqpnt.(p))<-i;
-	      board.solvable_groups.sqpnt.(p)
-	      <- board.solvable_groups.sqpnt.(p) + 1
-	  done
-	done;
+      for x=0 to 63 do
+    board.solvable_groups.sqpnt.(x) <- 0;
+    for y=0 to 15 do
+      board.solvable_groups.squar.(x).(y) <- -1
+    done
+      done;
+
+      for x=0 to boardX-1 do
+    for y=0 to boardY-1 do
+      board.square.(elm x y) := elm x y
+    done
+      done;
+
+    for i=0 to groups-1 do
+      for j=0 to tiles-1 do
+        let p = !(board.groups.(i).(j)) in
+          board.solvable_groups.squar.(p).(board.solvable_groups.sqpnt.(p))<-i;
+          board.solvable_groups.sqpnt.(p)
+          <- board.solvable_groups.sqpnt.(p) + 1
+      done
+    done;
       for i=0 to 7 do
-	board.square.(elm 7 i) := -1;
-	board.square.(elm i 6) := -1
+    board.square.(elm 7 i) := -1;
+    board.square.(elm i 6) := -1
       done;
       board.stack.(7) <- -1;
       for y=0 to boardY-1 do
-	for x=0 to boardX-1 do
-	  board.square.(elm x y) := 0
-	done
+    for x=0 to boardX-1 do
+      board.square.(elm x y) := 0
+    done
       done
 
 let gen_odd_threat board x side =
@@ -303,12 +303,12 @@ let gen_odd_threat board x side =
   and py = ref 0 in
     for y=0 to tiles-1 do
       if !(board.groups.(x).(y)) = 0 then
-	(
-	  px := board.xplace.(x).(y);
-	  py := board.yplace.(x).(y);
-	  emp.(!empty) <- elm !px !py;
-	  empty := !empty+1
-	)
+    (
+      px := board.xplace.(x).(y);
+      py := board.yplace.(x).(y);
+      emp.(!empty) <- elm !px !py;
+      empty := !empty+1
+    )
       else if !(board.groups.(x).(y)) = side then fill := !fill+1
     done;
     if !empty=1 && !fill=3 && (!py land 1) = 0 && board.stack.(!px) < !py then
@@ -325,8 +325,8 @@ let check_pentas board side =
   let rec helper x y bol =
     if y<2 then
       (
-	let px = x and py = (y+1)*2 in
-	helper x (y+1) (bol || pentas board px py side)
+    let px = x and py = (y+1)*2 in
+    helper x (y+1) (bol || pentas board px py side)
       )
     else bol in
   let rec helper2 x flag =
@@ -354,45 +354,45 @@ let groupeval board =
     for x = 0 to groups-1 do
       let p1 = ref 0
       and p2 = ref 0 in
-	for i = 0 to 3 do
-	  if !(board.groups.(x).(i)) = t1 then p1 := !p1+1
-	  else if !(board.groups.(x).(i)) = t2 then p2 := !p2+1
-	done;
-	if !p1 = 4 then score := !score +. goodmove
-	else if !p2 = 4 then score := !score +. badmove
-	else if !p1 = 3 && !p2 = 0 then
-	  (
+    for i = 0 to 3 do
+      if !(board.groups.(x).(i)) = t1 then p1 := !p1+1
+      else if !(board.groups.(x).(i)) = t2 then p2 := !p2+1
+    done;
+    if !p1 = 4 then score := !score +. goodmove
+    else if !p2 = 4 then score := !score +. badmove
+    else if !p1 = 3 && !p2 = 0 then
+      (
             score := !score +. 11.;
-	    let z = gen_odd_threat board x t1 in
-	    if z <> -1 then
+        let z = gen_odd_threat board x t1 in
+        if z <> -1 then
               (
-	        let f = check_double board x z t1 in
-	        if not f then
+            let f = check_double board x z t1 in
+            if not f then
                   if t1 = 1 then score := !score +. (200./.(float) (ely z))
                   else score := !score +. (150./.(float) (ely z))
-	        else if t1 = 1 then score := !score +.(750./.(float) (ely z))
-	        else score := !score +.(500./.(float) (ely z))
+            else if t1 = 1 then score := !score +.(750./.(float) (ely z))
+            else score := !score +.(500./.(float) (ely z))
               )
-	  )
-	else if !p2 = 3 && !p1 = 0 then
-	  (
-	    score := !score -. 50.;
-	    let z = gen_odd_threat board x t2 in
-	    if z <> -1 then
+      )
+    else if !p2 = 3 && !p1 = 0 then
+      (
+        score := !score -. 50.;
+        let z = gen_odd_threat board x t2 in
+        if z <> -1 then
               (
-		let f = check_double board x z t2 in
-		if not f then
-		  if t1 = 2 then score := !score -. (200./. (float) (ely z))
-		  else score := !score -. (150./.(float) (ely z))
-		else if t1 = 2 then score := !score-.(750./.(float) (ely z))
-		else score := !score -. (500./.(float) (ely z))
-	      )
+        let f = check_double board x z t2 in
+        if not f then
+          if t1 = 2 then score := !score -. (200./. (float) (ely z))
+          else score := !score -. (150./.(float) (ely z))
+        else if t1 = 2 then score := !score-.(750./.(float) (ely z))
+        else score := !score -. (500./.(float) (ely z))
           )
-	else if !p1 = 2 && !p2 = 0 then score := !score +. 10.
-	else if !p2 = 2 && !p1 = 0 then score := !score -. 10.;
-	if check_pentas board 1 then
-	  if t1 = 1 then score := !score +. 800.
-	  else score := !score -. 800.
+          )
+    else if !p1 = 2 && !p2 = 0 then score := !score +. 10.
+    else if !p2 = 2 && !p1 = 0 then score := !score -. 10.;
+    if check_pentas board 1 then
+      if t1 = 1 then score := !score +. 800.
+      else score := !score -. 800.
     done;
     !score
 
@@ -443,12 +443,12 @@ let fast_try_to_win board =
   let rec win x =
     if x<boardX then
       if makemove board x then
-	if get_game_result board = WIN then
-	  if undomove board x then x
-	  else assert false
-	else
-	  if undomove board x then win (x+1)
-	  else assert false
+    if get_game_result board = WIN then
+      if undomove board x then x
+      else assert false
+    else
+      if undomove board x then win (x+1)
+      else assert false
       else win (x+1)
     else -1
   in win 0
