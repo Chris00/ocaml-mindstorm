@@ -22,7 +22,6 @@ native: run_connect4.com run_connect4mem.com test.com
 
 run_connect4.exe : robot.cma $(SOURCES:.ml=.cmo)
 run_connect4mem.exe : robot.cma $(SOURCES:.ml=.cmo)
-scanPiece2.com: robot.cmxa
 run_connect4.com : robot.cmxa $(SOURCES:.ml=.cmx)
 run_connect4mem.com : robot.cmxa $(SOURCES:.ml=.cmx)
 test.com : robot.cmxa $(SOURCES:.ml=.cmx)
@@ -40,7 +39,7 @@ $(TESTS:.ml=.com): robot.cmxa
 test_alphabeta.com: game.cmx alphabeta.cmx
 test_pincer.com: pincer.cmx
 test_scanPiece.com: scanPiece.cmx
-test_scanPiece2.com: scanPiece2.cmx
+#test_scanPiece2.com: scanPiece2.cmx
 
 
 # Generate HTML documentation
