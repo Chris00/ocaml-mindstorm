@@ -12,20 +12,18 @@ let motor_open_pincer = Motor.b
 let motor_dist = Motor.c
 
 
-  (*angle d'ouverture de la pince*)
+(*angle d'ouverture de la pince*)
 let open_rot = 120
-  (*rotation pr prendre une piece du jeu ds le distributeur*)
+(*rotation pour prendre une piece du jeu ds le distributeur*)
 let rot_dist = 65
-  (* let move_speed = 10 *)
 let move_speed = 15
 let open_speed = -10
 let close_speed = 10
 
-(* let rotation = [|1035; 900; 768; 635; 504; 373; 235|] vitesse 10 vitesse 12*)
 let rotation = [|1033; 902; 760; 627; 496; 365; 229|]
 
-(*ajuste l'angle à faire suivant la vitesse du moteur open pincer*)
-let adjust_speed = 20   (* 4 pr une vitesse 10; 9 pr une vitesse 12 *)
+(*ajuste l'angle de fermeture de la pince*)
+let adjust_speed = 20   
 
 
 
@@ -39,7 +37,8 @@ struct
   let meas_dist = Robot.meas C.r (fun () -> get_angle motor_dist)
 
   (*nous retourne l'angle courant du moteur déplaçant la pince*)
-  let meas_translation_pincer = Robot.meas C.r (fun () ->  get_angle motor_pincer)
+  let meas_translation_pincer = Robot.meas C.r (fun () ->  get_angle 
+    motor_pincer)
 
   (*nous retourne l'angle courant du moteur ouvrant la pince*)
   let meas_open_pincer = Robot.meas C.r (fun _ -> get_angle motor_open_pincer)
@@ -51,15 +50,13 @@ struct
     Motor.set C.conn_pincer Motor.all (Motor.speed 0)
 
 
-  (*déplace la pince dans la direction [dir] ac une tach_limit [r]*)
+  (*déplace la pince dans la direction [dir] avec une tach_limit [r]*)
   let go_pincer r dir =
     (* dir négatif vers la réserve de pièces *)
     Motor.set C.conn_pincer motor_pincer (Motor.speed  ~tach_limit:r
                                       (dir*move_speed));
     Motor.set C.conn_pincer motor_open_pincer(Motor.speed ~tach_limit:r
                                           (dir*move_speed))
-
-
 
   let wait_next next _ =
     Motor.set C.conn_pincer motor_dist (Motor.speed 0);
@@ -81,14 +78,14 @@ struct
                            |Some d -> d > rot_dist)
       (put_in_pincer next)
 
-  (*tourne le distributeur pr prendre une pièce*)
+  (*tourne le distributeur pour prendre une pièce*)
   let put_piece_in_pincer next _ =
     Motor.set C.conn_pincer motor_open_pincer(Motor.speed 0);
     Motor.set C.conn_pincer motor_dist (Motor.speed  10);
     wait_dist next
 
 
- (*lorsque la pince est en position initiale, le distributeur met une pièce
+  (*lorsque la pince est en position initiale, le distributeur met une pièce
    dedans*)
   let wait_init_pos col next _ =
    Robot.event meas_translation_pincer (function

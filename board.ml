@@ -50,7 +50,7 @@ let gameboard () =
   let worh = min (w/9) (h/9) in
   let r_circle = 7*worh/16 in
 
-  (*dessine les ronds blancs repr�ntant le tableau vide*)
+  (*dessine les ronds blancs representant le tableau vide*)
   for j=0 to 6 do
     for i = 0 to 5 do
       set_color white;
@@ -79,6 +79,18 @@ let writing_center text color =
   and yw = (h/9) - (y_text/2) in
   moveto xw yw;
   draw_string text
+
+(*methode que l'on peut utiliser pour jouer directement sur l'interface
+  graphique*)
+let rec play () =
+  let clic = wait_next_event[Button_down] in
+  let pos_x = clic.mouse_x and pos_y = clic.mouse_y in
+  let col = pos_x/(w/9)-1 in
+  if ((pos_x > (w/9)) && (pos_x < (8*w/9))
+      && (pos_y > (2*h/9)) && (pos_y < (8*h/9)))
+  then col
+  else play ()
+
 
 let write_player_turn color =
   if color = red then writing_center "C'est au tour du joueur rouge" color

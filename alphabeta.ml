@@ -195,7 +195,8 @@ let rec ab nbr_token col game alpha beta mode depth color heuristic =
 
 let alphabeta game color level heuristic=
   let n = Game.nbr_token game in
-  let value, col = ab n 0 game neg_infinity infinity Max level color heuristic in
+  let value, col = ab n 0 game neg_infinity infinity Max level color heuristic
+  in
   let rec what_col_to_play g cost column =
     let n_in_col = Game.nbr_token_in_col g column in
     if n_in_col <> 6 then (cost, column)

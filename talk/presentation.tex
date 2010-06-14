@@ -25,7 +25,7 @@
     \end{column}
 
     \begin{column}[c]{.60\linewidth}
-      \begin{center}		
+      \begin{center}
         \noindent
         \smash{\includegraphics[width=#1]{images/#3}}
         \par\vfill
@@ -48,7 +48,7 @@
   \and David \textsc{Sbabo}
   \and Christophe~\textsc{Troestler}}
 \date{Printemps des Sciences, mars 2010}
-\institute{UMons}
+\institute{UMONS}
 
 
 
@@ -57,126 +57,199 @@
 \frame {
 	\maketitle
 }
-\section{Construction}
+
+\section*{Introduction}
 \frame {
-	\frametitle{Construction}
+	\frametitle{Introduction}
+	\textbf{Objectif :} Construire un robot qui joue à puissance 4.\\
+	\vspace{.8em}
+	\textbf{Deux aspects :}\\
+	\begin{itemize}
+		\item construction en Lego
+		\begin{itemize}
+			\item mettre les pièces dans la grille
+			\item détecter la pièce ajoutée par l'utilisateur
+		\end{itemize}
+		\item programmation
+		\begin{itemize}
+			\item déplacements du robot 
+			\item intelligence artificielle
+		\end{itemize}
+	\end{itemize}
+}
+
+\frame {
+	\frametitle{Plan}
+	\tableofcontents
+}
+
+\section{Construction du robot}
+\frame {
+	\frametitle{Construction du robot}
 	\begin{Large}
 		Au début, il y avait ...
  	\end{Large}
  	\pause
  	\begin{center}
-	\includegraphics[width=0.43\linewidth]{images/boite.jpg}
+		\includegraphics[width=0.43\linewidth]{images/boite.jpg}
  	\end{center}
 }
+
 \frame {
-	\frametitle{Construction}
+	\frametitle{Construction du robot}
 	\begin{center}
-		\includegraphics[width=0.7\linewidth]{images/mindstorm1.jpg}	
- 	\end{center} 	
- 	
+		\includegraphics[width=0.7\linewidth]{images/mindstorm1.jpg}
+ 	\end{center}
 }
- 
+
 \frame {
-	\frametitle{Construction}
+	\frametitle{Construction du robot}
  	\begin{Large}
 		Mais aussi et surtout ...
- 	\end{Large} 
+ 	\end{Large}
  	\pause
  	\begin{center}
-	\includegraphics[width=0.25\linewidth]{images/reflexion.png}	
+		\includegraphics[width=0.25\linewidth]{images/reflexion.png}
 	\end{center}
-} 
- 
+}
+
 \frame {
-	\frametitle{Construction}
-	\begin{Large}
+	\frametitle{Construction du robot}
+	\begin{large}
 		En effet, cela nous a demandé beaucoup d'imagination :
-	\end{Large}	
+	\end{large}
+	\begin{columns}
+		\begin{column}{.6\linewidth}
+			\begin{center}
+				\includegraphics[width=1\linewidth]{images/4X4.jpg}
+			\end{center}
+		\end{column}
+		\begin{column}{.38\linewidth}
+			\textbf{Inconvénients :}
+			\begin{itemize}
+				\item instable
+				\item trop lourd
+				\item précision des moteurs
+			\end{itemize}
+		\end{column}
+	\end{columns}
+}
+
+\frame {
+	\frametitle{Construction du robot}
+	\begin{large}
+		Première amélioration :
+	\end{large}
+	\begin{columns}
+		\begin{column}{.4\linewidth}
+			\begin{center}
+				\includegraphics[width=1\linewidth]{images/capteurV2.jpg}
+			\end{center}
+		\end{column}
+		\begin{column}{.6\linewidth}
+			\textbf{Avantages :}
+			\begin{itemize}
+				\item stabilité
+				\item plus léger
+			\end{itemize}
+			\textbf{Inconvénients :}
+			\begin{itemize}
+				\item besoin de placer le capteur en bas pour scanner la ligne du bas
+				\item besoin de monter les guides plus haut
+				\item problème de précision du capteur à cause de la rigidité des cables
+			\end{itemize}
+		\end{column}
+	\end{columns}
+}
+
+\frame {
+	\frametitle{Construction du robot}
+	\begin{large}
+		Avec la pince :
+	\end{large}
 	\begin{center}
-	\includegraphics[width=0.70\linewidth]{images/4X4.jpg}	
+		\includegraphics[width=0.78\linewidth]{images/pince.jpg}
 	\end{center}
 }
 
 \frame {
-	\frametitle{Construction}	
+	\frametitle{Construction du robot}
 	\begin{center}
-	\includegraphics[width=0.47\linewidth]{images/capteurV2.jpg}	
+		\includegraphics[width=0.55\linewidth]{images/cassetete.jpg}
 	\end{center}
 }
 
 \frame {
-	\frametitle{Construction}
-	\begin{center}
-	\includegraphics[width=0.85\linewidth]{images/pince.jpg}	
-	\end{center}
-}
-\frame {
-	\frametitle{Construction}
-	\begin{center}
-	\includegraphics[width=0.55\linewidth]{images/cassetete.jpg}	
-	\end{center}
-}
-
-\frame {
-	\frametitle{Construction}
+	\frametitle{Construction du robot}
 	\begin{Large}
-		Cependant, nous y sommes arrivés! Et en voici le résultat :
-	\end{Large}	
-	\pause
-	\begin{center}
-	\includegraphics[width=0.41\linewidth]{images/final.jpg}	
-	\end{center}
-
+		Cependant, nous y sommes arrivés!\\
+		\pause
+		Et en voici le résultat :
+	\end{Large}
+	
+	\begin{columns}
+		\begin{column}{.41\linewidth}
+			\begin{center}
+				\includegraphics[width=1\linewidth]{images/final.jpg}
+			\end{center}
+		\end{column}
+		\begin{column}{.5\linewidth}
+			\textbf{Avantages :}
+			\begin{itemize}
+				\item stabilité
+				\item légèreté
+				\item simplicité
+			\end{itemize}
+			\textbf{Inconvénient :}
+			\begin{itemize}
+				\item tension dans les fils
+			\end{itemize}
+		\end{column}
+	\end{columns}
 }
-\section{But et règles}
+
+\section{Règles du jeu}
 \frame {
-	\frametitle{But et règles}
+	\frametitle{Règles du jeu}
 		\begin{itemize}
 		\item Chaque joueur dispose de 21 pions.
-		\pause
-		\item Les deux joueurs placent à tour de rôle un pion dans la 
+		\item Les deux joueurs placent à tour de rôle un pion dans la
 			colonne de leur choix.
-		\pause
-		\item Le but est d'aligner au moins 4 pions horizontalement, 
+		\item Le but est d'aligner au moins 4 pions horizontalement,
 			verticalement ou diagonalement.
-		\pause
-		\item Si la grille est complète et qu'aucun des deux joueurs 
-		n'a réussi à aligner au moins 4 pions, la partie est déclarée 
+		\item Si la grille est complète et qu'aucun des deux joueurs
+		n'a réussi à aligner au moins 4 pions, la partie est déclarée
 		nulle.
-		\pause
 	\end{itemize}
 }
-\section{Définitions}
+
 \frame {
-	\frametitle{Définitions}
-	Pour chaque joueur, il aura donc \textbf{trois} issues possibles :
-		\begin{itemize}
-		\item Gagner, représenté par 1
-		\item Perdre, représenté par -1
-		\item Match nul, représenté par 0
-		\end{itemize}	
-	\pause		
-	\begin{block}{Jeu à somme nulle}
-		Un jeu à somme nulle est un jeu où la somme des gains de tous 
-		les joueurs est égale à 0.
-	\end{block}
+	\frametitle{Défi}
+	\begin{center}
+		\begin{Huge}
+			Défi !
+		\end{Huge}
+	\end{center}
 }
+
+\section{Idée de l'algorithme}
 \frame{
-\begin{itemize}
-\item Existence d'un stratégie gagnante pour le joueur qui commence.
-\pause
-\item Que signifie ces termes?
-\end{itemize}
-\pause
+	\frametitle{Stratégie}
+	\begin{itemize}
+		\item Il a été prouvé qu'il existe une stratégie gagnante pour le
+		\textbf{1er joueur}.
+		\pause
+		\item Que signifient ces termes?
+	\end{itemize}
+	\pause
 	\begin{block}{Stratégie gagnante}
 		Une stratégie est dite gagnante pour un joueur J si, quelle
-		que soit la façon dont joue l'autre joueur, c'est le joueur J
-		qui gagne lorsqu'il joue selon cette stratégie.
-	\end{block}	
+		que soit la façon dont joue l'autre joueur, le joueur J
+		gagne en suivant cette stratégie.
+	\end{block}
 }
-\section{Idée de l'algorithme}
-\subsection{Principe de base}
 
+\subsection{Principe de base}
 \begin{frame}
   \frametitle{Idée de l'algorithme}
  % \deroulementJeu[8em]{jeu_vide.png}{arbre.png}{jeu_vide.png}
@@ -230,9 +303,9 @@
 
         \onslide<6,12>{%
           \node [circle,fill=red] at (lclcl){%
-            \rlap{\hss\smash{\raisebox{-0.3ex}{\onslide<12>{1}}}}};
+            \rlap{\hss\smash{\raisebox{-0.3ex}{\onslide<12>{G}}}}};
         }
-        
+
         \onslide<7->{%
           \node (lrl) [circle,draw] at (-1.,-4){};
           \node (lrc) [circle,draw] at (-0.5,-4) {};
@@ -242,7 +315,7 @@
           \draw[->] (lr) -- (lrc);
           \draw[->] (lr) -- (lrr);
         }
-        
+
         \onslide<8->{%
           \node(lrcl) [circle,draw] at (-1,-5){};
           \node(lrcc) [circle,draw] at (-0.5,-5){};
@@ -252,7 +325,7 @@
           \draw[->] (lrc) -- (lrcc);
           \draw[->] (lrc) -- (lrcr);
         }
-        
+
         \onslide<9->{%
           \node(lrcrl) [circle,draw] at (-0.5,-6){};
           \node(lrcrc) [circle,draw] at (0,-6){};
@@ -262,7 +335,7 @@
           \draw[->] (lrcr) -- (lrcrc);
           \draw[->] (lrcr) -- (lrcrr);
         }
-        
+
         \onslide<10->{%
           \node(lrcrcl) [circle,draw] at (-0.5,-7){};
           \node(lrcrcc) [circle,draw] at (0,-7){};
@@ -271,13 +344,10 @@
           \draw[->] (lrcrc) -- (lrcrcc);
           \draw[->] (lrcrc) -- (lrcrcr);
         }
-        
-       % \onslide<11->{%
-       %   \onslide<11->{\node [circle,fill=yellow] at (lrcrcr) {};}
-       % }
+
          \onslide<11->{%
           \node [circle,fill=yellow] at (lrcrcr){%
-            \rlap{\hss\smash{\raisebox{-0.3ex}{\onslide<12>{-1}}}}};
+            \rlap{\hss\smash{\raisebox{-0.3ex}{\onslide<12>{P}}}}};
         }
       \end{scope}
 
@@ -298,15 +368,114 @@
       \rlap{\raisebox{0.3\linewidth}{%
           \includegraphics[width=0.25\linewidth]{images/5e.png}}}%
       \includegraphics[width=0.25\linewidth]{images/six.png}}%
-   
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Arbre}
+	\begin{tikzpicture}[x=3em,y=2.3em,thick]
+	\begin{scope}[text height=7pt]
+	% Level 0-1
+	\node (top) [circle,draw] at (0,0) {};
+	\node (l) [circle,draw] at (-2,-1) {};
+	\node (c) [circle,draw] at (0,-1) {};
+	\node (r) [circle,draw] at (2,-1) {};
+	\draw[->] (top) -- (l) node[above,pos=0.5]{};
+	\draw[->] (top) -- (c) node[above,pos=0.5] {};
+	\draw[->] (top) -- (r) node[above,pos=0.5] {};
+	\end{scope}
+	\begin{scope}[text height=4pt]
+	% Level 1-2
+	\node (ll) [circle,draw] at (-3.5,-2) {};
+	\node (lc) [circle,draw] at (-2,-2) {};
+	\node (lr) [circle,draw] at (-0.5,-2) {};
+	\draw[->] (l) -- (ll) node[above,pos=0.5]{};
+	\draw[->] (l) -- (lc) node[above,pos=0.5] {};
+	\draw[->] (l) -- (lr) node[above,pos=0.5] {};
+	% Level 2-3
+	\node (lll) [circle,draw] at (-6,-3) {};
+	\node (llc) [circle,draw] at (-3.5,-3) {};
+	\node (llr) [circle,draw] at (-1,-3) {};
+	\draw[->] (ll) -- (lll) node[above,pos=0.5]{};
+	\draw[->] (ll) -- (llc) node[above,pos=0.5] {};
+	\draw[->] (ll) -- (llr) node[above,pos=0.5] {};
+	% Level 3-4
+	\node (lllc) [circle,draw] at (-6,-4) {};
+	\node (lllr) [circle,draw] at (-3.5,-4) {};
+	\draw[->] (lll) -- (lllc) node[above,pos=0.5] {};
+	\draw[->] (lll) -- (lllr) node[above,pos=0.5] {};
+	\end{scope}
+
+	\begin{scope}[text height=2pt]
+	% Level 4-5
+	\node (lllcc) [circle,draw] at (-6,-5) {};
+	\node (lllcr) [circle,draw] at (-4.75,-5) {};
+	\draw[->] (lllc) -- (lllcc) node[above,pos=0.5] {};
+	\draw[->] (lllc) -- (lllcr) node[above,pos=0.5] {};
+	
+	\node (lllrc) [circle,draw] at (-3.5,-5) {};
+	\node (lllrr) [circle,draw] at (-2.25,-5) {};
+	\draw[->] (lllr) -- (lllrc) node[above,pos=0.5] {};
+	\draw[->] (lllr) -- (lllrr) node[above,pos=0.5] {};
+	\end{scope}
+
+	\begin{scope}[text height=1pt]
+	\node (lllccc) [circle,draw] at (-6,-6) {};
+	\node (lllccr) [circle,draw] at (-5.25,-6) {};
+	\draw[->] (lllcc) -- (lllccc) node[above,pos=0.5] {};
+	\draw[->] (lllcc) -- (lllccr) node[above,pos=0.5] {};
+
+	\node (lllcrc) [circle,draw] at (-4.75,-6) {};
+	\node (lllcrr) [circle,draw] at (-4,-6) {};
+	\draw[->] (lllcr) -- (lllcrc) node[above,pos=0.5] {};
+	\draw[->] (lllcr) -- (lllcrr) node[above,pos=0.5] {};
+
+	\node (lllrcc) [circle,draw] at (-3.5,-6) {};
+	\node (lllrcr) [circle,draw] at (-2.75,-6) {};
+	\draw[->] (lllrc) -- (lllrcc) node[above,pos=0.5] {};
+	\draw[->] (lllrc) -- (lllrcr) node[above,pos=0.5] {};
+
+	\node (lllrrc) [circle,draw] at (-2.25,-6) {};
+	\node (lllrrr) [circle,draw] at (-1.5,-6) {};
+	\draw[->] (lllrr) -- (lllrrc) node[above,pos=0.5] {};
+	\draw[->] (lllrr) -- (lllrrr) node[above,pos=0.5] {};
+
+	\node (lllcccr) [circle,draw] at (-5.8,-7) {};
+	\draw[->] (lllccc) -- (lllcccr) node[above,pos=0.5] {};
+	%\node (lllcccrr) [circle,draw] at (-5.7,-8) {};
+	%\draw[->] (lllcccr) -- (lllcccrr) node[above,pos=0.5] {};
+
+	\node (lllccrc) [circle,draw] at (-5.25,-7) {};
+	\draw[->] (lllccr) -- (lllccrc) node[above,pos=0.5] {};
+	\node (lllccrr) [circle,draw] at (-4.6,-7) {};
+	\draw[->] (lllccr) -- (lllccrr) node[above,pos=0.5] {};
+
+	\node (lllccrcr) [circle,draw] at (-5,-8) {};
+	\draw[->] (lllccrc) -- (lllccrcr) node[above,pos=0.5] {};
+
+	\node (lllccrrc) [circle,draw] at (-4.6,-8) {};
+	\draw[->] (lllccrr) -- (lllccrrc) node[above,pos=0.5] {};
+
+	\end{scope}
+    \end{tikzpicture}
 \end{frame}
 
 \subsection{Généralisation}
+%\frame{
+%	\frametitle{Généralisation}
+%	\begin{center}
+%	\includegraphics[width=1.\linewidth]{images/arbrePui4.png}
+%	\end{center}
+%}
+
 \frame{
+	\frametitle{Généralisation}
 	\begin{center}
-	\includegraphics[width=1.\linewidth]{images/arbrePui4.png}
-	\end{center}	
+	\includegraphics[width=1.\linewidth]{images/arbre7niveaux.png}
+	\end{center}
 }
+
 \frame{
 	\begin{table}[h]
 	\begin{tabular}{c|l}
@@ -332,67 +501,71 @@
 }
 \end{document}
 
-\begin{frame}
-  \frametitle{Idée de l'algorithme}
-  \deroulementJeu[8em]{1er.png}{arbre1.png}{pr.png}
-\end{frame}
-
-
-\begin{frame}
-  \frametitle{Idée de l'algorithme}
-  \deroulementJeu[8em]{2e.png}{arbre2.png}{deu.png}
-\end{frame}
-
-\begin{frame}
-  \frametitle{Idée de l'algorithme}
-  \deroulementJeu[8em]{2e.png}{arbre2.png}{deu.png}
-\end{frame}
-
-\begin{frame}
-  \frametitle{Idée de l'algorithme}
-  \deroulementJeu[8em]{3e.png}{arbre3.png}{tr.png}
-\end{frame}
-
-\begin{frame}
-  \frametitle{Idée de l'algorithme}
-  \deroulementJeu[8em]{4e.png}{arbre4.png}{qu.png}
-\end{frame}
-
-\begin{frame}
-  \frametitle{Idée de l'algorithme}
-  \deroulementJeu[8em]{5e.png}{arbre5.png}{cq.png}
-\end{frame}
-
-\begin{frame}
-  \frametitle{Idée de l'algorithme}
-  \deroulementJeu[8em]{5e.png}{arbre7.png}{six.png}
-\end{frame}
-
-\subsection{Généralisation}
-\frame{
-	\begin{center}
-	\includegraphics[width=1.\linewidth]{images/arbrePui4.png}
-	\end{center}	
-}
-\frame{
-	\begin{table}[h]
-	\begin{tabular}{c|l}
-	Niveau & \ Nombre de configurations \\
-	\hline
-	1 & $7^{1} = 7$ \\
-	2 & $7^{2} = 49$ \\
-	3 & $7^{3} = 343$ \\
-	4 & $7^{4} = 2.401$ \\
-	5 & $7^{5} = 16.807$ \\
-	6 & $7^{6} = 117.649$ \\
-	7 & $7^{7} = 823.543$ \\
-	8 & $7^{8} = 5.764.801$ \\
-	9 & $7^{9} = 40.353.607$ \\
-	10 & $7^{10} = 282.475.249$ \\
-	11 & $7^{11} = 1.977.326.743$\\
-	\end{tabular}
-	\end{table}
-	\Large{Explosion des cas!}
-}
-
-\end{document}
+%\begin{frame}
+%  \frametitle{Idée de l'algorithme}
+%  \deroulementJeu[8em]{1er.png}{arbre1.png}{pr.png}
+%\end{frame}
+%
+%
+%\begin{frame}
+%  \frametitle{Idée de l'algorithme}
+%  \deroulementJeu[8em]{2e.png}{arbre2.png}{deu.png}
+%\end{frame}
+%
+%\begin{frame}
+%  \frametitle{Idée de l'algorithme}
+%  \deroulementJeu[8em]{2e.png}{arbre2.png}{deu.png}
+%\end{frame}
+%
+%\begin{frame}
+%  \frametitle{Idée de l'algorithme}
+%  \deroulementJeu[8em]{3e.png}{arbre3.png}{tr.png}
+%\end{frame}
+%
+%\begin{frame}
+%  \frametitle{Idée de l'algorithme}
+%  \deroulementJeu[8em]{4e.png}{arbre4.png}{qu.png}
+%\end{frame}
+%
+%\begin{frame}
+%  \frametitle{Idée de l'algorithme}
+%  \deroulementJeu[8em]{5e.png}{arbre5.png}{cq.png}
+%\end{frame}
+%
+%\begin{frame}
+%  \frametitle{Idée de l'algorithme}
+%  \deroulementJeu[8em]{5e.png}{arbre7.png}{six.png}
+%\end{frame}
+%
+%\subsection{Généralisation}
+%\frame{
+%	\frametitle{Généralisation}
+%	\begin{center}
+%	\includegraphics[width=1.\linewidth]{images/arbrePui4.png}
+%	\end{center}
+%}
+%
+%
+%
+%\frame{
+%	\begin{table}[h]
+%	\begin{tabular}{c|l}
+%	Niveau & \ Nombre de configurations \\
+%	\hline
+%	1 & $7^{1} = 7$ \\
+%	2 & $7^{2} = 49$ \\
+%	3 & $7^{3} = 343$ \\
+%	4 & $7^{4} = 2.401$ \\
+%	5 & $7^{5} = 16.807$ \\
+%	6 & $7^{6} = 117.649$ \\
+%	7 & $7^{7} = 823.543$ \\
+%	8 & $7^{8} = 5.764.801$ \\
+%	9 & $7^{9} = 40.353.607$ \\
+%	10 & $7^{10} = 282.475.249$ \\
+%	11 & $7^{11} = 1.977.326.743$\\
+%	\end{tabular}
+%	\end{table}
+%	\Large{Explosion des cas!}
+%}
+%
+%\end{document}
