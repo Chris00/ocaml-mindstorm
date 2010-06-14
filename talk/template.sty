@@ -8,13 +8,15 @@
 	\leavevmode
 	\hbox{
 	\hspace*{-0.02\paperwidth}
-	\begin{beamercolorbox}[wd=0.61\paperwidth,ht=2.25ex,dp=1ex,left]{author in head/foot}
+	\begin{beamercolorbox}[wd=0.61\paperwidth,ht=2.25ex,dp=1ex,left]
+{author in head/foot}
 		\usebeamerfont{author in head/foot}
 		\hspace*{2em}
 		\insertshortauthor~--~\insertshortinstitute
 	\end{beamercolorbox}
 	\hspace*{-0.02\paperwidth}
-	\begin{beamercolorbox}[wd=0.41\paperwidth,ht=2.25ex,dp=1ex,right]{section in head/foot}
+	\begin{beamercolorbox}[wd=0.41\paperwidth,ht=2.25ex,dp=1ex,right]
+{section in head/foot}
 		\usebeamerfont{section in head/foot}
 		\insertframenumber{} / \inserttotalframenumber
 		\hspace*{2em}
@@ -22,7 +24,7 @@
 	\vskip0pt
 }
 
-%\addtobeamertemplate{footline}{\hfill\insertframenumber/\inserttotalframenumber\hspace{2em}\null}
+
 
 \definecolor{grey}{RGB}{130, 130, 130}
 
@@ -31,15 +33,3 @@
 \newcommand{\green}[1]{\textcolor{green}{#1}}
 \newcommand{\grey}[1]{\textcolor{grey}{#1}}
 
-%\AtBeginSection
-%{
-%	\frame {
-%		\frametitle{Table des matières}
-%		\begin{center}
-%			\begin{LARGE}
-%				\textsc{\insertsection}
-%			\end{LARGE}
-%		\end{center}
-%		\insertsubsectionnavigation{\paperwidth}
-%	}
-%}
