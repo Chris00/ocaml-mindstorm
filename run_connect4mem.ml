@@ -32,60 +32,58 @@ let move game col = ignore(Gamemem.makemove game col)
 (*si fst_player est vrai, ca veut dire que c'est a l'ordi de commencer,
   on lance donc alphabeta puis la pince et enfin le scan*)
 let rec computer_play game =
-  (* On cherche la colonne a jouer *)
-  Printf.printf "écrit c'est au joueur jaune\n%!";
+  (*on ecrit que c'est au tour du joueur jaune, donc l'ordi*)
   Board.write_player_turn Graphics.yellow;
-  Printf.printf "lance alphabeta\n%!";
+  (*on lance alphabeta pour connaitre la colonne a jouer et on y joue*)
   let _, col_to_play = Alphabetamem.alphabeta game 9 Gamemem.groupeval in
-  Printf.printf "col_to_play = %i\n%!" col_to_play;
   move game col_to_play;
-  Printf.printf "test si on a gagné ou match nul\n%!";
-  (*la pince va mettre la piece dans la colonne a jouer
-    et on va scanner pour voir si le joueur a joue*)
+
+  (*On test si la partie est finie*)
   if Gamemem.get_game_result game = Gamemem.WIN || Gamemem.draw game then
     (
-      Printf.printf "c fini, on stoppe après avoir ajouter la piece\n%!";
+      (* la partie est finie, on stoppe apres avoir ajouter la piece*)
       P.put_piece col_to_play
         (fun () ->
            Board.add_piece_to_board Graphics.yellow col_to_play;
            (* if Gamemem.draw game then Board.draw() *)
            (* else Board.yellow_success(); *)
-           Printf.printf "LE ROBOT GAGNE\n%!";
            Sys.command "aplay win.wav";
            S.return_init_pos Board.close_when_clicked)
     )
   else
     (
-      Printf.printf "ajoute une piece en col_to_play\n%!";
-      P.put_piece col_to_play (fun () ->
-                 Board.add_piece_to_board Graphics.yellow col_to_play;
-                                 S.add_piece col_to_play;
-                                 human_play game)
+      (*la partie continue, on met la piece et c'est au tour de l'autre joueur*)
+      P.put_piece col_to_play
+        (fun () ->
+           Board.add_piece_to_board Graphics.yellow col_to_play;
+           S.add_piece col_to_play;
+           human_play game)
     )
 
 and human_play game =
-  Printf.printf "écrit c'est au joueur rouge\n%!";
+  (*on ecrit que c'est au tour du joueur rouge, donc l'humain*)
   Board.write_player_turn Graphics.red;
-  Printf.printf "lance scan\n%!";
-  S.scan begin fun col ->
-    Printf.printf "lance mouve ds human_play\n%!";
-    move game col;
-    Printf.printf "ajoute le pion rouge\n%!";
-    Board.add_piece_to_board Graphics.red col;
-    Printf.printf "test si fini\n%!";
-    (* On verifie que le jeu n'est pas gagné ou match nul *)
-    if Gamemem.get_game_result game = Gamemem.WIN || Gamemem.draw game then (
-      (* if Gamemem.draw game then Board.draw() *)
-      (* else Board.red_success(); *)
-      Sys.command "aplay Game_over.wav";
-      Printf.printf "L'HUMAIN A GAGNE\n%!";
-      S.return_init_pos Board.close_when_clicked
-    )
-    else
-      (
-        computer_play game
-      )
-  end
+  (*on lance le scan pour connaitre la colonne qui a été jouée*)
+  S.scan
+    begin
+      fun col ->
+        move game col;
+        Board.add_piece_to_board Graphics.red col;
+
+        (* On verifie que la partie n'est pas finie *)
+        if Gamemem.get_game_result game = Gamemem.WIN
+          || Gamemem.draw game then
+            (
+              (* if Gamemem.draw game then Board.draw() *)
+              (* else Board.red_success(); *)
+              Sys.command "aplay Game_over.wav";
+              S.return_init_pos Board.close_when_clicked
+            )
+        else
+          (
+            computer_play game
+          )
+    end
 
 let () =
   Board.gameboard ();

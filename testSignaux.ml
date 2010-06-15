@@ -77,6 +77,3 @@ let () =
   R.run();
   S.run()
 
-(* Local Variables: *)
-(* compile-command: "make TestSignaux.com" *)
-(* End: *)
