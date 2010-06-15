@@ -27,16 +27,15 @@ let shift_up_v = 131
 let shift_up_r = 184
 let shift_up_l = 184
 
-
-(* angle de rotation de moteur_captor_vert pr la ligne [l] *)
+(* Angle de rotation de moteur_captor_vert pr la ligne [l]. *)
 let rot_v l =
   shift_up_v * l
 
-(*angle de rotation de moteur_captor_r pr la ligne [l], colonne [c]*)
+(* Angle de rotation de moteur_captor_r pr la ligne [l], colonne [c]. *)
 let rot_r l c =
   (shift_up_r*l)+(c*shift_h)
 
-(*angle de rotation de moteur_captor_l pr la ligne [l], colonne [c]*)
+(* Angle de rotation de moteur_captor_l pr la ligne [l], colonne [c]. *)
 let rot_l l c =
   (shift_up_l*l)-(c*shift_h)
 
@@ -45,10 +44,10 @@ let when_some cond v = match v with
   | Some d -> cond d
 
 
-(*tab des vitesses des trois moteurs (vert, r, l) lors des déplacements vers la
-  gauche. pr aller à droite vitesse, le tableau nous donne (vert, l, r)*)
-(*speed_up.(i).(j) nous donne les vitesses des moteurs (vert, r, l) lorsqu'on
-  doit se déplacer de i lignes vers le haut et de j col vers la gauche*)
+(* Tableau des vitesses des 3 moteurs (vert, r, l) lors des déplacements vers la
+  gauche. Pour aller a droite vitesse, le tableau nous donne (vert, l, r). *)
+(* speed_up.(i).(j) nous donne les vitesses des moteurs (vert, r, l) lorsqu'on
+  doit se deplacer de i lignes vers le haut et de j col vers la gauche. *)
 let speed_up =
   [|
     [|(0, 0, 0); (0, 15, -14); (0, 15, -14); (0, 15, -14);
@@ -66,7 +65,7 @@ let speed_up =
   |]
 
 
-(* meme chose mais vers le bas *)
+(* Meme chose mais vers le bas. *)
 let speed_down =
   [|
     [|(0, 0, 0); (0, 20, -19); (0, 20, -19); (0, 20, -19);
@@ -90,28 +89,29 @@ struct
   (* État du jeu *)
   let current_line = ref 0
   let current_col = ref 0
-  let scan_right = ref true (*on commence par le scannage de droite à gauche*)
+
+  let scan_right = ref true (* On commence par le scannage de droite a gauche.*)
   let number_piece = Array.make 7 0
-    (* Nombre de pièces par colonne.  Utile pour savoir où scanner. *)
+    (* Nombre de pieces par colonne. Utile pour savoir ou scanner. *)
   let get_angle motor = let _,_,_,a = Motor.get C.conn_scan motor in a
 
- (*nous retourne l'angle courant du moteur droit*)
+  (* Nous retourne l'angle courant du moteur droit. *)
   let meas_right = Robot.meas C.r (fun () -> get_angle motor_captor_r)
 
-  (*nous retourne l'angle courant du moteur gauche*)
+  (* Nous retourne l'angle courant du moteur gauche. *)
   let meas_left = Robot.meas C.r (fun () ->  get_angle motor_captor_l)
 
- (*nous retourne l'angle courant du moteur vertical*)
+  (* Nous retourne l'angle courant du moteur vertical. *)
   let meas_vert = Robot.meas C.r (fun () -> get_angle motor_captor_vert)
 
 
   let stop _ =
     Motor.set C.conn_scan Motor.all (Motor.speed 0)
 
- (*methode retournant le nbre de pions ds la col [col] du jeu [game]*)
+  (* Methode retournant le nbre de pions ds la col [col] du jeu [game]. *)
   let piece_in_col col = number_piece.(col)
 
-  (*methode ajoutant une piece au jeu [game] en colonne [col]*)
+  (* Methode ajoutant une piece au jeu [game] en colonne [col]. *)
   let add_piece col = number_piece.(col) <- number_piece.(col) + 1
 
   let pieces_per_col() =
@@ -121,7 +121,7 @@ struct
     Motor.set C.conn_scan Motor.all (Motor.speed 0);
     f()
 
-  (*ajuste la position du capteur couleur*)
+  (* Ajuste la position du capteur couleur. *)
   let adj_l angle_l f _ =
     Motor.set C.conn_scan motor_captor_l (Motor.speed 0);
     Motor.set C.conn_scan motor_captor_r (Motor.speed 0);
@@ -146,8 +146,8 @@ struct
         Robot.event meas_right (when_some good_angle) (adj_l angle_l f)
     | None -> assert false
 
-  (*ajustement de la position du capteur*)
-  (*on ajuste d'abord le moteur vert à petite vitesse puis le r puis le l*)
+  (* Ajustement de la position du capteur. *)
+  (* On ajuste d'abord le moteur vert a petite vitesse puis le r puis le l. *)
   let adjustment line col f =
     let angle_v = rot_v line and
         angle_r = rot_r line col and
@@ -163,10 +163,10 @@ struct
         Robot.event meas_vert (when_some good_angle) (adj_r angle_r angle_l f)
     | None -> assert false
 
-  (*scanne la case, si c'est une piece (couleur jaune ou rouge), il rescanne
-    une 2ème fois pr etre sur du résultat, si c'est bleu, il se réajuste,
-    sinon il continue*)
-  let rec scan_light ?(count = 0) f =
+  (* Scanne la case, si c'est une piece (couleur jaune ou rouge), il rescanne
+    une 2eme fois pr etre sur du resultat, si c'est bleu, il se reajuste,
+    sinon il continue *)
+  let rec scan_light ?(count_col = 0) ?(count_inv_arg = 0) f =
     Mindstorm.Sensor.set C.conn_scan color_port `Color_full `Pct_full_scale;
     usleep 0.25;
     try
@@ -175,14 +175,13 @@ struct
       Mindstorm.Sensor.set C.conn_scan color_port `No_sensor `Raw;
       match color with
       | `Black | `Green | `White ->
-          f None (*rappelle la fct [scan] qui appelera move_to sur la
-                    prochaine case*)
+          f None (* Rappelle la fct [scan] qui appelera move_to sur la
+                    prochaine case. *)
       | `Blue ->
-          printf "Ajustement\n%!";
           adjustment !current_line !current_col (fun _ -> scan_light f)
       | `Yellow | `Red ->
-          (*il a trouvé une piece*)
-          if count = 0 then scan_light ~count:1 f
+          (* Il a trouve une piece. *)
+          if count_col = 0 then scan_light ~count_col:1 f
           else
             (
               add_piece !current_col;
@@ -190,66 +189,27 @@ struct
             )
     with Invalid_argument msg ->
       printf "RAISED Invalid_argument(%S)\n%!" msg;
-      if count = 3 then (
+      if count_inv_arg = 3 then (
         Mindstorm.Sensor.set C.conn_scan color_port `No_sensor `Raw;
         f None
       )
-      else scan_light ~count:(count + 1) f
+      else scan_light ~count_inv_arg:(count_inv_arg + 1) f
 
-
-  (*attend d'avoir fini de monter (avec ralenti) avant de scanner la case*)
-  (* let wait_up_end angle_v f _ = *)
-  (*     let st = {speed = 0; motor_on = true; brake = true; *)
-  (*               regulation = `Idle; turn_ratio = 100; *)
-  (*             run_state = `Ramp_down; tach_limit = 30} in *)
-  (*     Motor.set C.conn_scan motor_captor_vert st; *)
-  (*     Robot.event meas_vert (function *)
-  (*                            |None -> false *)
-  (*                            |Some d -> d >= angle_v) *)
-  (*       (fun _ -> scan_light f) *)
 
   let wait_up angle_v f =
     Robot.event meas_vert (function
                            |None -> false
                            |Some d -> d >= angle_v) (stop_motors_and_do f)
-      (* (wait_up_end angle_v f) *)
-
-
-  (*attend d'avoir fini ac le moteur r (ac ralenti) avant de scanner la case*)
-  (*  let wait_down_right_end angle_r f _ = *)
-  (*     let st = {speed = 0; motor_on = true; brake = true; *)
-  (*               regulation = `Idle; turn_ratio = 100; *)
-  (*               run_state = `Ramp_down; tach_limit = 30} in *)
-  (*     Motor.set C.conn motor_captor_r st; *)
-  (*     Robot.event meas_right (function *)
-  (*                            |None -> false *)
-  (*                            |Some d -> d <= angle_r) *)
-  (*       (fun _ -> scan_light f) *)
 
   let wait_down_right angle_r f =
     Robot.event meas_right (function
                             |None -> false
                             |Some d -> d <= angle_r) (stop_motors_and_do f)
-      (* (wait_down_right_end angle_r f) *)
-
-
-  (*attend d'avoir fini ac le moteur l (ac ralenti) avant de scanner la case*)
-  (* let wait_down_left_end angle_l f _ = *)
-  (*     let st = {speed = 0; motor_on = true; brake = true; *)
-  (*               regulation = `Idle; turn_ratio = 100; *)
-  (*               run_state = `Ramp_down; tach_limit = 40} in *)
-  (*     Motor.set C.conn motor_captor_l st; *)
-  (*     Robot.event meas_right (function *)
-  (*                            |None -> false *)
-  (*                            |Some d -> d <= angle_l+5) *)
-  (*       (fun _ -> scan_light f) *)
-
 
   let wait_down_left angle_l f =
     Robot.event meas_left (function
                            |None -> false
                            |Some d -> d <= angle_l) (stop_motors_and_do f)
-      (* (wait_down_left_end angle_l f) *)
 
   (* Move to the desired position, update the (position) state, and
      execute [f]. *)
@@ -264,8 +224,8 @@ struct
     current_col := new_pos_col;
     if diff_line = 0 && diff_col = 0 then f()
     else (
-      (*on fait les deux mouvements en meme temps*)
-      if diff_line > 0 then ( (*on va vers le haut*)
+      (* on fait les deux mouvements en meme temps *)
+      if diff_line > 0 then ( (* on va vers le haut *)
         let speed_vert, speed_m1, speed_m2 =
           speed_up.(diff_line).(abs(diff_col)) in
         (match Robot.read meas_vert with
@@ -274,8 +234,8 @@ struct
              wait_up angle_v f
          | None -> assert false);
         let speed_r, speed_l =
-          if diff_col >= 0 then speed_m1, speed_m2 (*on va vers la gauche*)
-          else speed_m2, speed_m1  (*on va vers la droite*) in
+          if diff_col >= 0 then speed_m1, speed_m2 (* on va vers la gauche *)
+          else speed_m2, speed_m1  (* on va vers la droite *) in
         (match Robot.read meas_right with
          | Some m_r  ->
              Motor.set C.conn_scan motor_captor_r
@@ -287,7 +247,7 @@ struct
                (Motor.speed ~tach_limit:(abs(angle_l - m_l)) speed_l)
          | None -> assert false)
       )
-      else ( (*on descend*)
+      else ( (* on descend *)
         let speed_vert, speed_m1, speed_m2 =
           speed_down.(-diff_line).(abs(diff_col)) in
         (match Robot.read meas_vert with
@@ -296,7 +256,7 @@ struct
                (Motor.speed ~tach_limit:(abs(m_v -angle_v)) speed_vert)
          | None -> assert false);
 
-        if diff_col >= 0 then ( (*on va vers la gauche*)
+        if diff_col >= 0 then ( (* on va vers la gauche *)
           (match Robot.read meas_right with
            | Some m_r  ->
                Motor.set C.conn_scan motor_captor_r
@@ -308,7 +268,7 @@ struct
                wait_down_left angle_l f
            | None -> assert false);
         )
-        else ( (*on va vers la droite*)
+        else ( (* on va vers la droite *)
           (match Robot.read meas_right with
            | Some m_r  ->
                Motor.set C.conn_scan motor_captor_r (Motor.speed speed_m2);
@@ -326,6 +286,8 @@ struct
 
   exception Not_full of int
 
+  (* Deplace la pince a l'extremite du jeu la plus proche en faisant attention
+     a ce que la colonne ne soit pas pleine. *)
   let go_closer_non_full_col f =
     if !current_col > 3 then
       try
@@ -342,6 +304,7 @@ struct
         f() (* all columns full *)
       with Not_full c -> move_to (piece_in_col c) c f
 
+  (* Retourne la premiere colonne a gauche ou a droite qui est non pleine. *)
   let rec next_col current_col =
     let col = (if !scan_right then
                  if current_col < 6 then current_col + 1 else 0
@@ -350,23 +313,82 @@ struct
     if piece_in_col col = 6 then next_col col
     else col
 
-  let rec scan_columns f =
-    scan_light begin function
-    | None ->
-        let next_col = next_col !current_col in
-        move_to (piece_in_col next_col) next_col (fun () -> scan_columns f)
-    | Some col ->
-        (* Found piece in [col] *)
-        go_closer_non_full_col begin fun () ->
-          scan_right := (!current_col <= 3);
-          printf "Pièce trouvée dans la colonne %i\n%!" col;
-          f col
-        end
-    end
+  (* Calcul du chemin que le scanner doit parcourir. *)
+  let compute_way_scanner () =
+    let list_col = ref [] in
+    let n =
+      let length_tab = ref 0 in
+      for i = 0 to 6 do
+        if piece_in_col i < 6 then
+          (
+            length_tab := !length_tab + 1;
+            if i <> !current_col then list_col :=  i::!list_col
+          )
+      done;
+      !length_tab in
 
+    let tab = Array.init n (fun _ -> !current_col) in
+
+    let rec list_to_tab list i =
+      if i < n then
+        (
+          tab.(i) <- List.hd list;
+          list_to_tab (List.tl list) (i+1)
+        )
+    in list_to_tab !list_col 1;
+
+    (* Remplissage du tableau des sommets a parcourir en utilisant l'heuristique
+       plus proche voisin. Si 2 cases sont aussi proches, on favorise celle qui
+       minimise la difference de colonnes/largeurs. *)
+    for i = 1 to n-2 do
+      let min = ref(abs(tab.(i) - tab.(i-1)) + abs(piece_in_col tab.(i)
+                                                   - piece_in_col tab.(i-1)))
+      and pos_min = ref i in
+
+      for j = i+1 to n-1 do
+        let dist = abs(tab.(j) - tab.(i-1)) + abs(piece_in_col tab.(j)
+                                                  - piece_in_col tab.(i-1))
+        and diff_col_pos_min = abs(tab.(i-1) - !pos_min)
+        and diff_col_j = abs(tab.(i-1) - tab.(j)) in
+
+        if (dist < !min) || (dist = !min && diff_col_pos_min > diff_col_j)
+        then
+          (
+            pos_min := j;
+            min := dist
+          )
+      done;
+      let temp = tab.(i) in
+      tab.(i) <- tab.(!pos_min);
+      tab.(!pos_min) <- temp
+    done;
+    tab
+
+  (* Scanne le jeu jusqu'a trouver un nouveau pion. Retourne la colonne dans
+     laquelle le nouveau pion a ete detecte. *)
+  let scan_columns f =
+    let tab = compute_way_scanner () in
+
+    let rec scan_c f pos_tab =
+      scan_light begin function
+      | None ->
+          let new_pos =
+            if pos_tab < (Array.length tab - 1)
+            then pos_tab + 1
+            else 0 in
+          move_to (piece_in_col tab.(new_pos)) tab.(new_pos)
+            (fun () -> scan_c f new_pos)
+      | Some col ->
+          (* un pion a ete trouve en colonne [col] *)
+          go_closer_non_full_col begin fun () ->
+            f col
+          end
+      end in scan_c f 0
+
+  (* Ajuster en hauteur si une piece a ete ajoutee par le robot.  Si
+     la colonne est pleine, on passe à la suivante. Ensuite on commence le
+     scannage jusqu'a trouver une nouvelle piece. *)
   let scan f =
-    (* Ajuster en hauteur si une pièce a été ajoutée par le robot.  Si
-       la colonne est pleine, on passe à la suivante. *)
     let npieces = piece_in_col !current_col in
     let col = if npieces < 6 then !current_col else next_col !current_col in
     move_to (piece_in_col col) col (fun () -> scan_columns f)
