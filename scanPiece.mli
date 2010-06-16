@@ -10,7 +10,7 @@ sig
         mettre sa piece jusqu'a ce qu'il trouve une nouvelle piece.
         [k] est la fonction qui va etre lancee lorsque le robot a trouve
         une nouvelle piece dans le jeu et elle est appliquee sur la
-        colonne ou la piece a ete ajoute (utile pour pouvoir ensuite
+        colonne ou la piece a ete ajoutee (utile pour pouvoir ensuite
         calculer le coup prochain. *)
 
   val stop : 'a -> unit

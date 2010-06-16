@@ -90,7 +90,8 @@ struct
   let current_line = ref 0
   let current_col = ref 0
 
-  let scan_right = ref true (* On commence par le scannage de droite a gauche.*)
+  let col_right_full = ref true (* Toutes les col a droite de la col courrante
+                                   sont pleines.*)
   let number_piece = Array.make 7 0
     (* Nombre de pieces par colonne. Utile pour savoir ou scanner. *)
   let get_angle motor = let _,_,_,a = Motor.get C.conn_scan motor in a
@@ -287,59 +288,53 @@ struct
   exception Not_full of int
 
   (* Deplace la pince a l'extremite du jeu la plus proche en faisant attention
-     a ce que la colonne ne soit pas pleine. *)
+     a ce que la colonne ne soit pas pleine et lance f. *)
   let go_closer_non_full_col f =
     if !current_col > 3 then
-      try
-        for c = 6 downto 0 do
-          if piece_in_col c < 6 then raise(Not_full c)
-        done;
-        f() (* all columns full *)
-      with Not_full c -> move_to (piece_in_col c) c f
+      (
+        col_right_full := false;
+        try
+          for c = 6 downto 0 do
+            if piece_in_col c < 6 then raise(Not_full c)
+          done;
+          f() (* all columns full *)
+        with Not_full c -> move_to (piece_in_col c) c f
+      )
     else
-      try
-        for c = 0 to 6 do
-          if piece_in_col c < 6 then raise(Not_full c)
-        done;
-        f() (* all columns full *)
-      with Not_full c -> move_to (piece_in_col c) c f
+      (
+        col_right_full := true;
+        try
+          for c = 0 to 6 do
+            if piece_in_col c < 6 then raise(Not_full c)
+          done;
+          f() (* all columns full *)
+        with Not_full c -> move_to (piece_in_col c) c f
+      )
 
-  (* Retourne la premiere colonne a gauche ou a droite qui est non pleine. *)
-  let rec next_col current_col =
-    let col = (if !scan_right then
-                 if current_col < 6 then current_col + 1 else 0
-               else
-                 if current_col > 0 then current_col - 1 else 6) in
+  (* Retourne la plus proche colonne non pleine. *)
+  let rec next_col column =
+    let col = (if !col_right_full then column + 1
+               else column - 1) in
     if piece_in_col col = 6 then next_col col
     else col
 
   (* Calcul du chemin que le scanner doit parcourir. *)
   let compute_way_scanner () =
-    let list_col = ref [] in
+    let tab = Array.init 7 (fun _ -> !current_col) in
     let n =
-      let length_tab = ref 0 in
+      let length_tab = ref 1 in
       for i = 0 to 6 do
-        if piece_in_col i < 6 then
+        if i <> !current_col && piece_in_col i < 6 then
           (
-            length_tab := !length_tab + 1;
-            if i <> !current_col then list_col :=  i::!list_col
+            tab.(!length_tab) <- i;
+            length_tab := !length_tab + 1
           )
       done;
       !length_tab in
 
-    let tab = Array.init n (fun _ -> !current_col) in
-
-    let rec list_to_tab list i =
-      if i < n then
-        (
-          tab.(i) <- List.hd list;
-          list_to_tab (List.tl list) (i+1)
-        )
-    in list_to_tab !list_col 1;
-
     (* Remplissage du tableau des sommets a parcourir en utilisant l'heuristique
        plus proche voisin. Si 2 cases sont aussi proches, on favorise celle qui
-       minimise la difference de colonnes/largeurs. *)
+       minimise les deplacements horizontaux. *)
     for i = 1 to n-2 do
       let min = ref(abs(tab.(i) - tab.(i-1)) + abs(piece_in_col tab.(i)
                                                    - piece_in_col tab.(i-1)))
@@ -348,7 +343,7 @@ struct
       for j = i+1 to n-1 do
         let dist = abs(tab.(j) - tab.(i-1)) + abs(piece_in_col tab.(j)
                                                   - piece_in_col tab.(i-1))
-        and diff_col_pos_min = abs(tab.(i-1) - !pos_min)
+        and diff_col_pos_min = abs(tab.(i-1) - tab.(!pos_min))
         and diff_col_j = abs(tab.(i-1) - tab.(j)) in
 
         if (dist < !min) || (dist = !min && diff_col_pos_min > diff_col_j)
@@ -362,18 +357,18 @@ struct
       tab.(i) <- tab.(!pos_min);
       tab.(!pos_min) <- temp
     done;
-    tab
+    (tab, n)
 
   (* Scanne le jeu jusqu'a trouver un nouveau pion. Retourne la colonne dans
      laquelle le nouveau pion a ete detecte. *)
   let scan_columns f =
-    let tab = compute_way_scanner () in
+    let tab, n = compute_way_scanner () in
 
     let rec scan_c f pos_tab =
       scan_light begin function
       | None ->
           let new_pos =
-            if pos_tab < (Array.length tab - 1)
+            if pos_tab < (n - 1)
             then pos_tab + 1
             else 0 in
           move_to (piece_in_col tab.(new_pos)) tab.(new_pos)

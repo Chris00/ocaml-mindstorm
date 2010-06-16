@@ -51,8 +51,6 @@ let alphabeta game level heuristic =
   else
     let value, col =
       ab 0 game neg_infinity infinity Max level heuristic in
-    Printf.printf "la valeur et la col donnés par ab = %f\n%!" value;
-    Printf.printf " et %i\n%!" col;
     let rec what_col_to_play g cost c =
       let n = g.Gamemem.stack.(c) in
       if n <> 6 then (cost, c)
