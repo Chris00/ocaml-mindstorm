@@ -27,7 +27,7 @@ end
 module P = Pincer.Run(Conn)
 module S = ScanPiece.Run(Conn)
 
-let move game col = ignore(Gamemem.makemove game col)
+let move game col = ignore(Structure.makemove game col)
 
 (*si fst_player est vrai, ca veut dire que c'est a l'ordi de commencer,
   on lance donc alphabeta puis la pince et enfin le scan*)
@@ -35,11 +35,11 @@ let rec computer_play game =
   (*on ecrit que c'est au tour du joueur jaune, donc l'ordi*)
   Board.write_player_turn Graphics.yellow;
   (*on lance alphabeta pour connaitre la colonne a jouer et on y joue*)
-  let _, col_to_play = Alphabetamem.alphabeta game 9 Gamemem.groupeval in
+  let col_to_play = Ia.move_for game    in
   move game col_to_play;
 
   (*On test si la partie est finie*)
-  if Gamemem.get_game_result game = Gamemem.WIN || Gamemem.draw game then
+  if Structure.get_game_result game > -1 then
     (
       (* la partie est finie, on stoppe apres avoir ajouter la piece*)
       P.put_piece col_to_play
@@ -71,8 +71,7 @@ and human_play game =
         Board.add_piece_to_board Graphics.red col;
 
         (* On verifie que la partie n'est pas finie *)
-        if Gamemem.get_game_result game = Gamemem.WIN
-          || Gamemem.draw game then
+        if Structure.get_game_result game > -1 then
             (
               (* if Gamemem.draw game then Board.draw() *)
               (* else Board.red_success(); *)
@@ -87,8 +86,8 @@ and human_play game =
 
 let () =
   Board.gameboard ();
-  let game = Gamemem.make_board() in
-  Gamemem.initboard game;
+  let game = Structure.make_board() in
+  Structure.initboard game;
   (if Conn.fst_computer then computer_play else human_play) game;
   Robot.run Conn.r
 
