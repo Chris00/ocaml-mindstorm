@@ -87,7 +87,6 @@ and human_play game =
 let () =
   Display.gameboard ();
   let game = Board.make() in
-  Board.init game;
   (if Conn.fst_computer then computer_play else human_play) game;
   Robot.run Conn.r
 

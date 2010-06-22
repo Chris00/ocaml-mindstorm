@@ -60,11 +60,8 @@ type t = {
 (*Creates a copy of the current board into a second board*)
 val copy : t -> t -> unit
 
-(*Creates a new board*)
+(*Creates a new board (and initializes it) *)
 val make : unit -> t
-
-(*initializes the board*)
-val init : t -> unit
 
 (*Build the opening book*)
 val build_book : t -> unit

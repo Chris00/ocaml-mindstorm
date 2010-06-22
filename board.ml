@@ -60,7 +60,7 @@ bb.solvable_groups <- b.solvable_groups;
 bb.white_book <- Array.copy b.white_book
 
 
-let make() =
+let make_t() =
   let solv =
     {
       squar = Array.make_matrix 64 16 0;
@@ -193,6 +193,11 @@ let init board =
 	done
    done
 
+let make() =
+  let b = make_t() in
+  init b;
+  b
+
 let build_book board =
   let i = ref 0
   and j = ref 0
@@ -218,9 +223,8 @@ let build_book board =
 
 let create_game() =
   let g = make() in
-    init g;
-    build_book g;
-    g
+  build_book g;
+  g
 
 let show_square board =
   for j=0 to boardY - 1 do
