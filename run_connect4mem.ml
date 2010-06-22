@@ -1,5 +1,5 @@
 open Alphabetamem
-open Board
+open Display
 
 let bt_pincer = ref "00:16:53:03:A5:32"
 and bt_scan = ref "00:16:53:0C:84:49"
@@ -33,7 +33,7 @@ let move game col = ignore(Structure.makemove game col)
   on lance donc alphabeta puis la pince et enfin le scan*)
 let rec computer_play game =
   (*on ecrit que c'est au tour du joueur jaune, donc l'ordi*)
-  Board.write_player_turn Graphics.yellow;
+  Display.write_player_turn Graphics.yellow;
   (*on lance alphabeta pour connaitre la colonne a jouer et on y joue*)
   let col_to_play = Ia.move_for game    in
   move game col_to_play;
@@ -44,39 +44,39 @@ let rec computer_play game =
       (* la partie est finie, on stoppe apres avoir ajouter la piece*)
       P.put_piece col_to_play
         (fun () ->
-           Board.add_piece_to_board Graphics.yellow col_to_play;
-           (* if Gamemem.draw game then Board.draw() *)
-           (* else Board.yellow_success(); *)
+           Display.add_piece_to_board Graphics.yellow col_to_play;
+           (* if Gamemem.draw game then Display.draw() *)
+           (* else Display.yellow_success(); *)
            Sys.command "aplay win.wav";
-           S.return_init_pos Board.close_when_clicked)
+           S.return_init_pos Display.close_when_clicked)
     )
   else
     (
       (*la partie continue, on met la piece et c'est au tour de l'autre joueur*)
       P.put_piece col_to_play
         (fun () ->
-           Board.add_piece_to_board Graphics.yellow col_to_play;
+           Display.add_piece_to_board Graphics.yellow col_to_play;
            S.add_piece col_to_play;
            human_play game)
     )
 
 and human_play game =
   (*on ecrit que c'est au tour du joueur rouge, donc l'humain*)
-  Board.write_player_turn Graphics.red;
+  Display.write_player_turn Graphics.red;
   (*on lance le scan pour connaitre la colonne qui a été jouée*)
   S.scan
     begin
       fun col ->
         move game col;
-        Board.add_piece_to_board Graphics.red col;
+        Display.add_piece_to_board Graphics.red col;
 
         (* On verifie que la partie n'est pas finie *)
         if Structure.get_game_result game > -1 then
             (
-              (* if Gamemem.draw game then Board.draw() *)
-              (* else Board.red_success(); *)
+              (* if Gamemem.draw game then Display.draw() *)
+              (* else Display.red_success(); *)
               Sys.command "aplay Game_over.wav";
-              S.return_init_pos Board.close_when_clicked
+              S.return_init_pos Display.close_when_clicked
             )
         else
           (
@@ -85,7 +85,7 @@ and human_play game =
     end
 
 let () =
-  Board.gameboard ();
+  Display.gameboard ();
   let game = Structure.make_board() in
   Structure.initboard game;
   (if Conn.fst_computer then computer_play else human_play) game;

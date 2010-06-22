@@ -30,44 +30,44 @@ module S = ScanPiece.Run(Conn)
 (*si fst_player est vrai, ca veut dire que c'est a l'ordi de commencer,
   on lance donc alphabeta puis la pince et enfin le scan*)
 let rec computer_play game =
-  Board.write_player_turn Graphics.yellow;
+  Display.write_player_turn Graphics.yellow;
   let _, col_to_play = alphabeta game Game.Yellow 8 heuristic in
   Game.move game col_to_play Game.Yellow;
   if Game.is_winning game col_to_play || Game.is_draw game then
     (
       P.put_piece col_to_play
         (fun () ->
-           Board.add_piece_to_board Graphics.yellow col_to_play;
-           if Game.is_draw game then Board.draw()
-           else Board.yellow_success();
-           S.return_init_pos Board.close_when_clicked)
+           Display.add_piece_to_board Graphics.yellow col_to_play;
+           if Game.is_draw game then Display.draw()
+           else Display.yellow_success();
+           S.return_init_pos Display.close_when_clicked)
     )
   else
     (
       P.put_piece col_to_play
         (fun () ->
-           Board.add_piece_to_board Graphics.yellow col_to_play;
+           Display.add_piece_to_board Graphics.yellow col_to_play;
            S.add_piece col_to_play;
            human_play game)
     )
 
 and human_play game =
-  Board.write_player_turn Graphics.red;
+  Display.write_player_turn Graphics.red;
   S.scan
     begin
       fun col ->
         Game.move game col Game.Red;
-        Board.add_piece_to_board Graphics.red col;
+        Display.add_piece_to_board Graphics.red col;
         if Game.is_winning game col || Game.is_draw game then
           (
-            if Game.is_draw game then Board.draw()
-            else Board.red_success();
-            S.return_init_pos Board.close_when_clicked
+            if Game.is_draw game then Display.draw()
+            else Display.red_success();
+            S.return_init_pos Display.close_when_clicked
           )
     end
 
 let () =
-  Board.gameboard ();
+  Display.gameboard ();
   let game = Game.make() in
   (if Conn.fst_computer then computer_play else human_play) game;
   Robot.run Conn.r

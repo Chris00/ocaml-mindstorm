@@ -16,7 +16,7 @@ LIBS_CMXA=$(LIBS_CMA:.cma=.cmxa)
 all: byte native
 
 SOURCES = utils.ml structure.ml rules.ml adjacency.ml solver.ml \
-    evaluate.ml heuristic.ml opening_book.ml ia.ml board.ml \
+    evaluate.ml heuristic.ml opening_book.ml ia.ml display.ml \
     scanPiece.ml pincer.ml
 byte: run_connect4mem.exe
 native: run_connect4mem.com test.com
