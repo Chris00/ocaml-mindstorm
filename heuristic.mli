@@ -21,7 +21,7 @@ val make_node : unit -> node
 val rootnode : node ref
 
 (*The current board, shared for all the functions*)
-val auxboard : Structure.board
+val auxboard : Board.t
 
 (*The number of nodes expanded, shared for all the functions*)
 val her_node_not_expanded : int ref
@@ -40,7 +40,7 @@ val her_generate_all_children : node -> unit
 
 (*Calculate the best answer with an heruistic for the current board,
 for a given side and a maximum depth*)
-val explore_tree : Structure.board -> int -> int -> int
+val explore_tree : Board.t -> int -> int -> int
 
 (*Evaluates a node*)
 val her_evaluate : node -> int
@@ -73,4 +73,4 @@ val her_pn_search : node -> int -> info -> unit
 (*Return the next best move if one move is proved to be winning
 of if all the moves are proved to be losing, -1 if nothing
 is proved with a maximum of maxnodenum nodes visited*)
-val heuristic_play_best : Structure.board -> int -> int
+val heuristic_play_best : Board.t -> int -> int

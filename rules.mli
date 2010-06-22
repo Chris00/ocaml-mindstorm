@@ -1,23 +1,23 @@
 (*Checks and stored all the instances of claimeven*)
-val claimeven : Structure.board -> unit
+val claimeven : Board.t -> unit
 
 (*Checks and stored all the instances of baseinverse*)
-val baseinverse : Structure.board -> unit
+val baseinverse : Board.t -> unit
 
 (*Checks and stored all the instances of vertical*)
-val vertical : Structure.board -> unit
+val vertical : Board.t -> unit
 
 (*Checks and stored all the instances of afterven*)
-val aftereven : Structure.board -> unit
+val aftereven : Board.t -> unit
 
 (*Checks and stored all the instances of lowinverse*)
-val lowinverse : Structure.board -> unit
+val lowinverse : Board.t -> unit
 
 (*Checks and stored all the instances of highinverse*)
-val highinverse : Structure.board -> unit
+val highinverse : Board.t -> unit
 
 (*Checks and stored all the instances of baseclaim*)
-val baseclaim : Structure.board -> unit
+val baseclaim : Board.t -> unit
 
 (*Checks and stored all the instances of before*)
-val before : Structure.board -> unit
+val before : Board.t -> unit

@@ -18,8 +18,8 @@ val get_lower : int ref array -> int array
 (*Checks if the one of the next seven moves possible current
 board is stored in the in the book for the compressed position
 cmparray.*)
-val check_book : Structure.board -> int array -> int -> bool
+val check_book : Board.t -> int array -> int -> bool
 
 (*Checks if the book gives the best next move for a given
 side. Returns the column if an answer is found, -1 if not*)
-val use_opening_book : Structure.board -> int -> int
+val use_opening_book : Board.t -> int -> int

@@ -1,5 +1,5 @@
 open Utils
-open Structure
+open Board
 
 let rules_name = [|"CLAIMEVEN";"BASEINVERSE";"VERTICAL";"LOWINVERSE";"HIGHINVERSE";"BASECLAIM";"BEFORE";"SPECIALBEFORE"|]
 and tempsolused = ref 0

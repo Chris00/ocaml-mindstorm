@@ -1,5 +1,4 @@
 open Utils
-open Structure
 open Evaluate
 
 type status = Proved | Disproved | Unknown
@@ -80,7 +79,7 @@ let make_node() =
   }
 
 let rootnode = ref (make_node())
-let auxboard = make_board()
+let auxboard = Board.make()
 let her_node_not_expanded = ref 0
 let her_node_expanded = ref 0
 let nodeseq = [|3;2;4;5;1;0;6|]
@@ -131,28 +130,28 @@ let her_generate_all_children node =
 
 let rec explore_tree board side depth = 
   let cn = ref 0
-  and tmp = if board.turn = side then
+  and tmp = if board.Board.turn = side then
       group_eval board
     else (-1) * (group_eval board) in
   let answ = ref 0 in
   if depth = 0 then tmp
   else
     (
-      if board.turn <> side then
+      if board.Board.turn <> side then
 	(
 	  answ := goodmove-depth;
 	  let x = ref 0 in
 	  while !x<boardX && !answ <> badmove do
-	    if board.stack.(!x) < boardY then
+	    if board.Board.stack.(!x) < boardY then
 	      (
 		cn := !cn+1;
-		if connected board !x >=4 then answ := badmove
+		if Board.connected board !x >=4 then answ := badmove
 		else
 		  (
-		    let _ = makemove board !x
+		    let _ = Board.makemove board !x
 		    and tmp = explore_tree board side (depth-1) in
                     answ := min !answ tmp;
-		    if not (undomove board !x) then raise Error;
+		    if not (Board.undomove board !x) then raise Error;
 		  )
 	      );
             x := !x + 1
@@ -164,16 +163,16 @@ let rec explore_tree board side depth =
 	  answ := badmove + depth;
 	  let x = ref 0 in
 	  while !x<boardX do
-	    if board.stack.(!x) < boardY then
+	    if board.Board.stack.(!x) < boardY then
 	      (
 		cn := !cn + 1;
-		if connected board !x >= 4 then answ := goodmove
+		if Board.connected board !x >= 4 then answ := goodmove
 		else
 		  (
-		    let _ = makemove board !x
+		    let _ = Board.makemove board !x
 		    and tmp = explore_tree board side (depth-1) in
 		    answ := max !answ tmp;
-		    if not (undomove board !x) then raise Error
+		    if not (Board.undomove board !x) then raise Error
 		  )
 	      );
             x := !x + 1
@@ -187,15 +186,16 @@ let rec explore_tree board side depth =
 let her_evaluate node =
   node.evaluated <- true;
   for x=0 to 63 do
-    auxboard.square.(x) := node.squaree.(x)
+    auxboard.Board.square.(x) := node.squaree.(x)
   done;
-  auxboard.turn <- node.tur;
-  auxboard.filled <- 0;
-  auxboard.stack <- Array.copy node.stac;
+  auxboard.Board.turn <- node.tur;
+  auxboard.Board.filled <- 0;
+  auxboard.Board.stack <- Array.copy node.stac;
   for x=0 to boardX do
-    if (x<boardX) then auxboard.filled <- auxboard.filled + node.stac.(x)
+    if (x<boardX) then
+      auxboard.Board.filled <- auxboard.Board.filled + node.stac.(x)
   done;
-  if auxboard.filled = maxmen then
+  if auxboard.Board.filled = maxmen then
     (
       if !rootnode.tur = 1 then
 	if !rootnode.typed = or_type then node.value <- Proved
@@ -348,12 +348,12 @@ let her_pn_search root maxnodes info =
 
 
 let heuristic_play_best board maxnodenum =
-  let tempboard = create_game()
+  let tempboard = Board.create_game()
   and rootnode =
     {
       squaree = Array.make ((boardX+1)*(boardY+2)) 0;
-      tur = board.turn;
-      stac = Array.init (boardX+1) (fun x -> board.stack.(x));
+      tur = board.Board.turn;
+      stac = Array.init (boardX+1) (fun x -> board.Board.stack.(x));
       evaluated = false;
       expanded = false;
       value = Unknown;
@@ -363,11 +363,11 @@ let heuristic_play_best board maxnodenum =
       child = Array.init boardX (fun i -> None);
       parents = Array.init boardX (fun i -> None);
     } in
-  copy_board board tempboard;
+  Board.copy board tempboard;
   for y=0 to boardY-1 do
-    rootnode.squaree.(elm boardX y) <- !(board.square.(elm boardX y));
+    rootnode.squaree.(elm boardX y) <- !(board.Board.square.(elm boardX y));
     for x = 0 to boardX-1 do
-      rootnode.squaree.(elm x y) <- !(board.square.(elm x y));
+      rootnode.squaree.(elm x y) <- !(board.Board.square.(elm x y));
     done;
   done;
   let info = {
@@ -382,7 +382,7 @@ let heuristic_play_best board maxnodenum =
     | Unknown -> -1
     | Disproved -> -2
     | Proved -> info.bestmove in
-  board.nodes_visited <- !her_node_expanded + !her_node_not_expanded;
-  board.maxtreedepth <- info.max_tree_depth;
-  copy_board tempboard board;
+  board.Board.nodes_visited <- !her_node_expanded + !her_node_not_expanded;
+  board.Board.maxtreedepth <- info.max_tree_depth;
+  Board.copy tempboard board;
   mymove

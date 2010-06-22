@@ -39,23 +39,23 @@ val make_problem : int -> bool -> int -> problem
 (*Find the most difficult problem from the list for the current board
 and returns a couple (a,b) a is the number of possible solutions and b
 is the number of the problem*)
-val find_most_difficult_problem : problem_list -> Structure.board -> int * int
+val find_most_difficult_problem : problem_list -> Board.t -> int * int
 
 (*Build the list of problems for the current board*)
-val build_problem_list : Structure.board -> problem_list
+val build_problem_list : Board.t -> problem_list
 
 (*Removes the impossible solutions from the list for the given board.
 The array of array matrix contains is the solutions are possible
 to be combined for the problem psol*)
-val remove_solutions : problem_list -> Structure.board -> bool array array -> int -> up_solution
+val remove_solutions : problem_list -> Board.t -> bool array array -> int -> up_solution
 
 (*Restore the solutions if a problem is solved and doesn't destroy
 a solution anymore for the current board*)
-val restore_solutions : up_solution -> problem_list -> Structure.board -> unit
+val restore_solutions : up_solution -> problem_list -> Board.t -> unit
 
 (*Checks the the problem list of the current board and the matrix of
 combinaison has a solution*)
-val solve_problem_list : problem_list -> Structure.board -> bool array array -> bool
+val solve_problem_list : problem_list -> Board.t -> bool array array -> bool
 
 (*Checks if the current position of the board has a solution*)
-val problem_solver : Structure.board -> bool array array -> bool
+val problem_solver : Board.t -> bool array array -> bool

@@ -1,5 +1,5 @@
 open Utils
-open Structure
+open Board
 open Rules
 open Adjacency
 open Solver

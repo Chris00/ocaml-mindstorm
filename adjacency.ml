@@ -1,5 +1,5 @@
 open Utils
-open Structure
+open Board
 
 let rulecombo = [|[|1;1;1;1;3;3;1;1;1|];
                   [|1;1;1;1;1;1;1;1;1|];

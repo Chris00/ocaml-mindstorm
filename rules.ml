@@ -1,4 +1,4 @@
-open Structure
+open Board
 open Utils
 
 let claimeven board =

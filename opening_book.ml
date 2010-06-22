@@ -1,5 +1,5 @@
 open Utils
-open Structure
+open Board
 open Heuristic
 
 let expand_block blk pss =

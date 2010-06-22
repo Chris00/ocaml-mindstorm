@@ -1,6 +1,6 @@
 open Utils
 
-type board = {
+type t = {
   mutable square : int ref array;
   mutable wipesq : int array;
   mutable usablegroup : bool array;
@@ -30,7 +30,7 @@ type board = {
   mutable white_book : int array array;
 }
 
-let copy_board b bb =
+let copy b bb =
 bb.square <- Array.copy b.square;
 bb.wipesq <- Array.copy b.wipesq;
 bb.usablegroup <- Array.copy b.usablegroup;
@@ -60,7 +60,7 @@ bb.solvable_groups <- b.solvable_groups;
 bb.white_book <- Array.copy b.white_book
 
 
-let make_board() =
+let make() =
   let solv =
     {
       squar = Array.init 64 (fun i -> Array.init 16 (fun j -> 0));
@@ -114,7 +114,7 @@ let make_board() =
       white_book = Array.init 60499 (fun i -> Array.init 14 (fun j -> 0))
     } in board
 
-let initboard board =
+let init board =
     let i = ref 0 in
       for y=0 to boardY-1 do
 	for x=0 to boardX-4 do
@@ -217,8 +217,8 @@ let build_book board =
   with End_of_file -> close_in ic
 
 let create_game() =
-  let g = make_board() in
-    initboard g;
+  let g = make() in
+    init g;
     build_book g;
     g
 
