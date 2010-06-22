@@ -72,11 +72,10 @@ let comp_rules board p1 p2 =
 
 
 let build_adjacency_matrix board =
-  let matrix = Array.init board.sp
-    (fun i -> Array.init board.sp (fun j -> false)) in
-    for x=0 to board.sp-1 do
-      for y=x to board.sp-1 do
-	if comp_rules board x y then matrix.(y).(x) <- true
-      done
-    done;
-    matrix
+  let matrix = Array.make_matrix board.sp board.sp false in
+  for x=0 to board.sp-1 do
+    for y=x to board.sp-1 do
+      if comp_rules board x y then matrix.(y).(x) <- true
+    done
+  done;
+  matrix
