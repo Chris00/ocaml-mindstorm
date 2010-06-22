@@ -2,9 +2,7 @@ open Utils
 open Structure
 open Evaluate
 
-let proved = 1
-and disproved = -1
-and unknown = 0
+type status = Proved | Disproved | Unknown
 exception Error
 
 type info =
@@ -20,7 +18,7 @@ type node =
       mutable tur : int;
       mutable evaluated : bool;
       mutable expanded : bool;
-      mutable value : int;
+      mutable value : status;
       mutable typed : int;
       mutable proof : int;
       mutable disproof : int;
@@ -59,7 +57,7 @@ let make_node() =
       stac = Array.init (boardX+1) (fun i -> 0);
       evaluated = false;
       expanded = false;
-      value = 0;
+      value = Unknown;
       typed = or_type;
       proof = 0;
       disproof = 0;
@@ -74,19 +72,12 @@ let her_node_expanded = ref 0
 let nodeseq = [|3;2;4;5;1;0;6|]
 
 let copy a =
-  {
-      squaree = Array.copy a.squaree;
-      stac = Array.copy a.stac;
-      tur = a.tur;
-      child = Array.copy a.child;
-      parents = Array.copy a.parents;
-      evaluated = a.evaluated;
-      expanded = a.expanded;
-      value = a.value;
-      typed = a.typed;
-      proof = a.proof;
-      disproof = a.disproof;
-    }
+  { a with
+    squaree = Array.copy a.squaree;
+    stac = Array.copy a.stac;
+    child = Array.copy a.child;
+    parents = Array.copy a.parents;
+  }
 
 let her_generate_all_children node =
   for x=0 to boardX-1 do
@@ -101,7 +92,7 @@ let her_generate_all_children node =
 	    parents = Array.init boardX (fun i -> None);
 	    evaluated = false;
 	    expanded = false;
-	    value = 0;
+	    value = Unknown;
 	    typed = if node.typed = or_type then and_type else or_type;
 	    proof = 0;
 	    disproof = 0;
@@ -193,11 +184,11 @@ let her_evaluate node =
     if auxboard.filled = maxmen then
 	(
 	  if !rootnode.tur = 1 then
-	    if !rootnode.typed = or_type then node.value <- proved
-	    else node.value <- disproved
+	    if !rootnode.typed = or_type then node.value <- Proved
+	    else node.value <- Disproved
 	  else 
-	    if node.typed = or_type then node.value <- disproved
-	    else node.value <- proved;
+	    if node.typed = or_type then node.value <- Disproved
+	    else node.value <- Proved;
         -1
 	)
     else
@@ -205,9 +196,9 @@ let her_evaluate node =
 	let bestmove = fast_try_to_win auxboard in
 	if bestmove <> -1 then
     (
-      if node.typed = or_type then node.value <- proved
-	  else node.value <- disproved)
-    else node.value <- unknown;
+      if node.typed = or_type then node.value <- Proved
+      else node.value <- Disproved)
+        else node.value <- Unknown;
 	bestmove
 	)
 
@@ -257,17 +248,15 @@ let her_set_proof_and_disproof_numbers node =
       )
     else raise Error
   else if node.evaluated then
-    if node.value = proved then
-      (
-	    node.proof <- 0;
-	    node.disproof <- max_int;
-      )
-    else if node.value = disproved then
-      (
-	    node.proof <- max_int;
-	    node.disproof <- 0
-      )
-    else her_set_pdv_according_to_children node
+    match node.value with
+    | Proved ->
+      node.proof <- 0;
+      node.disproof <- max_int;
+    | Disproved ->
+      node.proof <- max_int;
+      node.disproof <- 0
+    | Unknown ->
+      her_set_pdv_according_to_children node
   else raise Error
 	
 
@@ -338,9 +327,9 @@ let her_pn_search root maxnodes info =
 	 her_develop_node her_most_proving_node;
 	 her_update_ancestors her_most_proving_node;
     done;
-  if root.proof = 0 then root.value <- proved
-  else if root.disproof = 0 then root.value <- disproved
-  else root.value <- unknown
+  if root.proof = 0 then root.value <- Proved
+  else if root.disproof = 0 then root.value <- Disproved
+  else root.value <- Unknown
   
 
 
@@ -353,7 +342,7 @@ let tempboard = create_game()
       stac = Array.init (boardX+1) (fun x -> board.stack.(x));
       evaluated = false;
       expanded = false;
-      value = unknown;
+      value = Unknown;
       typed = or_type;
       proof = 0;
       disproof = 0;
@@ -375,9 +364,10 @@ let tempboard = create_game()
       her_node_not_expanded := 0;
       her_pn_search rootnode maxnodenum info;
       let mymove =
-	if rootnode.value = unknown then -1
-	else if rootnode.value = disproved then -2
-	else info.bestmove in
+        match rootnode.value with
+        | Unknown -> -1
+        | Disproved -> -2
+        | Proved -> info.bestmove in
 	board.nodes_visited <- !her_node_expanded + !her_node_not_expanded;
 	board.maxtreedepth <- info.max_tree_depth;
 	copy_board tempboard board;

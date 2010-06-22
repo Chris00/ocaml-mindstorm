@@ -1,6 +1,4 @@
-val proved : int
-val disproved : int
-val unknown : int
+type status = Proved | Disproved | Unknown
 exception Error
 type info = { mutable max_tree_depth : int; mutable bestmove : int; }
 
@@ -18,7 +16,7 @@ type node = {
   mutable tur : int;
   mutable evaluated : bool;
   mutable expanded : bool;
-  mutable value : int;
+  mutable value : status;
   mutable typed : int;
   mutable proof : int;
   mutable disproof : int;
