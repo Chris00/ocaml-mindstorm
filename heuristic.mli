@@ -1,28 +1,7 @@
-type status = Proved | Disproved | Unknown
 exception Error
 type info = { mutable max_tree_depth : int; mutable bestmove : int; }
 
-(*A node of a graph. Squaree is a position of a possible game of connect 4,
-stac the number of pieces in each column, tur the player who will play next;
-evaluated a boolean saying if the node has been evaluated, expanded a boolean
-saying if the node has been expanded, value his value, typed his type, proof
-the number saying if the node only needs a few checks to be evaluated as a
-winning node, disproof if the node only needs a few checks to be evaluated as
-a losing node, child an array of his seven possible children and parents an array
-of his seven possible fathers*)  
-type node = {
-  mutable squaree : int array;
-  mutable stac : int array;
-  mutable tur : int;
-  mutable evaluated : bool;
-  mutable expanded : bool;
-  mutable value : status;
-  mutable typed : int;
-  mutable proof : int;
-  mutable disproof : int;
-  mutable child : node option array;
-  mutable parents : node option array;
-}
+type node
 
 (*Prints the position stroed in a node*)
 val show : node -> unit
