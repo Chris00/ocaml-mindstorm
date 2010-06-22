@@ -21,7 +21,7 @@ type mode = Max | Min;;
 
 
 let tab_game_1token =
-  let tab = Array.init 14 (fun i -> Game.make()) in
+  let tab = Array.init 14 (fun _ -> Game.make()) in
   for i = 0 to 6 do
     Game.move tab.(i) i Game.Red;
     Game.move tab.(i+7) i Game.Yellow
@@ -29,7 +29,7 @@ let tab_game_1token =
   tab
 
 let tab_game_2token =
-  let tab = Array.init 14 (fun i -> Game.make()) in
+  let tab = Array.init 14 (fun _ -> Game.make()) in
   for i = 0 to 6 do
     Game.move (tab.(i)) 3 Game.Red;
     Game.move (tab.(i)) i Game.Yellow;

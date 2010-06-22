@@ -155,7 +155,7 @@ type result = DRAW | WIN | UNDECIDED
 let make_board() =
   let solv =
     {
-      squar = Array.init 64 (fun i -> Array.init 16 (fun j -> 0));
+      squar = Array.make_matrix 64 16 0;
       sqpnt = Array.make 64 0
     }
   and intg =
@@ -167,7 +167,7 @@ let make_board() =
     }
   in
     {
-      wins = Array.init 2 (fun i -> 0);
+      wins = Array.make 2 0;
       draws = 0;
       lastguess = 0;
       bestguess = maxmen;
@@ -175,44 +175,44 @@ let make_board() =
       white_lev = 0;
       black_lev = 0;
       autotest = 0;
-      rules = Array.init 3 (fun i -> 0);
+      rules = Array.make 3 0;
       oracle_guesses = 0;
-      instances = Array.init 10 (fun i -> 0);
+      instances = Array.make 10 0;
       turn = 1;
       filled = 0;
       cpu = 1;
       bbposit =0;
-      groups = Array.init 69 (fun i -> (Array.init 4 (fun j -> ref 0)));
-      xplace = Array.init 69 (fun i -> (Array.init 4 (fun j -> 0)));
-      yplace = Array.init 69 (fun i -> (Array.init 4 (fun j -> 0)));
-      square = Array.init ((boardX+1)*(boardY+2)) (fun i -> ref 0);
-      wipesq = Array.init ((boardX+1)*(boardY+2)) (fun i -> 0);
-      usablegroup = Array.init groups (fun i -> true);
-      sqused = Array.init ((boardX+1)*(boardY+2)) (fun i -> false);
-      stack = Array.init (boardX+1) (fun i -> 0);
-      moves = Array.init maxmen (fun i -> 0);
+      groups = Array.init 69 (fun i -> (Array.init 4 (fun _ -> ref 0)));
+      xplace = Array.make_matrix 69 4 0;
+      yplace = Array.make_matrix 69 4 0;
+      square = Array.make ((boardX+1)*(boardY+2)) (fun _ -> ref 0);
+      wipesq = Array.make ((boardX+1)*(boardY+2)) 0;
+      usablegroup = Array.make groups true;
+      sqused = Array.make ((boardX+1)*(boardY+2)) false;
+      stack = Array.make (boardX+1) 0;
+      moves = Array.make maxmen 0;
       solvable_groups = solv;
-      choices = Array.init maxmen (fun i -> 0);
-      mlist = Array.init maxmen (fun i -> 0);
+      choices = Array.make maxmen 0;
+      mlist = Array.make maxmen 0;
       intgp = intg;
       solution = Array.init alloc_solutions (fun i ->
-    {
-      valid = true;
-      solname = -1;
-      solpoint = Array.init 2 (fun i -> 0);
-      sqinv = Array.init (2*tiles) (fun i -> 0);
-      sqinvnumb = 0;
-      solgroups = Array.init groups (fun i -> 0);
-      solgroupsnumb = 0
-    } );
+        {
+          valid = true;
+          solname = -1;
+          solpoint = Array.make 2 0;
+          sqinv = Array.make (2*tiles) 0;
+          sqinvnumb = 0;
+          solgroups = Array.make groups 0;
+          solgroupsnumb = 0
+        } );
       sp = -1;
       problem_solved = 0;
       solused = -1;
-      oracle = Array.init 2 (fun i -> 0);
+      oracle = Array.make 2 0;
       nodes_visited = 0;
       maxtreedepth = 0;
-      white_book = Array.init 1 (fun i -> 0);
-      black_book = Array.init 1 (fun i -> 0);
+      white_book = Array.make 1 0;
+      black_book = Array.make 1 0;
       wbposit = 0;
       lastob = 0
     }

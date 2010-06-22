@@ -67,15 +67,15 @@ let make_node() =
   {
     squaree = Array.make ((boardX+1)*(boardY+2)) 0;
     tur = 0;
-    stac = Array.init (boardX+1) (fun i -> 0);
+    stac = Array.make (boardX+1) 0;
     evaluated = false;
     expanded = false;
     value = Unknown;
     typed = or_type;
     proof = 0;
     disproof = 0;
-    child = Array.init boardX (fun i -> None);
-    parents = Array.init boardX (fun i -> None);
+    child = Array.make boardX None;
+    parents = Array.make boardX None;
   }
 
 let rootnode = ref (make_node())
@@ -101,8 +101,8 @@ let her_generate_all_children node =
 	    squaree = Array.copy node.squaree;
 	    stac = Array.copy node.stac;
 	    tur = switch node.tur;
-	    child = Array.init boardX (fun i -> None);
-	    parents = Array.init boardX (fun i -> None);
+	    child = Array.make boardX None;
+	    parents = Array.make boardX None;
 	    evaluated = false;
 	    expanded = false;
 	    value = Unknown;
@@ -360,8 +360,8 @@ let heuristic_play_best board maxnodenum =
       typed = or_type;
       proof = 0;
       disproof = 0;
-      child = Array.init boardX (fun i -> None);
-      parents = Array.init boardX (fun i -> None);
+      child = Array.make boardX None;
+      parents = Array.make boardX None;
     } in
   Board.copy board tempboard;
   for y=0 to boardY-1 do

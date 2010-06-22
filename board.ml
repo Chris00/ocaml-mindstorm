@@ -63,7 +63,7 @@ bb.white_book <- Array.copy b.white_book
 let make() =
   let solv =
     {
-      squar = Array.init 64 (fun i -> Array.init 16 (fun j -> 0));
+      squar = Array.make_matrix 64 16 0;
       sqpnt = Array.make 64 0
     }
   and intg =
@@ -76,42 +76,42 @@ let make() =
   let board =
     {
       lastguess = 0;
-      rules = Array.init 3 (fun i -> 0);
+      rules = Array.make 3 0;
       oracle_guesses = 0;
-      instances = Array.init 10 (fun i -> 0);
+      instances = Array.make 10 0;
       turn = 1;
       filled = 0;
-      groups = Array.init 69 (fun i -> (Array.init 4 (fun j -> ref 0)));
-      xplace = Array.init 69 (fun i -> (Array.init 4 (fun j -> 0)));
-      yplace = Array.init 69 (fun i -> (Array.init 4 (fun j -> 0)));
-      square = Array.init ((boardX+1)*(boardY+2)) (fun i -> ref 0);
-      wipesq = Array.init ((boardX+1)*(boardY+2)) (fun i -> 0);
-      usablegroup = Array.init groups (fun i -> true);
-      sqused = Array.init ((boardX+1)*(boardY+2)) (fun i -> false);
-      stack = Array.init (boardX+1) (fun i -> 0);
-      moves = Array.init maxmen (fun i -> -1);
+      groups = Array.init 69 (fun i -> (Array.init 4 (fun _ -> ref 0)));
+      xplace = Array.make_matrix 69 4 0;
+      yplace = Array.make_matrix 69 4 0;
+      square = Array.init ((boardX+1)*(boardY+2)) (fun _ -> ref 0);
+      wipesq = Array.make ((boardX+1)*(boardY+2)) 0;
+      usablegroup = Array.make groups true;
+      sqused = Array.make ((boardX+1)*(boardY+2)) false;
+      stack = Array.make (boardX+1) 0;
+      moves = Array.make maxmen (-1);
       solvable_groups = solv;
-      choices = Array.init maxmen (fun i -> 0);
-      mlist = Array.init maxmen (fun i -> -1);
+      choices = Array.make maxmen 0;
+      mlist = Array.make maxmen (-1);
       intgp = intg;
       solution = Array.init alloc_solutions
 	(fun i -> {
 	   valid = true;
 	   solname = -1;
-	   solpoint = Array.init 2 (fun i -> 0);
-	   sqinv = Array.init (2*tiles) (fun i -> 0);
+	   solpoint = Array.make 2 0;
+	   sqinv = Array.make (2*tiles) 0;
 	   sqinvnumb = 0;
-	   solgroups = Array.init groups (fun i -> 0);
+	   solgroups = Array.make groups 0;
 	   solgroupsnumb = 0
 	 }
 	);
       sp = 0;
       problem_solved = 0;
       solused = -1;
-      oracle = Array.init 2 (fun i -> false);
+      oracle = Array.make 2 false;
       nodes_visited = 0;
       maxtreedepth = 0;
-      white_book = Array.init 60499 (fun i -> Array.init 14 (fun j -> 0))
+      white_book = Array.make_matrix 60499 14 0
     } in board
 
 let init board =
@@ -439,7 +439,7 @@ let check_claim board cl =
 
 let generate_all_other_before_instances board cols cl j =
   let step = 128 lsr cols
-  and gc = Array.init 4 (fun j -> (Array.init 3 (fun i -> 0))) in
+  and gc = Array.make_matrix 4 3 0 in
     for x=0 to cols - 1 do
       let px = elx cl.(x)
       and py = ely cl.(x) in
@@ -451,8 +451,8 @@ let generate_all_other_before_instances board cols cl j =
     let rec helper cnt =
       if cnt < 128 then
 	(
-	  let pn = Array.init 4 (fun i -> (cnt lsr 6) land 1)
-	  and sl = Array.init 4 (fun l -> (Array.init 2 (fun l -> 0)))
+	  let pn = Array.make 4 ((cnt lsr 6) land 1)
+	  and sl = Array.make_matrix 4 2 0
 	  and flag = ref true and j = ref 0 and k = ref 0 in
 	    for x=0 to cols-1 do
 	      sl.(x).(1) <- gc.(x).(1+pn.(x));
