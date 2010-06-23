@@ -1,6 +1,6 @@
 let () =
 for j=0 to 6 do
-let g = Board.create_game() in
+let g = Board.make() in
   ignore(Board.makemove g j);
   Printf.printf "J = %d\n%!" j;
   let i = ref 2 in

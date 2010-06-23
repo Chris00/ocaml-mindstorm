@@ -30,35 +30,27 @@ type t = {
   mutable white_book : int array array;
 }
 
-let copy b bb =
-bb.square <- Array.copy b.square;
-bb.wipesq <- Array.copy b.wipesq;
-bb.usablegroup <- Array.copy b.usablegroup;
-bb.sqused <- Array.copy b.sqused;
-bb.stack <- Array.copy b.stack;
-bb.groups <- Array.copy b.groups;
-bb.xplace <- Array.copy b.xplace;
-bb.yplace <- Array.copy b.yplace;
-bb.turn <- b.turn;
-bb.moves <- Array.copy b.moves;
-bb.choices <- Array.copy b.choices;
-bb.mlist <- Array.copy b.mlist;
-bb.filled <- b.filled;
-bb.intgp <- b.intgp;
-bb.solution <- Array.copy b.solution;
-bb.sp <- b.sp;
-bb.problem_solved <- b.problem_solved;
-bb.solused <- b.solused;
-bb.oracle <- Array.copy b.oracle;
-bb.oracle_guesses <- b.oracle_guesses;
-bb.lastguess <- b.lastguess;
-bb.nodes_visited <- b.nodes_visited;
-bb.maxtreedepth <- b.maxtreedepth;
-bb.rules <- Array.copy b.rules;
-bb.instances <- Array.copy b.instances;
-bb.solvable_groups <- b.solvable_groups;
-bb.white_book <- Array.copy b.white_book
-
+let copy b = { b with
+  square = Array.copy b.square;
+  wipesq = Array.copy b.wipesq;
+  usablegroup = Array.copy b.usablegroup;
+  sqused = Array.copy b.sqused;
+  stack = Array.copy b.stack;
+  groups = Array.copy b.groups;
+  xplace = Array.copy b.xplace;
+  yplace = Array.copy b.yplace;
+  moves = Array.copy b.moves;
+  choices = Array.copy b.choices;
+  mlist = Array.copy b.mlist;
+  solution = Array.copy b.solution;
+  oracle = Array.copy b.oracle;
+  oracle_guesses = b.oracle_guesses;
+  rules = Array.copy b.rules;
+  instances = Array.copy b.instances;
+  solvable_groups = b.solvable_groups;
+  white_book = Array.copy b.white_book
+    (* FIXME: should not need to be copied as it should not be modified *)
+}
 
 let make_t() =
   let solv =
@@ -113,6 +105,35 @@ let make_t() =
       maxtreedepth = 0;
       white_book = Array.make_matrix 60499 14 0
     } in board
+
+let white_book =
+  lazy(
+    let white_book = Array.make_matrix 60499 14 0 in
+    let i = ref 0
+    and j = ref 0
+    and line = ref ""
+    and ic = open_in "white_book" in
+    try
+      while true do
+        let a = input_char ic in
+        if a = ' ' then (
+          white_book.(!i).(!j) <- (int_of_string !line);
+          line := "";
+          j := !j+1;
+        )
+        else if a = '\n' then (
+          white_book.(!i).(!j) <- (int_of_string !line);
+          line := "";
+          j := 0;
+          i := !i+1
+        )
+        else line := String.concat "" [!line;(String.make 1 a)];
+      done;
+      assert false
+    with End_of_file ->
+      close_in ic;
+      white_book
+  )
 
 let init board =
     let i = ref 0 in
@@ -191,40 +212,14 @@ let init board =
 	for x=0 to boardX-1 do
 	  board.square.(elm x y) := 0
 	done
-   done
+   done;
+   let w = Lazy.force white_book in
+   Array.blit w 0 board.white_book 0 (Array.length w)
 
 let make() =
   let b = make_t() in
   init b;
   b
-
-let build_book board =
-  let i = ref 0
-  and j = ref 0
-  and line = ref ""
-  and ic = open_in "white_book" in
-  try
-    while true do
-      let a = input_char ic in
-      if a = ' ' then (
-        board.white_book.(!i).(!j) <- (int_of_string !line);
-        line := "";
-        j := !j+1;
-        )
-      else if a = '\n' then (
-        board.white_book.(!i).(!j) <- (int_of_string !line);
-        line := "";
-        j := 0;
-        i := !i+1
-        )
-      else line := String.concat "" [!line;(String.make 1 a)];
-    done   
-  with End_of_file -> close_in ic
-
-let create_game() =
-  let g = make() in
-  build_book g;
-  g
 
 let show_square board =
   for j=0 to boardY - 1 do

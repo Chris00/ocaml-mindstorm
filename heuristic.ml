@@ -348,10 +348,8 @@ let her_pn_search root maxnodes info =
 
 
 let heuristic_play_best board maxnodenum =
-  let tempboard = Board.create_game()
-  and rootnode =
-    {
-      squaree = Array.make ((boardX+1)*(boardY+2)) 0;
+  let rootnode =
+    { squaree = Array.make ((boardX+1)*(boardY+2)) 0;
       tur = board.Board.turn;
       stac = Array.init (boardX+1) (fun x -> board.Board.stack.(x));
       evaluated = false;
@@ -363,11 +361,11 @@ let heuristic_play_best board maxnodenum =
       child = Array.make boardX None;
       parents = Array.make boardX None;
     } in
-  Board.copy board tempboard;
+  let b = Board.copy board in
   for y=0 to boardY-1 do
-    rootnode.squaree.(elm boardX y) <- !(board.Board.square.(elm boardX y));
+    rootnode.squaree.(elm boardX y) <- !(b.Board.square.(elm boardX y));
     for x = 0 to boardX-1 do
-      rootnode.squaree.(elm x y) <- !(board.Board.square.(elm x y));
+      rootnode.squaree.(elm x y) <- !(b.Board.square.(elm x y));
     done;
   done;
   let info = {
@@ -382,7 +380,8 @@ let heuristic_play_best board maxnodenum =
     | Unknown -> -1
     | Disproved -> -2
     | Proved -> info.bestmove in
-  board.Board.nodes_visited <- !her_node_expanded + !her_node_not_expanded;
-  board.Board.maxtreedepth <- info.max_tree_depth;
-  Board.copy tempboard board;
+  (* FIXME: not clear why one makes these modifications since [b] will
+     be garbage collected. *)
+  b.Board.nodes_visited <- !her_node_expanded + !her_node_not_expanded;
+  b.Board.maxtreedepth <- info.max_tree_depth;
   mymove
