@@ -380,8 +380,6 @@ let heuristic_play_best board maxnodenum =
     | Unknown -> -1
     | Disproved -> -2
     | Proved -> info.bestmove in
-  (* FIXME: not clear why one makes these modifications since [b] will
-     be garbage collected. *)
-  b.Board.nodes_visited <- !her_node_expanded + !her_node_not_expanded;
-  b.Board.maxtreedepth <- info.max_tree_depth;
+  board.Board.nodes_visited <- !her_node_expanded + !her_node_not_expanded;
+  board.Board.maxtreedepth <- info.max_tree_depth;
   mymove
