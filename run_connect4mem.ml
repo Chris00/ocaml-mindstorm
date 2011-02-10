@@ -27,23 +27,22 @@ end
 module P = Pincer.Run(Conn)
 module S = ScanPiece.Run(Conn)
 
-let move_for game gamemem = Ia.move_for gamemem
-  (*let if_velana_fails () =
+let move_for game gamemem =
+  let if_velana_fails () =
     let _, c = Alphabetamem.alphabeta gamemem 9 Gamemem.groupeval
     in Some c in
   match Velena.move_for (List.rev game) if_velana_fails with
   | Some c -> c
-  | None -> assert false*)
+  | None -> assert false
 
 let is_won_or_draw game gamemem =
-  let a = Structure.get_game_result gamemem in a > -1
-  (*let if_velana_fails () =
+  let if_velana_fails () =
     if Gamemem.get_game_result gamemem = Gamemem.WIN
       || Gamemem.draw gamemem then None
     else Some(-1) (* value does not matter *) in
-  Velena.move_for (List.rev game) if_velana_fails = None*)
+  Velena.move_for (List.rev game) if_velana_fails = None
 
-let move game col = ignore(Structure.makemove game col)
+let move game col = ignore(Gamemem.makemove game col)
 
 (*si fst_player est vrai, ca veut dire que c'est a l'ordi de commencer,
   on lance donc alphabeta puis la pince et enfin le scan*)
@@ -104,8 +103,8 @@ and human_play game gamemem =
 let () =
   Board.gameboard ();
   let game = ref [] in
-  let gamemem = Structure.make_board() in
-  Structure.initboard gamemem;
+  let gamemem = Gamemem.make_board() in
+  Gamemem.initboard gamemem;
   (if Conn.fst_computer then computer_play else human_play) game gamemem;
   Robot.run Conn.r
 

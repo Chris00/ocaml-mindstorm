@@ -15,15 +15,14 @@ LIBS_CMXA=$(LIBS_CMA:.cma=.cmxa)
 
 all: byte native
 
-SOURCES = utils.ml structure.ml rules.ml adjacency.ml solver.ml \
-    evaluate.ml heuristic.ml opening_book.ml ia.ml game.ml alphabeta.ml \
-    board.ml scanPiece.ml pincer.ml gamemem.ml alphabetamem.ml velena.ml
-byte: run_connect4.exe run_connect4mem.exe
-native: run_connect4.com run_connect4mem.com test.com
-#velena/veleng:
-#	$(MAKE) -C velena
+SOURCES = game.ml alphabeta.ml board.ml scanPiece.ml pincer.ml \
+	gamemem.ml alphabetamem.ml velena.ml
+byte: run_connect4.exe run_connect4mem.exe velena/veleng
+native: run_connect4.com run_connect4mem.com test.com velena/veleng
+velena/veleng:
+	$(MAKE) -C velena
 
-#test_velena.com: velena.cmx
+test_velena.com: velena.cmx
 
 run_connect4.exe : robot.cma $(SOURCES:.ml=.cmo)
 run_connect4mem.exe : robot.cma $(SOURCES:.ml=.cmo)
@@ -36,15 +35,6 @@ test.com : robot.cmxa $(SOURCES:.ml=.cmx)
 # General "event" library
 robot.cma: robot.cmo
 robot.cmxa: robot.cmx
-utils.cmxa: utils.cmx
-board.cmxa: board.cmx
-rules.cmxa: rules.cmx
-adjacency.cmxa: adjacency.cmx
-solver.cmxa: solver.cmx
-heuristic.cmxa: heuristic.cmx
-evaluate.cmxa: evaluate.cmx
-opening_book.cmxa: opening_book.cmx
-ia.cmxa: ia.cmx
 
 # Various tests
 TESTS=$(wildcard test*.ml)
