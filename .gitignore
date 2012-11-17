@@ -23,6 +23,10 @@ auto
 *.pdf
 *.snm
 *.toc
-# Tarballs
+# Tarballs & misc
 *.tar.gz
 .obj
+biblio/
+photo robot/
+velena-branch/
+110331telemb.flv
