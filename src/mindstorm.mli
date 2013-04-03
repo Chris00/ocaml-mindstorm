@@ -21,7 +21,6 @@
     the brick is the slave). Communication with the NXT brick is done
     through bluetooth (and possibly eventually USB).
 
-    @version 0.5.2
     @author Christophe Troestler <Christophe.Troestler\@umons.ac.be>
 *)
 
