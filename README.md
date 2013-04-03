@@ -1,3 +1,5 @@
+Mindstorm
+=========
 
 Prerequisite under Unix
 -----------------------
@@ -9,8 +11,8 @@ For the USB connection, you must install the package libusb-1.0-0-dev
 Prerequisite under Windows
 --------------------------
 
-Do not install the LEGO® fantom drivers.  (If you know how to make
-this library work with the LEGO® drivers installed, email us.)
+Do not install the LEGOÂ® fantom drivers.  (If you know how to make
+this library work with the LEGOÂ® drivers installed, email us.)
 
 Prerequisite under Mac OS X
 ---------------------------
