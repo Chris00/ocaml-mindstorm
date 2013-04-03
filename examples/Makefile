@@ -1,6 +1,6 @@
 # Compile in -cunstom mode so there is no problem with finding the
 # shared library dllmindstorm.so
-OCAMLC_FLAGS = -thread -g -I .. -dllpath .. -custom
+OCAMLC_FLAGS = -thread -g -I ../src -dllpath ../src -custom
 
 EXAMPLES=$(wildcard *.ml)
 LIBS_CMA=unix.cma mindstorm.cma threads.cma
