@@ -1,16 +1,14 @@
 open Printf
 module Sensor = Mindstorm.Sensor
 
-IFDEF WIN32 THEN
 (* Win32 command shell is poor *)
-let repeat_till_ENTER msg f =
+let repeat_till_ENTER_win32 msg f =
   printf "%s.\n%!" msg;
   let i = ref 0 in
   while !i < 200 do f !i; incr i done
 
-ELSE
 (* Unix & Mac OSX have proper terminals *)
-let repeat_till_ENTER msg f =
+let repeat_till_ENTER_unix msg f =
   let params = Unix.tcgetattr Unix.stdin in
   Unix.tcsetattr Unix.stdin Unix.TCSAFLUSH
     { params with Unix.c_icanon = false; c_echo = false;
@@ -26,7 +24,11 @@ let repeat_till_ENTER msg f =
   with e ->
     Unix.tcsetattr Unix.stdin Unix.TCSAFLUSH params;
     raise e
-ENDIF
+
+let repeat_till_ENTER =
+  if Sys.os_type = "Win32" then repeat_till_ENTER_win32
+  else repeat_till_ENTER_unix
+
 
 let color_sensor = ref true
 
