@@ -1,0 +1,46 @@
+#								-*-conf-*-
+OASISFormat: 0.3
+Name:        mindstorm
+Version:     0.5.2
+Synopsis:    Drive Lego Mindstorm bricks from OCaml
+Description: This library allows you to communicate with yout Lego 
+  Mindstorm brick via bluetooth, enable the motors and retrieve the data
+  from various sensors.
+Authors:     Christophe Troestler, Julie De Pril, Marc Ducobu, Dany Maslowski
+Maintainers: Christophe Troestler <Christophe.Troestler@umons.ac.be>
+License:     LGPL-2.1 with OCaml linking exception
+Homepage:    http://forge.ocamlcore.org/projects/ocaml-mindstorm/
+Plugins:     META (0.3), StdFiles (0.3)
+
+Flag has_usb
+  Description: Whether libusb development files are installed
+  Default: false
+
+Library mindstorm
+  Path:       src
+  BuildTools: ocamlbuild
+  Modules:    Mindstorm
+  BuildDepends: unix
+  CSources:   mindstorm_stubs.c
+  if system(linux)
+    CCLib:    -lbluetooth
+    if flag(has_usb)
+      CCLib+: -lusb-1.0
+  if system(win)
+    CCLib:    /nologo /I"C:\Program Files\Microsoft Platform SDK\Include"
+  if system(Darwin)
+    CCLib:
+  
+Document API
+  Title:           API reference for Mindstorm
+  Type:            OCamlbuild (0.3)
+  InstallDir:      $docdir/api
+  BuildTools:      ocamldoc, ocamlbuild
+  XOCamlbuildPath: .
+  XOCamlbuildLibraries: mindstorm
+
+
+SourceRepository trunk
+  Type:       git
+  Location:   http://forge.ocamlcore.org/anonscm/git/ocaml-mindstorm/ocaml-mindstorm.git
+  Browser:    http://forge.ocamlcore.org/scm/browser.php?group_id=122
