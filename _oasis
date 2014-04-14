@@ -10,7 +10,7 @@ Authors:     Christophe Troestler, Julie De Pril, Marc Ducobu, Dany Maslowski
 Maintainers: Christophe Troestler <Christophe.Troestler@umons.ac.be>
 License:     LGPL-2.1 with OCaml linking exception
 Homepage:    http://forge.ocamlcore.org/projects/ocaml-mindstorm/
-Plugins:     META (0.3), StdFiles (0.3)
+Plugins:     META (0.3)
 
 Flag has_usb
   Description: Whether libusb development files are installed
@@ -36,9 +36,10 @@ Document API
   Type:            OCamlbuild (0.3)
   InstallDir:      $docdir/api
   BuildTools:      ocamldoc, ocamlbuild
+  Format:	   HTML
+  Index:           src/intro.txt
   XOCamlbuildPath: .
   XOCamlbuildLibraries: mindstorm
-
 
 SourceRepository trunk
   Type:       git

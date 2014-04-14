@@ -1,60 +1,46 @@
 # Generic Makefile
-PKGNAME = ocaml-mindstorm
+PKGNAME = mindstorm
 INTERFACES = mindstorm.mli
-DOC_DIR = doc
+DOC_DIR = _build/API.docdir
 WEB_DIR = web
 WEB 	= forge.ocamlcore.org:/home/groups/ocaml-mindstorm/htdocs
-PKG = mindstorm
 INSTALL_FILES = mindstorm.mli mindstorm.cmi mindstorm.cma \
   mindstorm.cmx mindstorm.cmxa mindstorm.a
 DISTFILES = $(INTERFACES) $(wildcard *.ml *.h *.c Makefile*) tests/ examples/
 
-CFLAGS= -Wall -fPIC $(D_HAS_USB) $(USB_INCLUDE)
-OCAMLC_FLAGS = -g -dtypes
-
-PP = camlp4o pa_macro.cmo $(D_OS) $(D_ARCH64) $(D_HAS_USB)
-
-VERSION=$(shell grep "@version" mindstorm.mli | sed "s/[^0-9]*//")
+VERSION=$(shell grep "Version" _oasis | sed "s/[^0-9]*//")
 ROOT_TARBALL=$(PKGNAME)-$(VERSION)
 PKG_TARBALL=$(PKGNAME)-$(VERSION).tar.gz
 
-.PHONY: all byte native
+.PHONY: all byte native tests examples
 all: byte native
-byte: mindstorm.cma
-native: mindstorm.cmxa
+byte native:
+	$(MAKE) -C src $@
 
+tests: byte
+	$(MAKE) -B -C tests byte
 
-.PHONY: tests
-tests: mindstorm.cma
-	$(CD) tests && $(MAKE) -B PP="$(PP)" byte
+examples: byte
+	$(MAKE) -C examples -B byte
 
-# FIXME: Early testing (obsolete?)
-test.exe: $(STUBS:.c=$(EXT_O)) test.ml
-	$(OCAMLC) -o $@ -custom unix.cma -I "$(OCAMLLIBDIR)" $(addprefix -cclib ,$(CC_LIB)) $^
+configure: setup.ml
+	ocaml $< -configure
 
-.PHONY: examples ex
-ex: examples
-examples: mindstorm.cma
-	$(CD) examples && $(MAKE) -B byte
+setup.ml src/META: _oasis
+	oasis setup -setup-update dynamic
 
 # Install
 
-install: META all
-	$(OCAMLFIND) install $(PKG) META $(INSTALL_FILES)
+install: src/META all
+	$(OCAMLFIND) install $(PKGNAME) META $(INSTALL_FILES)
 
 uninstall:
-	$(OCAMLFIND) remove $(PKG)
-
-META: META.in
-	cat $^ > $@
-	echo "version = \"$(VERSION)\"" >> $@
+	$(OCAMLFIND) remove $(PKGNAME)
 
 # Generate HTML documentation
 .PHONY: doc
-doc:
-#	cd src/; $(MAKE) $(INTERFACES)
-	$(OCAMLDOC) -d $(DOC_DIR) -colorize-code -stars -html \
-	  $(INTERFACES) -intro $(DOC_DIR)/intro.txt
+doc: configure
+	ocaml setup.ml -doc
 
 # Publish the doc to OCamlCore
 .PHONY: web web-doc website website-img
@@ -91,17 +77,10 @@ tar:
 	@echo "Created tarball '/tmp/$(PKG_TARBALL)'."
 
 
-include Makefile.ocaml
-# Define the OS type for the Camlp4 preprocessor and load system
-# specific Makefiles for rules to create the .cm[x]a
-make_os_type.exe: LIBS_CMA+=unix.cma
-.os_type: make_os_type.exe
-	"./$<" > $@
-include .os_type
-
 .PHONY: clean
 clean::
-	$(MAKE) -C tests RM="$(RM)" $@
-	$(MAKE) -C examples RM="$(RM)" $@
-	-$(RM) META .os_type $(wildcard *.exe) $(PKG_TARBALL)
-	-cd $(DOC_DIR) && $(RM) $(wildcard *~ *.html *.css)
+	-ocaml setup.ml -clean
+	$(MAKE) -C src $@
+	$(MAKE) -C tests $@
+	$(MAKE) -C examples $@
+	$(RM) $(PKG_TARBALL) setup.data setup.log
