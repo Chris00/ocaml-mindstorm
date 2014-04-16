@@ -12,35 +12,23 @@ VERSION=$(shell grep "Version" _oasis | sed "s/[^0-9]*//")
 ROOT_TARBALL=$(PKGNAME)-$(VERSION)
 PKG_TARBALL=$(PKGNAME)-$(VERSION).tar.gz
 
-.PHONY: all byte native tests examples
-all: byte native
-byte native:
-	$(MAKE) -C src $@
+.PHONY: all byte native configure doc test install uninstall reinstall \
+  upload-doc
 
-tests: byte
-	$(MAKE) -B -C tests byte
-
-examples: byte
-	$(MAKE) -C examples -B byte
+all byte native: configure
+	ocaml setup.ml -build
 
 configure: setup.ml
-	ocaml $< -configure
+	ocaml $< -configure --enable-tests
 
 setup.ml src/META: _oasis
 	oasis setup -setup-update dynamic
 
-# Install
+test doc install uninstall reinstall: all
+	ocaml setup.ml -$@
 
-install: src/META all
-	$(OCAMLFIND) install $(PKGNAME) META $(INSTALL_FILES)
-
-uninstall:
-	$(OCAMLFIND) remove $(PKGNAME)
-
-# Generate HTML documentation
-.PHONY: doc
-doc: configure
-	ocaml setup.ml -doc
+upload-doc: doc
+	scp -C -p -r _build/API.docdir $(WEB)
 
 # Publish the doc to OCamlCore
 .PHONY: web web-doc website website-img
@@ -80,7 +68,4 @@ tar:
 .PHONY: clean
 clean::
 	-ocaml setup.ml -clean
-	$(MAKE) -C src $@
-	$(MAKE) -C tests $@
-	$(MAKE) -C examples $@
 	$(RM) $(PKG_TARBALL) setup.data setup.log

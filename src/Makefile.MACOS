@@ -1,6 +1,0 @@
-# Makefile for Mac OS X
-STUBS=
-
-mindstorm.cma: mindstorm.cmo
-
-mindstorm.cmxa: mindstorm.cmx
