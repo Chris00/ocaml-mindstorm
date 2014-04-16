@@ -1,14 +1,15 @@
 # Generic Makefile
-PKGNAME = mindstorm
-INTERFACES = mindstorm.mli
+PKGNAME = $(shell oasis query name)
+VERSION = $(shell oasis query version)
 DOC_DIR = _build/API.docdir
 WEB_DIR = web
 WEB 	= forge.ocamlcore.org:/home/groups/ocaml-mindstorm/htdocs
 INSTALL_FILES = mindstorm.mli mindstorm.cmi mindstorm.cma \
   mindstorm.cmx mindstorm.cmxa mindstorm.a
-DISTFILES = $(INTERFACES) $(wildcard *.ml *.h *.c Makefile*) tests/ examples/
+DISTFILES = Makefile myocamlbuild.ml _oasis setup.ml _tags \
+  $(wildcard $(addprefix src/, *.ml *.mli *.h *.c)) \
+  tests/ examples/
 
-VERSION=$(shell grep "Version" _oasis | sed "s/[^0-9]*//")
 ROOT_TARBALL=$(PKGNAME)-$(VERSION)
 PKG_TARBALL=$(PKGNAME)-$(VERSION).tar.gz
 
@@ -21,7 +22,7 @@ all byte native: configure
 configure: setup.ml
 	ocaml $< -configure --enable-tests
 
-setup.ml src/META: _oasis
+setup.ml: _oasis
 	oasis setup -setup-update dynamic
 
 test doc install uninstall reinstall: all
@@ -52,17 +53,16 @@ website-img:
 	fi
 
 .PHONY: dist tar
-dist: tar
-# "Force" a tag to be defined for each released tarball
-tar:
-	@ TMP=`mktemp -d` && \
-	bzr export "$$TMP/$(ROOT_TARBALL)" -r "tag:$(VERSION)" && \
-	cd $$TMP && \
-	$(RM) -rf $(ROOT_TARBALL)/doc/Lego/ $(ROOT_TARBALL)/bin \
-	  $(ROOT_TARBALL)/web && \
-	tar -zcf /tmp/$(PKG_TARBALL) $(ROOT_TARBALL) && \
-	$(RM) -rf $$TMP
-	@echo "Created tarball '/tmp/$(PKG_TARBALL)'."
+dist tar:
+	mkdir -p $(ROOT_TARBALL)
+	for f in $(DISTFILES); do \
+	  cp -r --parents $$f $(ROOT_TARBALL); \
+	done
+# Make a setup.ml independent of oasis:
+	cd $(ROOT_TARBALL) && oasis setup
+	tar -zcvf $(PKG_TARBALL) $(ROOT_TARBALL)
+	$(RM) -r $(ROOT_TARBALL)
+	@echo "Created tarball '$(PKG_TARBALL)'."
 
 
 .PHONY: clean

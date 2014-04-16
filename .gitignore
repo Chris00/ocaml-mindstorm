@@ -1,23 +1,11 @@
 # .gitignore						-*-conf-unix-*-
-*.annot
-*.cm[ioax]
-*.so
-*.[oa]
-*.cmxa
 *.exe
 *.com
-.depend.ocaml
-# Generated files
-.os_type
-META
-doc/
+*.native
+*.byte
 API.docdir
+doc/
 _build/
 setup.data
 setup.log
-API.odocl
-AUTHORS.txt
-INSTALL.txt
-README.txt
-src/*.clib
-src/*.mllib
+*.tar.gz
