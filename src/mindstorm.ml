@@ -204,7 +204,7 @@ let copy_uint16 i s ofs =
 *)
 let uint32 s i =
   assert(i + 3 < String.length s);
-  IFNDEF ARCH64 THEN
+  IFNDEF AMD64 THEN
     (* OCaml int are 31 bits (on a 32 bits platform), thus raise an
        exception if the last bit is set. *)
     if s.[i + 3] >= '\x40' then failwith "Mindstorm.uint32: overflow (32 bits)";
@@ -231,7 +231,7 @@ let int32 s i =
   let msb = Char.code s.[i + 3] in
   if msb >= 0x80 then (
     (* negative number *)
-    IFNDEF ARCH64 THEN
+    IFNDEF AMD64 THEN
       (* 32 bits architecture *)
       if msb land 0x40 = 0 then failwith "Mindstorm.int32: overflow (32 bits)";
     ELSE () (* For camlp4 3.09 *)
@@ -240,7 +240,7 @@ let int32 s i =
       lor (Char.code s.[i + 1] lsl 8)
       lor (Char.code s.[i + 2] lsl 16)
       lor (msb lsl 24) in
-    IFDEF ARCH64 THEN
+    IFDEF AMD64 THEN
       (* bits 0 .. 31 are set by x ; complete by setting to 1 the bits
          32 to 62 (Caml ints are 63 bits). *)
       x lor fill32
@@ -248,7 +248,7 @@ let int32 s i =
   )
   else (
     (* positive number *)
-    IFNDEF ARCH64 THEN
+    IFNDEF AMD64 THEN
       if msb >= 0x40 then failwith "Mindstorm.int32: overflow (32 bits)";
     ELSE () (* For camlp4 3.09 *)
     ENDIF;
@@ -556,7 +556,7 @@ type out_flag =
     | `Append
     ]
 
-(* FIXME: On 64 bits, one must check [length < 2^32] => ARCH64 macro*)
+(* FIXME: On 64 bits, one must check [length < 2^32] => AMD64 macro*)
 let open_out_gen conn flag_byte length fname =
   if length < 0 then invalid_arg "Mindstorm.open_out";
   let pkg = String.create 28 in

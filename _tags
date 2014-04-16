@@ -1,4 +1,10 @@
+#                                                             -*-conf-*-
 # OASIS_START
 # OASIS_STOP
 
 true: annot
+true: debug
+
+#<src/mindstorm.ml>: pp(camlp4o pa_macro.cmo -D$(system) -D$(architecture) -DHAS_USB=$(has_usb))
+# pp_mindstorm defined in myocamlbuild.ml
+<src/mindstorm.ml>: pp_mindstorm
