@@ -4,8 +4,7 @@ VERSION = $(shell oasis query version)
 DOC_DIR = _build/API.docdir
 WEB_DIR = web
 WEB 	= forge.ocamlcore.org:/home/groups/ocaml-mindstorm/htdocs
-INSTALL_FILES = mindstorm.mli mindstorm.cmi mindstorm.cma \
-  mindstorm.cmx mindstorm.cmxa mindstorm.a
+SCP	= scp -C -p -r
 DISTFILES = Makefile myocamlbuild.ml _oasis setup.ml _tags \
   $(wildcard $(addprefix src/, *.ml *.mli *.h *.c)) \
   tests/ examples/
@@ -13,8 +12,7 @@ DISTFILES = Makefile myocamlbuild.ml _oasis setup.ml _tags \
 ROOT_TARBALL=$(PKGNAME)-$(VERSION)
 PKG_TARBALL=$(PKGNAME)-$(VERSION).tar.gz
 
-.PHONY: all byte native configure doc test install uninstall reinstall \
-  upload-doc
+.PHONY: all byte native configure doc test install uninstall reinstall
 
 all byte native: configure
 	ocaml setup.ml -build
@@ -28,16 +26,13 @@ setup.ml: _oasis
 test doc install uninstall reinstall: all
 	ocaml setup.ml -$@
 
-upload-doc: doc
-	scp -C -p -r _build/API.docdir $(WEB)
-
 # Publish the doc to OCamlCore
-.PHONY: web web-doc website website-img
+.PHONY: upload-doc web web-doc website website-img
 web: web-doc website website-img
-web-doc: doc
-	@ if [ -d $(DOC_DIR) ] ; then \
-	  scp $(wildcard $(DOC_DIR)/*.html $(DOC_DIR)/*.css) $(WEB)/doc/ \
-	  && echo "--- Published documentation on OCamlForge." ; \
+upload-doc web-doc: doc
+	if [ -d $(DOC_DIR)/ ] ; then \
+	  $(SCP) $(DOC_DIR)/*.html $(DOC_DIR)/*.css $(WEB)/doc/ \
+	  && echo "--- Published documentation on OCamlForge."; \
 	fi
 
 website:
