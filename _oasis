@@ -25,17 +25,16 @@ Library mindstorm
   if architecture(amd64)
     CCOpt: -DARCH64
   if system(linux)
-    CCOpt: -DUNIX
     CCLib: -lbluetooth
     if flag(has_usb)
       CCLib+: -lusb-1.0
       CCOpt+: -DHAS_USB
-  if system(win)
+  if system(msvc)
     CCOpt: /nologo /DWIN32
     CCLib: /I"C:\Program Files\Microsoft Platform SDK\Include"
-  if system(Darwin)
+  if system(macosx)
     CCOpt: -DMACOS
-    CCLib:
+    CCLib: -I/System/Library/Frameworks/IOBluetooth.framework/Headers
   
 Document API
   Title:           API reference for Mindstorm
