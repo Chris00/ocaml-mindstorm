@@ -217,6 +217,7 @@ li {
 
 img.ocaml {
   float: right;
+  width: 150px;
   padding-top: 20px;
   border: none;
 }
