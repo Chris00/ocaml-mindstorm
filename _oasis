@@ -1,7 +1,7 @@
 #								-*-conf-*-
 OASISFormat: 0.3
 Name:        mindstorm
-Version:     0.5.3
+Version:     0.5.4
 Synopsis:    Drive Lego Mindstorm bricks from OCaml
 Description: This library allows you to communicate with yout Lego 
   Mindstorm brick via bluetooth, enable the motors and retrieve the data
