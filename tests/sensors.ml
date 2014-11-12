@@ -14,7 +14,7 @@ let repeat_till_ENTER_unix msg f =
     { params with Unix.c_icanon = false; c_echo = false;
         c_vmin = 0; c_vtime = 0; };
   (* FIXME: We should also catch signals *)
-  let no_key_pressed() = Unix.read Unix.stdin " " 0 1 = 0 in
+  let no_key_pressed() = Unix.read Unix.stdin (Bytes.create 1) 0 1 = 0 in
   printf "%s; when finished press ENTER.\n%!" msg;
   try
     let i = ref 0 in

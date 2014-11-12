@@ -34,6 +34,7 @@ let my_dispatch = function
 
      flag ["program"; "byte"] (A"-custom"); (* run examples w/o install *)
      flag ["compile"; "native"] (S[A"-inline"; A"10"]);
+     (* mark_tag_used "tests"; (\* disable warning *\) *)
   | _ -> ()
 
 let () =

@@ -20,7 +20,7 @@ Library mindstorm
   Path:       src
   BuildTools: ocamlbuild
   Modules:    Mindstorm
-  BuildDepends: unix
+  BuildDepends: unix, bytes
   CSources:   mindstorm_stubs.c
   if architecture(amd64)
     CCOpt: -DARCH64

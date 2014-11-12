@@ -631,7 +631,7 @@ val close_in : 'a in_channel -> unit
   (** [close_in ch] closes the channel [ch].  Closing an already
       closed channel does nothing.  *)
 
-val input : 'a in_channel -> string -> int -> int -> int
+val input : 'a in_channel -> Bytes.t -> int -> int -> int
   (** [input ch buf ofs len] reads a block of data of length [len]
       from the channel [ch] and write it to [buf] starting at position
       [ofs].

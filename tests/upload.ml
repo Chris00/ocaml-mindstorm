@@ -20,9 +20,9 @@ let () =
 
   let fh = Mindstorm.open_in conn fname in
   let len = Mindstorm.in_channel_length fh in
-  let s = String.create len in
+  let s = Bytes.create len in
   let r = Mindstorm.input fh s 0 len in
-  printf "Contents (%i bytes): %S\n%!" r s;
+  printf "Contents (%i bytes): %S\n%!" r (Bytes.unsafe_to_string s);
   Mindstorm.close_in fh;
 
   printf "@[<2>Files on the brick: ";
