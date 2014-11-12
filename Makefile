@@ -5,7 +5,7 @@ DOC_DIR = _build/API.docdir
 WEB_DIR = web
 WEB 	= forge.ocamlcore.org:/home/groups/ocaml-mindstorm/htdocs
 SCP	= scp -C -p -r
-DISTFILES = Makefile myocamlbuild.ml _oasis setup.ml _tags \
+DISTFILES = Makefile myocamlbuild.ml _oasis _opam setup.ml _tags \
   $(wildcard $(addprefix src/, *.ml *.mli *.h *.c)) \
   tests/ examples/
 
