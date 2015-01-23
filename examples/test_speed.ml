@@ -4,7 +4,7 @@ module Motor = Mindstorm.Motor
 
 (* `S1 : touch sensor
    `S4 : ultrasonic sensor
-   Motors connected to B and C (like the basic robot of the LEGO® set). *)
+   Motors connected to B and C (like the basic robot of the LEGOÂ® set). *)
 
 let test_motor id_motor conn speed =
   printf "speed %i\n%!" speed;

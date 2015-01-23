@@ -28,7 +28,7 @@ type usb
 type bluetooth
 
 type 'a conn
-  (** Abstract type representing a connection to a LEGO® mindstorm
+  (** Abstract type representing a connection to a LEGOÂ® mindstorm
       brick.  The type parameter indicates whether this connection
       is a USB or a bluetooth one. *)
 
@@ -263,7 +263,7 @@ sig
         - [block_tach_count] is the current position relative to the
         last programmed movement.
         - [rotation_count] is the program-relative position counter
-        relative to the last reset of the rotation sensor for motor [p].  *)
+        relative to the last reset of the rotation sensor for motorÂ [p].  *)
 
   val reset_pos : ?check_status:bool -> 'a conn -> ?relative:bool -> port -> unit
     (** [reset_pos conn p] resets the rotation count (given by the
@@ -330,10 +330,10 @@ sig
       - [`Lowspeed]:      I2C digital sensor
       - [`Lowspeed_9v]:   I2C digital sensor, 9V power (e.g. ultrasonic).
       - [`Highspeed]:     Set [`S4] to highspeed mode.  This is currently
-      unused by LEGO® sensors.  This targets the P-Net communication
+      unused by LEGOÂ® sensors.  This targets the P-Net communication
       protocol (www.P-net.org).
 
-      The LEGO® NXT 2.0 (8547) includes a color sensor with a
+      The LEGOÂ® NXT 2.0 (8547) includes a color sensor with a
       tri-color led.  The following values allow to configure it.  If
       you have an older brick, this may require that you update its
       firmware.  Todo it under Linux, you can issue the command
@@ -533,9 +533,9 @@ sig
           - [`Zero] returns the value of the actual zero (settable
           with the [`Zero] command).
 
-          - [`Scale_mul] (resp. [`Scale_div]) return the current
-          scaling factor (resp. divisor).  It is settable with the
-          [`Scale_mul] (resp. [`Scale_div]) command.  *)
+          - [`Scale_mul] (resp.Â [`Scale_div]) return the current
+          scaling factor (resp.Â divisor).  It is settable with the
+          [`Scale_mul] (resp.Â [`Scale_div]) command.  *)
 
     val get_state : 'a t -> [`Off | `Meas | `Meas_cont | `Event | `Reset]
       (** [get_state us] get the current state of the ultrasonic

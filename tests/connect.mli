@@ -1,5 +1,5 @@
 (** Module to handle the Bluetooth and USB program arguments to
-    establish a bluetooth or a USB connection with the LEGO® brick. *)
+    establish a bluetooth or a USB connection with the LEGOÂ® brick. *)
 
 
 type t = {
