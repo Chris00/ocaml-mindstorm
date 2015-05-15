@@ -1,0 +1,15 @@
+language: c
+sudo: required
+script: bash -ex .travis-ci.sh
+os:
+  - linux
+  - osx
+env:
+  matrix:
+    - OCAML_VERSION=4.02 EXTRA_DEPS="oasis"
+    - OCAML_VERSION=4.01 EXTRA_DEPS="oasis"
+    - OCAML_VERSION=3.12 EXTRA_DEPS="oasis"
+
+notifications:
+  email:
+    - Christophe.Troestler@umons.ac.be
