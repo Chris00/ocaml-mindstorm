@@ -1,0 +1,41 @@
+# http://www.appveyor.com/docs/appveyor-yml
+
+platform:
+  - x64
+
+branches:
+  only:
+    - master
+  except:
+    - gh-pages
+
+environment:
+  global:
+    CYG_ARCH: x86
+    CYG_ROOT: C:/cygwin
+    CYG_CACHE: C:/cygwin/var/cache/setup
+    CYG_MIRROR: http://mirrors.kernel.org/sourceware/cygwin/
+    OPAM_VERSION: 1.2.2
+    OPAM_DIR: C:/cygwin/tmp
+
+init:
+  - 'echo System architecture: %PLATFORM%'
+
+install:
+  - if not exist "%CYG_ROOT%" mkdir "%CYG_ROOT%"
+  - appveyor DownloadFile "http://cygwin.com/setup-%CYG_ARCH%.exe" -FileName "%CYG_ROOT%\setup.exe"
+  - '"%CYG_ROOT%\setup.exe" -qnNdO -R "%CYG_ROOT%" -s "%CYG_MIRROR%" -l "%CYG_CACHE%" -P make -P git -P gcc-core -P ocaml -P ocaml-compiler-libs -P curl -P m4 -P tar -P patch -P flexdll >NUL'
+  - '"%CYG_ROOT%/bin/bash" -lc "cygcheck -dc cygwin"'
+  - '"%CYG_ROOT%/bin/bash" -lc "ocaml -version"'
+  - if not exist "%OPAM_DIR%" mkdir "%OPAM_DIR%"
+  - appveyor DownloadFile "https://github.com/ocaml/opam/releases/download/%OPAM_VERSION%/opam-full-%OPAM_VERSION%.tar.gz" -FileName "%OPAM_DIR%/opam.tar.gz"
+  - 'cd "%OPAM_DIR%" && tar xvf "opam.tar.gz"'
+  - '%CYG_ROOT%/bin/bash -lc "cd \"%OPAM_DIR%/opam-full-%OPAM_VERSION%-rc2\" && env DJDIR="workaround" ./configure && make lib-ext && make && make install"'
+  - '%CYG_ROOT%/bin/bash -lc "opam init -y -a"'
+  - '%CYG_ROOT%/bin/bash -lc "opam install -y -v oasis"'
+
+build_script:
+  - 'echo Build in "%APPVEYOR_BUILD_FOLDER%"'
+  - '%CYG_ROOT%/bin/bash -lc "cd \"%APPVEYOR_BUILD_FOLDER%\""'
+  - '%CYG_ROOT%/bin/bash -lc "ocaml setup.ml -configure"'
+  - '%CYG_ROOT%/bin/bash -lc "ocaml setup.ml -build"'
