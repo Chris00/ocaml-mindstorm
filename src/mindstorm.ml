@@ -1,9 +1,9 @@
 (* File: mindstorm.ml
 
-   Copyright (C) 2007
+   Copyright (C) 2007-
 
-     Christophe Troestler <Christophe.Troestler@umh.ac.be>
-     WWW: http://math.umh.ac.be/an/software/
+     Christophe Troestler <Christophe.Troestler@umons.ac.be>
+     WWW: http://math.umons.ac.be/anum/software/
 
    This library is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License version 2.1 or
