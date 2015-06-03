@@ -1,5 +1,5 @@
 #								-*-conf-*-
-OASISFormat: 0.3
+OASISFormat: 0.4
 Name:        mindstorm
 Version:     0.5.4
 Synopsis:    Drive Lego Mindstorms bricks from OCaml
@@ -10,7 +10,7 @@ Authors:     Christophe Troestler, Julie De Pril, Marc Ducobu, Dany Maslowski
 Maintainers: Christophe Troestler <Christophe.Troestler@umons.ac.be>
 License:     LGPL-2.1 with OCaml linking exception
 Homepage:    http://forge.ocamlcore.org/projects/ocaml-mindstorm/
-Plugins:     META (0.3)
+Plugins:     META (0.4)
 
 Flag has_usb
   Description: Whether libusb development files are installed
@@ -38,7 +38,7 @@ Library mindstorm
   
 Document API
   Title:           API reference for Mindstorm
-  Type:            OCamlbuild (0.3)
+  Type:            OCamlbuild (0.4)
   InstallDir:      $docdir/api
   BuildTools:      ocamldoc, ocamlbuild
   Format:	   HTML
