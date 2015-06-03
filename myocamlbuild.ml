@@ -19,9 +19,9 @@ let my_dispatch = function
                            "src" / "mindstorm_win.c";
                            "src" / "unixsupport_win.h"];
      (* _tags cannot used in FilesAB (sic), configure preprocessing here. *)
-     let pp = sprintf "camlp4o pa_macro.cmo -D%s -D%s%s"
+     let pp = sprintf "cppo -D %s -D %s%s"
                       (String.uppercase os_type) (String.uppercase arch)
-                      (if has_usb then "-DHAS_USB" else "") in
+                      (if has_usb then " -D HAS_USB" else "") in
      let pp = S[A "-pp"; A  pp] in
      flag ["pp_mindstorm"; "ocamldep"] pp;
      flag ["pp_mindstorm"; "ocaml"; "compile"] pp;

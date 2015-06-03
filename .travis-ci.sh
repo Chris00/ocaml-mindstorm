@@ -15,7 +15,7 @@ eval $(opam config env)
 if [ "$TRAVIS_OS_NAME" = "linux" ]; then
     sudo apt-get install -y libbluetooth-dev
 fi
-opam install ocamlfind oasis
+opam install ocamlfind oasis cppo
 
 make
 

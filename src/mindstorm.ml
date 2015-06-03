@@ -131,7 +131,7 @@ let check_status_as_exn status =
 
 (* [really_input fd buf ofs len] reads [len] bytes from [fd] and store
    them into [buf] starting at position [ofs]. *)
-IFDEF WIN32 THEN
+#ifdef WIN32
 let really_input_fd =
   let rec loop ntries fd buf i n =
     if ntries > 50 && i = 0 then
@@ -148,7 +148,7 @@ let really_input_fd =
     ) in
   fun fd buf ofs n -> loop 1 fd buf ofs n
 
-ELSE
+#else
 (* Unix & Mac OS X *)
 let really_input_fd =
   let rec loop fd buf i n =
@@ -161,7 +161,7 @@ let really_input_fd =
     ) in
   fun fd buf ofs n -> loop fd buf ofs n
 
-ENDIF
+#endif
 
 let really_read fd n =
   let buf = Bytes.create n in
@@ -204,13 +204,12 @@ let copy_uint16 i s ofs =
 *)
 let uint32 s i =
   assert(i + 3 < Bytes.length s);
-  IFNDEF AMD64 THEN
+#ifndef AMD64
     (* OCaml int are 31 bits (on a 32 bits platform), thus raise an
        exception if the last bit is set. *)
     if Bytes.get s (i + 3) >= '\x40' then
       failwith "Mindstorm.uint32: overflow (32 bits)";
-  ELSE () (* For camlp4 3.09 *)
-  ENDIF;
+#endif
   Char.code(Bytes.get s i)
   lor (Char.code(Bytes.get s (i + 1)) lsl 8)
   lor (Char.code(Bytes.get s (i + 2)) lsl 16)
@@ -232,27 +231,27 @@ let int32 s i =
   let msb = Char.code (Bytes.get s (i + 3)) in
   if msb >= 0x80 then (
     (* negative number *)
-    IFNDEF AMD64 THEN
-      (* 32 bits architecture *)
-      if msb land 0x40 = 0 then failwith "Mindstorm.int32: overflow (32 bits)";
-    ELSE () (* For camlp4 3.09 *)
-    ENDIF;
+#ifndef AMD64
+    (* 32 bits architecture *)
+    if msb land 0x40 = 0 then failwith "Mindstorm.int32: overflow (32 bits)";
+#endif
     let x = Char.code (Bytes.get s i)
             lor (Char.code(Bytes.get s (i + 1)) lsl 8)
             lor (Char.code(Bytes.get s (i + 2)) lsl 16)
             lor (msb lsl 24) in
-    IFDEF AMD64 THEN
-      (* bits 0 .. 31 are set by x ; complete by setting to 1 the bits
-         32 to 62 (Caml ints are 63 bits). *)
-      x lor fill32
-    ELSE x (* "sign bit" set because [msb land 0x40 = 1] *)  ENDIF
+#ifdef AMD64
+    (* bits 0 .. 31 are set by x ; complete by setting to 1 the bits
+       32 to 62 (Caml ints are 63 bits). *)
+    x lor fill32
+#else
+    x (* "sign bit" set because [msb land 0x40 = 1] *)
+#endif
   )
   else (
     (* positive number *)
-    IFNDEF AMD64 THEN
-      if msb >= 0x40 then failwith "Mindstorm.int32: overflow (32 bits)";
-    ELSE () (* For camlp4 3.09 *)
-    ENDIF;
+#ifndef AMD64
+    if msb >= 0x40 then failwith "Mindstorm.int32: overflow (32 bits)";
+#endif
     Char.code (Bytes.get s i)
     lor (Char.code(Bytes.get s (i + 1)) lsl 8)
     lor (Char.code(Bytes.get s (i + 2)) lsl 16)
@@ -353,21 +352,20 @@ module USB =
 struct
   type device (* a handle to a USB LEGO device. *)
 
-  IFDEF HAS_USB THEN
-  IFDEF MACOS THEN
+#ifdef HAS_USB
+#ifdef MACOS
   (* Mac OS X *)
   let bricks () = []
   let connect ?(check_status=false) socket = failwith "Not yet implemented"
     (* libusb should work *)
 
-  ELSE
-  IFDEF WIN32 THEN
+#elif defined WIN32
   (* Windows *)
   let bricks () = []
   let connect ?(check_status=false) socket = failwith "Not yet implemented"
     (* See http://www.microsoft.com/whdc/connect/usb/winusb_howto.mspx *)
 
-  ELSE
+#else
   (* Unix *)
   external bricks : unit -> device list = "ocaml_mindstorm_bricks"
   external exit_libusb : unit -> unit = "ocaml_mindstorm_exit"
@@ -395,14 +393,13 @@ struct
       close = close;
       check_status = check_status }
 
-  ENDIF
-  ENDIF
-  ELSE
+#endif
+#else
   (* No USB libary *)
   let bricks () = []
   let connect ?(check_status=false) socket =
     failwith "The Mindstorm module was compliled without USB support"
-  ENDIF
+#endif
 end
 
 (** Bluetooth -------------------- *)
@@ -419,7 +416,7 @@ let bt_recv fd n =
   pkg
 ;;
 
-IFDEF MACOS THEN
+#ifdef MACOS
 (* Mac OS X *)
 let connect_bluetooth ?(check_status=false) tty =
   let fd = Unix.openfile tty [Unix.O_RDWR] 0o660 in
@@ -428,8 +425,7 @@ let connect_bluetooth ?(check_status=false) tty =
     close = Unix.close;
     check_status = check_status }
 
-ELSE
-IFDEF WIN32 THEN
+#elif defined WIN32
 (* Windows *)
 external socket_bluetooth : string -> Unix.file_descr
   = "ocaml_mindstorm_connect"
@@ -441,7 +437,7 @@ let connect_bluetooth ?(check_status=false) addr =
     close = Unix.close;
     check_status = check_status }
 
-ELSE
+#else
 (* Unix *)
 external socket_bluetooth : string -> Unix.file_descr
   = "ocaml_mindstorm_connect"
@@ -453,8 +449,7 @@ let connect_bluetooth ?(check_status=false) addr =
     close = Unix.close;
     check_status = check_status }
 
-ENDIF
-ENDIF
+#endif
 
 
 (* ---------------------------------------------------------------------- *)

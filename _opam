@@ -1,3 +1,6 @@
+depends: [
+  "cppo"
+]
 depexts: [
   [ [ "debian"  ] [ "libbluetooth-dev" ] ]
   [ [ "ubuntu"  ] [ "libbluetooth-dev" ] ]
