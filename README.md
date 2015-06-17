@@ -32,10 +32,11 @@ If you downloaded the tarball, type:
     make
     make install
 
-(The installation requires findlib.)
+The installation requires `ocamlfind` and
+[`cppo`](http://mjambon.com/cppo.html) (both installable via opam).
 
 If you cloned the repository, you will additionally need
-[oasis](http://oasis.forge.ocamlcore.org/) (installable via opam).
+[oasis](http://oasis.forge.ocamlcore.org/) (also installable via opam).
 
 
 Documentation
