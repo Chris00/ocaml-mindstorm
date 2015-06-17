@@ -22,7 +22,8 @@ Xcode.
 Compilation & Installation
 --------------------------
 
-The easier way to install this package it to use opam:
+The easier way to install this package it to use
+[opam](http://opam.ocaml.org/):
 
     opam install mindstorm
 
@@ -32,6 +33,10 @@ If you downloaded the tarball, type:
     make install
 
 (The installation requires findlib.)
+
+If you cloned the repository, you will additionally need
+[oasis](http://oasis.forge.ocamlcore.org/) (installable via opam).
+
 
 Documentation
 -------------
