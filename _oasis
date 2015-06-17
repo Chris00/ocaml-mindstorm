@@ -34,7 +34,7 @@ Library mindstorm
     CCLib: /I"C:\Program Files\Microsoft Platform SDK\Include"
   if system(macosx)
     CCOpt: -DMACOS
-    CCLib: -I/System/Library/Frameworks/IOBluetooth.framework/Headers
+    CCLib: -I /System/Library/Frameworks/IOBluetooth.framework/Headers
   
 Document API
   Title:           API reference for Mindstorm
