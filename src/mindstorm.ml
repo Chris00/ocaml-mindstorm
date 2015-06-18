@@ -353,7 +353,7 @@ struct
   type device (* a handle to a USB LEGO device. *)
 
 #ifdef HAS_USB
-#ifdef MACOS
+#ifdef MACOSX
   (* Mac OS X *)
   let bricks () = []
   let connect ?(check_status=false) socket = failwith "Not yet implemented"
@@ -416,7 +416,7 @@ let bt_recv fd n =
   pkg
 ;;
 
-#ifdef MACOS
+#ifdef MACOSX
 (* Mac OS X *)
 let connect_bluetooth ?(check_status=false) tty =
   let fd = Unix.openfile tty [Unix.O_RDWR] 0o660 in

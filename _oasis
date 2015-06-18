@@ -33,7 +33,7 @@ Library mindstorm
     CCOpt: /nologo /DWIN32
     CCLib: /I"C:\Program Files\Microsoft Platform SDK\Include"
   if system(macosx)
-    CCOpt: -DMACOS
+    CCOpt: -DMACOSX
     CCLib: -I /System/Library/Frameworks/IOBluetooth.framework/Headers
   
 Document API
