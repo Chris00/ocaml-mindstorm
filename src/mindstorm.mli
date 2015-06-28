@@ -40,7 +40,7 @@ module NXT : module type of Mindstorm_NXT
 (** {2:connectBluetooth How to connect the brick through bluetooth}
 
 You need to create a serial port connection using the instructions
-below for your platform.  Then use {!Mindstorm.connect_bluetooth} to
+below for your platform.  Then use {!Minsdstorm.NXT.connect_bluetooth} to
 create a handle for the brick.
 
 {3 Linux}
@@ -57,7 +57,7 @@ text after the $ sign is what you type, underneath is the answer):
 v}
 
 to discover the address of your brick.  Then use
-{!Mindstorm.connect_bluetooth}[ "00:16:53:03:A5:32"] to establish the
+{!Minsdstorm.NXT.connect_bluetooth}[ "00:16:53:03:A5:32"] to establish the
 connection (of course, replace ["00:16:53:03:A5:32"] by your actual
 bluetooth address) -- the first time, the brick will ask you to enter
 a code and the bluetooth applet will pop up a box in which you need to
@@ -91,7 +91,7 @@ Serial Port To NXT in OSX}":
 
 You're done! You should now have a [/dev/tty.NXT-DevB-1].
 
-Now you can connect to the brick using {!Mindstorm.connect_bluetooth}[
+Now you can connect to the brick using {!Minsdstorm.NXT.connect_bluetooth}[
 "/dev/tty.NXT-DevB-1"].  Beware that if you rename the brick with
 {!Mindstorm.set_brick_name}, you will have to change the TTY device
 accordingly.
@@ -104,11 +104,11 @@ accordingly.
 From windows, open the bluetooth control panel, create a new
 connection to the NXT brick, right click on your connection and select
 "details" to see which serial port is used, for example COM40.  Then
-use {!Mindstorm.connect_bluetooth}[ "COM40"] to connect to the brick from
+use {!Mindstorm.NXT.connect_bluetooth}[ "COM40"] to connect to the brick from
 your programs.  ATM, you have to always start by establishing the
 connection by hand before you can use the brick.  Patches are welcome
 so that is is enough to pass the bluetooth address to
-{!Mindstorm.connect_bluetooth} and the library performs the
+{!Mindstorm.NXT.connect_bluetooth} and the library performs the
 connection.
 
 Windows Vista uses different ports for outgoing and incoming
