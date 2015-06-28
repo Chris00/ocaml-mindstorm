@@ -16,6 +16,8 @@
    LICENSE for more details. *)
 
 
+(** Drive Lego Minsdstorm bricks with OCaml! *)
+
 (** OCaml-mindstorm is a library that enables you to drive Lego
     mindstorm NXT or EV3 bricks from OCaml (the computer is the master
     and the brick is the slave). Communication with the brick is done
@@ -24,7 +26,13 @@
     @author Christophe Troestler <Christophe.Troestler\@umons.ac.be>
 *)
 
+(** Interface to NXT bricks (it is an alias of {!module:Mindstorm_NXT}
+    but [Mindstorm.NXT] should be used). *)
+#if OCAML_MAJOR >= 4 && OCAML_MINOR >= 2
+module NXT = Mindstorm_NXT
+#else
 module NXT : module type of Mindstorm_NXT
+#endif
 
 
 

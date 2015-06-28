@@ -11,6 +11,7 @@ Maintainers: Christophe Troestler <Christophe.Troestler@umons.ac.be>
 License:     LGPL-2.1 with OCaml linking exception
 Homepage:    http://forge.ocamlcore.org/projects/ocaml-mindstorm/
 Plugins:     META (0.4)
+OCamlVersion: >= 4.01.0
 
 Flag has_usb
   Description: Whether libusb development files are installed
