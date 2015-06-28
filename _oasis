@@ -42,7 +42,7 @@ Document API
   InstallDir:      $docdir/api
   BuildTools:      ocamldoc, ocamlbuild
   Format:	   HTML
-  Index:           src/intro.txt
+  Index:           doc/intro.txt
   XOCamlbuildPath: .
   XOCamlbuildLibraries: mindstorm
 
