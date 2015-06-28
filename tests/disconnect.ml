@@ -2,7 +2,7 @@
    disconnect from the brick.  It also shows how to register a handler
    to deal with interactive interrupts. *)
 open Printf
-module Motor = Mindstorm.Motor
+module Motor = Mindstorm.NXT.Motor
 
 let bt =
   if Array.length Sys.argv < 2 then (
@@ -18,7 +18,7 @@ let speed s = { Motor.speed = s;  motor_on = s <> 0;
                 tach_limit = 0 (* forever *) }
 
 let () =
-  let conn = Mindstorm.connect_bluetooth bt in
+  let conn = Mindstorm.NXT.connect_bluetooth bt in
   Sys.set_signal Sys.sigint
     (Sys.Signal_handle(fun _ ->
                          Motor.set conn Motor.a (speed 0);
@@ -29,6 +29,6 @@ let () =
   printf "The motor connected to the port A should be running\n";
   printf "The program is going to terminate in 5 sec; try also Ctrl-C\n%!";
   Unix.sleep 5;
-  Mindstorm.close conn;
+  Mindstorm.NXT.close conn;
   printf "We are disconnected.  Motor should still be running...\n";
   printf "Rexecute and press Ctrl-C\n"

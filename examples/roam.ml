@@ -1,6 +1,6 @@
 open Printf
-module Sensor = Mindstorm.Sensor
-module Motor = Mindstorm.Motor
+module Sensor = Mindstorm.NXT.Sensor
+module Motor = Mindstorm.NXT.Motor
 
 (* `S1 : touch sensor
    `S4 : ultrasonic sensor
@@ -16,7 +16,7 @@ let run conn =
     Motor.set conn Motor.b (Motor.speed b);
     Motor.set conn Motor.c (Motor.speed c) in
   (* Stop if Ctrl-c is pressed. *)
-  let stop _ = set_speed 0 0; Mindstorm.close conn; exit 0 in
+  let stop _ = set_speed 0 0; Mindstorm.NXT.close conn; exit 0 in
   Sys.set_signal Sys.sigint (Sys.Signal_handle stop);
 
   let get_ultra () =
@@ -54,6 +54,6 @@ let () =
       exit 1;
     )
     else Sys.argv.(1) in
-  let conn = Mindstorm.connect_bluetooth bt in
+  let conn = Mindstorm.NXT.connect_bluetooth bt in
   printf "Press the button on the robot to stop.\n%!";
   run conn

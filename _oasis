@@ -19,7 +19,8 @@ Flag has_usb
 Library mindstorm
   Path:       src
   BuildTools: ocamlbuild
-  Modules:    Mindstorm
+  Modules:    Mindstorm, Mindstorm_NXT
+  InternalModules: Mindstorm_common
   BuildDepends: unix, bytes
   CSources:   mindstorm_stubs.c
   if architecture(amd64)

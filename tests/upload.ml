@@ -11,24 +11,24 @@ let bt =
   else Sys.argv.(1)
 
 let () =
-  let conn = Mindstorm.connect_bluetooth bt in
+  let conn = Mindstorm.NXT.connect_bluetooth bt in
 
-  let fh = Mindstorm.open_out conn (`File (String.length data)) fname in
-  let w = Mindstorm.output fh data 0 (String.length data) in
+  let fh = Mindstorm.NXT.open_out conn (`File (String.length data)) fname in
+  let w = Mindstorm.NXT.output fh data 0 (String.length data) in
   printf "Wrote %i bytes to %S.\n%!" w fname;
-  Mindstorm.close_out fh;
+  Mindstorm.NXT.close_out fh;
 
-  let fh = Mindstorm.open_in conn fname in
-  let len = Mindstorm.in_channel_length fh in
+  let fh = Mindstorm.NXT.open_in conn fname in
+  let len = Mindstorm.NXT.in_channel_length fh in
   let s = Bytes.create len in
-  let r = Mindstorm.input fh s 0 len in
+  let r = Mindstorm.NXT.input fh s 0 len in
   printf "Contents (%i bytes): %S\n%!" r (Bytes.unsafe_to_string s);
-  Mindstorm.close_in fh;
+  Mindstorm.NXT.close_in fh;
 
   printf "@[<2>Files on the brick: ";
-  Mindstorm.Find.iter conn "*.*"  ~f:begin fun name _ ->
+  Mindstorm.NXT.Find.iter conn "*.*"  ~f:begin fun name _ ->
     printf "%S  @," name;
   end;
   printf "@]\n%!";
 
-  Mindstorm.remove conn fname
+  Mindstorm.NXT.remove conn fname

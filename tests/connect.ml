@@ -5,7 +5,7 @@ let dev = ref None
 
 type t = {
   args : (Arg.key * Arg.spec * Arg.doc) list;
-  f : 'a. 'a Mindstorm.conn -> unit;
+  f : 'a. 'a Mindstorm.NXT.conn -> unit;
 }
 
 let default_args = [
@@ -20,14 +20,14 @@ let and_do d =
   Arg.parse args (fun a -> raise(Arg.Bad "no anonymous argument")) usage_msg;
   match !dev with
   | Some(Bluetooth addr) ->
-      let conn = Mindstorm.connect_bluetooth addr in
+      let conn = Mindstorm.NXT.connect_bluetooth addr in
       d.f conn;
-      Mindstorm.close conn
+      Mindstorm.NXT.close conn
   | Some USB ->
-      (match Mindstorm.USB.bricks() with
+      (match Mindstorm.NXT.USB.bricks() with
        | dev :: _ ->
-           let conn = Mindstorm.USB.connect dev in
+           let conn = Mindstorm.NXT.USB.connect dev in
            d.f conn;
-           Mindstorm.close conn
+           Mindstorm.NXT.close conn
        | [] -> print_endline "No NXT brick connected to a USB port.")
   | None -> Arg.usage args usage_msg; exit 1

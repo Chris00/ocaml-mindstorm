@@ -1,6 +1,6 @@
 open Printf
-module Sensor = Mindstorm.Sensor
-module Motor = Mindstorm.Motor
+module Sensor = Mindstorm.NXT.Sensor
+module Motor = Mindstorm.NXT.Motor
 
 let switch = `S1
 let m = Motor.a
@@ -19,7 +19,7 @@ let speed s =
     turn_ratio = 0; run_state = `Running; tach_limit = 0  }
 
 let () =
-  let conn = Mindstorm.connect_bluetooth bt in
+  let conn = Mindstorm.NXT.connect_bluetooth bt in
   printf "Connected!  Push the touch sensor connected to \"1\".\n%!";
   Sensor.set conn switch `Switch `Bool;
   let rec run_until_pushed () =
@@ -29,4 +29,4 @@ let () =
     else run_until_pushed()  in
   Motor.set conn m (speed 1);
   run_until_pushed ();
-  Mindstorm.close conn
+  Mindstorm.NXT.close conn

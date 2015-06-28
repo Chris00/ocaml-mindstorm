@@ -8,4 +8,4 @@ true: safe_string
 
 #<src/mindstorm.ml>: pp(cppo -D$(system) -D$(architecture) -DHAS_USB=$(has_usb))
 # pp_mindstorm defined in myocamlbuild.ml
-<src/mindstorm.ml>: pp_mindstorm
+<src/mindstorm_NXT.ml>: pp_mindstorm

@@ -1,6 +1,6 @@
 open Printf
-module Sensor = Mindstorm.Sensor
-module Motor = Mindstorm.Motor
+module Sensor = Mindstorm.NXT.Sensor
+module Motor = Mindstorm.NXT.Motor
 
 let c_touch = Condition.create ()
 let m = Mutex.create ()
@@ -30,7 +30,7 @@ let () =
      exit 1;
    )
    else Sys.argv.(1) in
- let conn = Mindstorm.connect_bluetooth bt in
+ let conn = Mindstorm.NXT.connect_bluetooth bt in
  printf "Connected\n%!";
  let _t1 = Thread.create react_touch conn in
  let _t2 = Thread.create test_touch conn in

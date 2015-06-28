@@ -1,6 +1,6 @@
 open Printf
-module Sensor = Mindstorm.Sensor
-module Motor = Mindstorm.Motor
+module Sensor = Mindstorm.NXT.Sensor
+module Motor = Mindstorm.NXT.Motor
 
 (* `S1 : touch sensor
    `S4 : ultrasonic sensor
@@ -23,7 +23,7 @@ let run conn =
   Motor.set conn Motor.a (Motor.speed 0);
   (*List.iter (test_motor Motor.b conn) [-50;-70;0];
   Motor.set conn Motor.b (Motor.speed 0);*)
-  Mindstorm.close conn;;
+  Mindstorm.NXT.close conn;;
 
 let () =
   let bt =
@@ -32,6 +32,6 @@ let () =
       exit 1;
     )
     else Sys.argv.(1) in
-  let conn = Mindstorm.connect_bluetooth bt in
+  let conn = Mindstorm.NXT.connect_bluetooth bt in
   printf "Test motor.\n%!";
   run conn

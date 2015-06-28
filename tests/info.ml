@@ -7,19 +7,19 @@ let print_info conn =
   begin match !new_brick_name with
   | None -> ()
   | Some name ->
-      Mindstorm.set_brick_name conn name ~check_status:true;
+      Mindstorm.NXT.set_brick_name conn name ~check_status:true;
       printf "Brick name set to %S.\n" name
   end;
   printf "Device info: \n%!";
-  let i = Mindstorm.get_device_info conn in
-  printf "- brick name = %S\n" i.Mindstorm.brick_name;
-  printf "- bluetooth address = %S\n" i.Mindstorm.bluetooth_addr;
-  printf "- signal strength = %i\n" i.Mindstorm.signal_strength;
-  printf "- free user FLASH = %i bytes\n%!" i.Mindstorm.free_user_flash;
-  let (p1, p0, f1, f0) = Mindstorm.firmware_version conn in
+  let i = Mindstorm.NXT.get_device_info conn in
+  printf "- brick name = %S\n" i.Mindstorm.NXT.brick_name;
+  printf "- bluetooth address = %S\n" i.Mindstorm.NXT.bluetooth_addr;
+  printf "- signal strength = %i\n" i.Mindstorm.NXT.signal_strength;
+  printf "- free user FLASH = %i bytes\n%!" i.Mindstorm.NXT.free_user_flash;
+  let (p1, p0, f1, f0) = Mindstorm.NXT.firmware_version conn in
   printf "- protocol = %i.%i, firmware = %i.%02i\n" p1 p0 f1 f0;
   printf "Battery level: %!";
-  let bat = Mindstorm.battery_level conn in
+  let bat = Mindstorm.NXT.battery_level conn in
   printf "%i millivolts\n%!" bat
 
 let () =

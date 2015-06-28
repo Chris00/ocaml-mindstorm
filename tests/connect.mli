@@ -6,7 +6,7 @@ type t = {
   args : (Arg.key * Arg.spec * Arg.doc) list;
   (** Possible additional program arguments. *)
 
-  f : 'a. 'a Mindstorm.conn -> unit;
+  f : 'a. 'a Mindstorm.NXT.conn -> unit;
   (** The function to execute once connected. *)
 }
 

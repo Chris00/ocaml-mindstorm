@@ -8,8 +8,8 @@ let bt =
   else Sys.argv.(1)
 
 let () =
-  let conn = Mindstorm.connect_bluetooth bt in
+  let conn = Mindstorm.NXT.connect_bluetooth bt in
   printf "Current sleep time limit = %!";
-  let bat = Mindstorm.keep_alive conn in
+  let bat = Mindstorm.NXT.keep_alive conn in
   printf "%i milliseconds\n%!" bat;
-  Mindstorm.close conn
+  Mindstorm.NXT.close conn

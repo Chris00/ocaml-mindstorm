@@ -1,5 +1,5 @@
 open Printf
-module Sensor = Mindstorm.Sensor
+module Sensor = Mindstorm.NXT.Sensor
 
 (* Win32 command shell is poor *)
 let repeat_till_ENTER_win32 msg f =

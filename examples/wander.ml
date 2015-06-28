@@ -2,8 +2,8 @@
    http://www.mactech.com/articles/mactech/Vol.23/23.04/LegoNXTontheMac/index.html
 *)
 open Printf
-module Motor = Mindstorm.Motor
-module U = Mindstorm.Sensor.Ultrasonic
+module Motor = Mindstorm.NXT.Motor
+module U = Mindstorm.NXT.Sensor.Ultrasonic
 
 let usleep s = ignore(Unix.select [] [] [] s)
 
@@ -36,11 +36,11 @@ let () =
       printf "%s <bluetooth addr>\n" Sys.argv.(0);  exit 1;
     )
     else Sys.argv.(1) in
-  let conn = Mindstorm.connect_bluetooth bt in
+  let conn = Mindstorm.NXT.connect_bluetooth bt in
   let stop _ =
     Motor.set conn Motor.b (Motor.speed 0);
     Motor.set conn Motor.c (Motor.speed 0);
-    Mindstorm.close conn;
+    Mindstorm.NXT.close conn;
     printf "\n";
     exit 0 in
   Sys.set_signal Sys.sigint (Sys.Signal_handle stop);
