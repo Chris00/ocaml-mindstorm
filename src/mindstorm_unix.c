@@ -50,7 +50,7 @@ value ocaml_mindstorm_connect(value vdest)
   str2ba(String_val(vdest), &addr.rc_bdaddr);
   status = connect(sock, (struct sockaddr *)&addr, sizeof(addr));
   /* uerror available because we link with unix.cm[x]a */
-  if (status < 0) uerror("Mindstorm.connect_bluetooth", vdest);
+  if (status < 0) uerror("Mindstorm.*.connect_bluetooth", vdest);
 
   /* a OCaml Unix.file_descr is just an int underneath (see
    * e.g. socket.c in the CVS directory of unix module). */
