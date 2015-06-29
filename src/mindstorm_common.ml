@@ -85,7 +85,7 @@ let int16 s i =
     (* negative, complete with 1 the higher bits *)
     x lor (-0x10000)
 
-let copy_uint16 i s ofs =
+let copy_uint16 (i: int) s ofs =
   assert(ofs + 1 < Bytes.length s);
   Bytes.set s ofs (Char.unsafe_chr(i land 0xFF)); (* LSB *)
   Bytes.set s (ofs + 1) (Char.unsafe_chr((i lsr 8) land 0xFF)) (* MSB *)

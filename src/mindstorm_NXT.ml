@@ -30,7 +30,7 @@
    - optional timeouts (for reading and receiving status)?
 *)
 
-open Mindstorm_common
+include Mindstorm_common
 
 type error =
   | No_more_handles
@@ -80,7 +80,7 @@ let success_char = '\x00'
 let eof_char = '\x85'
 
 let error =
-  let e = Array.make 256 (Failure "Mindstorm: undocumented error") in
+  let e = Array.make 256 (Failure "Mindstorm.NXT: undocumented error") in
   (* Communication protocol errors *)
   e.(0x81) <- Error No_more_handles;
   e.(0x82) <- Error No_space;
@@ -241,7 +241,7 @@ let bt_recv fd n =
   (* We wanted to check the status and raise the corresponding
      exception here but we cannot because of the behavior of [input]. *)
   pkg
-;;
+
 
 #ifdef MACOSX
 (* Mac OS X *)

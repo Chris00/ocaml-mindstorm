@@ -34,6 +34,15 @@ module NXT = Mindstorm_NXT
 module NXT : module type of Mindstorm_NXT
 #endif
 
+(** (ALPHA VERSION)
+    Interface to EV3 bricks (it is an alias of {!module:Mindstorm_EV3}
+    but [Mindstorm.EV3] should be used). *)
+#if OCAML_MAJOR >= 4 && OCAML_MINOR >= 2
+module EV3 = Mindstorm_EV3
+#else
+module EV3 : module type of Mindstorm_EV3
+#endif
+
 
 
 (************************************************************************)
@@ -57,11 +66,38 @@ text after the $ sign is what you type, underneath is the answer):
 v}
 
 to discover the address of your brick.  Then use
-{!Minsdstorm.NXT.connect_bluetooth}[ "00:16:53:03:A5:32"] to establish the
+{!Minsdstorm.NXT.connect_bluetooth}[ "00:16:53:03:A5:32"]
+or {!Minsdstorm.EV3.connect_bluetooth}[ "00:16:53:03:A5:32"] to establish the
 connection (of course, replace ["00:16:53:03:A5:32"] by your actual
-bluetooth address) -- the first time, the brick will ask you to enter
+bluetooth address) — the first time, the brick will ask you to enter
 a code and the bluetooth applet will pop up a box in which you need to
 copy the very same code (this is to forbid unwanted connections).
+
+If test programs fail with [Unix.Unix_error(Unix.EUNKNOWNERR ...)]
+and your computer does not ask you the passkey (which may indicate
+that you should check that the blueman applet is not running multiple
+times), pair the brick with your computer first.  One way to do it is
+to run [bluetoothctl] and type at its prompt (output only partly
+shown):
+
+{v
+        [bluetooth]# scan on
+        Discovery started
+        [CHG] Controller 87:EE:A8:C3:A5:83 Discovering: yes
+        [NEW] Device 01:15:34:56:31:11 EV3
+        [bluetooth]# agent on
+        Agent registered
+        [bluetooth]# default-agent
+        Default agent request successful
+        [bluetooth]# pair 01:15:34:56:31:11
+        Attempting to pair with 01:15:34:56:31:11
+        Request PIN code
+        [agent] Enter PIN code: 1234
+        ...
+v}
+
+You should then be able to connect to the brick without confirmation
+being requested.
 
 
 {3 MacOS X}

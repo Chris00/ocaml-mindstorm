@@ -20,7 +20,7 @@ Flag has_usb
 Library mindstorm
   Path:       src
   BuildTools: ocamlbuild
-  Modules:    Mindstorm, Mindstorm_NXT
+  Modules:    Mindstorm, Mindstorm_NXT, Mindstorm_EV3
   InternalModules: Mindstorm_common
   BuildDepends: unix, bytes
   CSources:   mindstorm_stubs.c
@@ -117,6 +117,16 @@ Executable upload
   Build$:	flag(tests)
   Path:         tests/
   MainIs:       upload.ml
+  BuildTools:   ocamlbuild
+  BuildDepends: mindstorm
+  CompiledObject: best
+  Install:      false
+
+
+Executable ev3_sound
+  Build$:	flag(tests)
+  Path:         tests/
+  MainIs:       ev3_sound.ml
   BuildTools:   ocamlbuild
   BuildDepends: mindstorm
   CompiledObject: best

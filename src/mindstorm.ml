@@ -16,3 +16,5 @@
    LICENSE for more details. *)
 
 module NXT = Mindstorm_NXT
+
+module EV3 = Mindstorm_EV3
