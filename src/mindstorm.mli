@@ -103,36 +103,36 @@ being requested.
 {3 MacOS X}
 
 + Turn on the NXT brick and make sure bluetooth is on and visible (you
-  should see a bluetooth icon at the top left corner);
+  should see a bluetooth icon at the top left corner).
 + Turn on the Bluetooth on your Mac. Then click the bluetooth icon in
-  the menubar, select "Open Bluetooth Preferences...";
+  the menubar, select "Open Bluetooth Preferences..."
 + You should see the brick (it's just called [NXT] by default) listed
   under 'Devices', with an option called 'Pair' on the right. If you
   don't see the device or don't see 'Pair', consider restarting the
   bluetooth on your computer and your brick and double-checking
-  visibility.;
+  visibility.
 + Select the [Pair] option beside [NXT] from the list.;
 + The NXT will beep and ask for a passkey. Choose 1234 (this is the
   default but you can choose anything you like) and press the orange
-  button.;
+  button.
 + The Mac will immediately complain, saying "Pairing failed". Ignore
   this. You will see that a new button, called "Options", has become
-  avaiable in the bluetooth menu. Click it. You'll now see a prompt
-  for a code. Enter the same passkey as you did on the brick itself.;
+  available in the bluetooth menu. Click it. You'll now see a prompt
+  for a code. Enter the same passkey as you did on the brick itself.
 + The NXT will beep again. You must enter your code yet again. This
   three-step process should get you your connection. On the Bluetooth
-  menu, you will find that NXT is 'Connected'.;
+  menu, you will find that NXT is 'Connected'.
 + Note: It is pointless to proceed unless the steps above have been
   completed. Even if you run into trouble, please work on getting
-  through the above before proceeding. ;
+  through the above before proceeding.
 + Now the brick and the Mac are talking, but we need to know which
   egress port is being used by the Mac, so we can send out our
   instructions to the brick via that port. Fortunately, this is easy
-  enough to do. Run `ls -t /dev` in Terminal. This lists the files in
-  the directory `/dev` arranged by the last time they were modified,
-  with the most recent on top.;
-+ Somewhere near the top, you will see an entry to the tone of
-  "tty.NXT-DevB". Figure out exactly what it is for your
+  enough to do. Run [ls -t /dev] in Terminal. This lists the files in
+  the directory [/dev] arranged by the last time they were modified,
+  with the most recent on top.
++ Somewhere near the top, you will see an entry alike
+  [tty.NXT-DevB].  Figure out exactly what it is for your
   computer. This name is very important.
 
 You're done! You should now have a [/dev/tty.NXT-DevB]. This means you
@@ -142,7 +142,7 @@ with the name you found above, of course. Beware that if you rename
 the brick with {!Mindstorm.set_brick_name}, you will have to change
 the name accordingly. Note also that this name may change when you
 disconnect and reconnect.  If you can't establish a connection some
-time in the future, consider going back and checking the `/dev`
+time in the future, consider going back and checking the [/dev]
 directory to see if things have changed.
 
 
