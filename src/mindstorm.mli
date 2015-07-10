@@ -102,35 +102,25 @@ being requested.
 
 {3 MacOS X}
 
-We follow here the instructions
-"{{:http://tonybuser.com/bluetooth-serial-port-to-nxt-in-osx}Bluetooth
-Serial Port To NXT in OSX}":
 {ol
-{- Turn on the NXT brick and make sure bluetooth is on (you should
+{- Turn on the NXT brick and make sure bluetooth is on and visible (you should
    see a bluetooth icon at the top left corner);}
-{- Click the bluetooth icon in the menubar, select "Setup bluetooth device";}
-{- When it asks for Select Device Type, choose "Any device";}
-{- Select [NXT] (or whatever your brick is called but [NXT] is the factory
-    setting so we'll use that from now on) from the list and click continue;}
-{- The NXT will beep and ask for a passkey, choose 1234 (the default but
-   you can choose anything you like) and press the orange button;}
-{- Click continue in OSX, enter same passkey as above (1234 by default);}
-{- The NXT will beep again, press orange button to use 1234 again;}
-{- The mac will complain "There were no supported services found on your
-   device"; don't worry about that and click continue and then click Quit;}
-{- In OSX click the bluetooth icon, select "Open bluetooth
-   preferences", you should see [NXT] (or whatever your brick is
-   called) listed, select it, then click "Edit Serial Ports";}
-{- It should show [NXT-DevB-1] (replace [NXT] by the name of your
-   brick), if not click add, use Port Name: [NXT-DevB-1], Device
-   Service: Dev B, Port type: RS-232.  Click Apply.}}
+{- Turn on the Bluetooth on your Mac. Then click the bluetooth icon in the menubar, select "Open Bluetooth Preferences...";}
+{- You should see the brick (it's just called [NXT] by default) listed uder 'Devices', with an option called 'Pair' on the right. If you don't see the device or don't see 'Pair', consider restarting the bluetooth on your computer and your brick and double-checking visibility.;}
+{- Select the [Pair] option beside [NXT] from the list.;}
+{- The NXT will beep and ask for a passkey. Choose 1234 (this is the default but
+   you can choose anything you like) and press the orange button.;}
+{- The Mac will immediately complain, saying "Pairing failed". Ignore this. You will see that a new button, called "Options", has become avaiable in the bluetooth menu. Click it. You'll now see a prompt for a code. Enter the same passkey as you did on the brick itself.;}
+{- The NXT will beep again. You must enter your code yet again. This three-step process should get you your connection. On the Bluetooth menu, you will find that NXT is 'Connected'.;}
+{- Note: It is pointless to proceed unless the steps above have been completed. Even if you run into trouble, please work on getting through the above before proceeding. ;}
+{- Now the brick and the Mac are talking, but we need to know which egress port is being used by the Mac, so we can send out our instructions to the brick via that port. Fortunately, this is easy enough to do. Run `ls -t /dev` in Terminal. This lists the files in the directory `/dev` arranged by the last time they were modified, with the most recent on top.;}
+{- Somewhere near the top, you will see an entry to the tone of "tty.NXT-DevB". Figure out exactly what it is for your computer. This name is very important. ;}
 
-You're done! You should now have a [/dev/tty.NXT-DevB-1].
+You're done! You should now have a [/dev/tty.NXT-DevB]. This means you can connect to the brick using something to the tone of {!Minsdstorm.NXT.connect_bluetooth}[
+"/dev/tty.NXT-DevB"].  Substitute with the name you found above, of course. Beware that if you rename the brick with
+{!Mindstorm.set_brick_name}, you will have to change the name accordingly. Note also that this name may change when you disconnect and reconnect.
+If you can't establish a connection some time in the future, consider going back and checking the `/dev` directory to see if things have changed.
 
-Now you can connect to the brick using {!Minsdstorm.NXT.connect_bluetooth}[
-"/dev/tty.NXT-DevB-1"].  Beware that if you rename the brick with
-{!Mindstorm.set_brick_name}, you will have to change the TTY device
-accordingly.
 
 
 {3 Windows}
