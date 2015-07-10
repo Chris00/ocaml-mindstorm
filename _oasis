@@ -136,6 +136,7 @@ Executable ev3_sound
 ######################################################################
 
 Executable roam
+  Build$:	flag(tests)
   Path:         examples/
   MainIs:       roam.ml
   BuildTools:   ocamlbuild
@@ -144,6 +145,7 @@ Executable roam
   Install:      false
 
 Executable run_push
+  Build$:	flag(tests)
   Path:         examples/
   MainIs:       run_push.ml
   BuildTools:   ocamlbuild
@@ -152,6 +154,7 @@ Executable run_push
   Install:      false
 
 Executable test_speed
+  Build$:	flag(tests)
   Path:         examples/
   MainIs:       test_speed.ml
   BuildTools:   ocamlbuild
@@ -160,6 +163,7 @@ Executable test_speed
   Install:      false
 
 Executable test_threads
+  Build$:	flag(tests)
   Path:         examples/
   MainIs:       test_threads.ml
   BuildTools:   ocamlbuild
@@ -168,6 +172,7 @@ Executable test_threads
   Install:      false
 
 Executable wander
+  Build$:	flag(tests)
   Path:         examples/
   MainIs:       wander.ml
   BuildTools:   ocamlbuild
@@ -176,7 +181,7 @@ Executable wander
   Install:      false
 
 
-SourceRepository trunk
+SourceRepository master
   Type:       git
   Location:   https://github.com/Chris00/ocaml-mindstorm.git
   Browser:    https://github.com/Chris00/ocaml-mindstorm
