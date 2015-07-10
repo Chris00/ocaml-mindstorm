@@ -115,6 +115,7 @@ being requested.
 {- Note: It is pointless to proceed unless the steps above have been completed. Even if you run into trouble, please work on getting through the above before proceeding. ;}
 {- Now the brick and the Mac are talking, but we need to know which egress port is being used by the Mac, so we can send out our instructions to the brick via that port. Fortunately, this is easy enough to do. Run `ls -t /dev` in Terminal. This lists the files in the directory `/dev` arranged by the last time they were modified, with the most recent on top.;}
 {- Somewhere near the top, you will see an entry to the tone of "tty.NXT-DevB". Figure out exactly what it is for your computer. This name is very important. ;}
+}
 
 You're done! You should now have a [/dev/tty.NXT-DevB]. This means you can connect to the brick using something to the tone of {!Minsdstorm.NXT.connect_bluetooth}[
 "/dev/tty.NXT-DevB"].  Substitute with the name you found above, of course. Beware that if you rename the brick with
