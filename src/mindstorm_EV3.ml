@@ -103,9 +103,26 @@ let bt_recv fd =
 
 #ifdef MACOSX
 (* Mac OS X *)
+let connect_bluetooth tty =
+  let fd = Unix.openfile tty [Unix.O_RDWR] 0o660 in
+  { fd = fd;
+    send = bt_send;
+    recv = bt_recv;
+    close = Unix.close;
+    msg_counter = 0 }
 
 #elif defined WIN32
 (* Windows *)
+external socket_bluetooth : string -> Unix.file_descr
+  = "ocaml_mindstorm_connect"
+
+let connect_bluetooth addr =
+  let fd = socket_bluetooth ("\\\\.\\" ^ addr) in
+  { fd = fd;
+    send = bt_send;
+    recv = bt_recv;
+    close = Unix.close;
+    msg_counter = 0 }
 
 #else
 (* Unix *)
