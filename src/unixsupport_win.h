@@ -17,7 +17,6 @@
 #include <wtypes.h>
 #include <winbase.h>
 #include <stdlib.h>
-#include <direct.h>
 #include <process.h>
 #include <sys/types.h>
 #include <winsock.h>

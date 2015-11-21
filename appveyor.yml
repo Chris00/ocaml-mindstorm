@@ -1,5 +1,8 @@
 # http://www.appveyor.com/docs/appveyor-yml
 
+platform:
+  - x64
+
 # Use 'unstable' build worker image as it contains Cygwin
 os: Unstable
 
@@ -17,6 +20,7 @@ environment:
     OPAM_DIR: C:/opam
     OPAMROOT: /cygdrive/c/opam/opamroot
     OCAMLRUNPARAM: b
+    APPVEYOR: yes
 
 cache:
   - C:\opam
