@@ -3,41 +3,23 @@
 platform:
   - x64
 
-# Use 'unstable' build worker image as it contains Cygwin
-os: Unstable
-
 branches:
   only:
     - master
-  except:
-    - gh-pages
-
-environment:
-  global:
-    CYG_ROOT: C:/cygwin
-    CYG_MIRROR: http://mirrors.kernel.org/sourceware/cygwin/
-    CYG_CACHE: C:/cygwin/var/cache/setup
-    OPAM_DIR: C:/opam
-    OPAMROOT: /cygdrive/c/opam/opamroot
-    OCAMLRUNPARAM: b
-    APPVEYOR: yes
-
-cache:
-  - C:\opam
-  - C:\cygwin\var\cache\setup
+    - appv
 
 # Do a shallow clone of the repo to speed up the build
 clone_depth: 1
 
 install:
-  - set PATH=%OPAM_DIR%\bin;%PATH%
-#  - appveyor DownloadFile "http://cygwin.com/setup-%CYG_ARCH%.exe" -FileName "%CYG_ROOT%\setup-x86.exe"
-  - '"%CYG_ROOT%\setup-x86.exe" -qnNdO -R "%CYG_ROOT%" -s "%CYG_MIRROR%" -l "%CYG_CACHE%" -P make -P gcc-core -P ocaml -P ocaml-compiler-libs -P m4 -P tar -P patch -P flexdll >NUL'
-  - '%CYG_ROOT%\bin\bash -lc "cygcheck -dc cygwin"'
-  - '%CYG_ROOT%\bin\bash -lc "echo \"OCaml version `ocamlc -version`\""'
-  - appveyor_install.cmd
+  - appveyor DownloadFile "https://raw.githubusercontent.com/Chris00/ocaml-appveyor/master/install_ocaml.cmd" -FileName "C:\install_ocaml.cmd"
+  - C:\install_ocaml.cmd
+  - appveyor DownloadFile "https://raw.githubusercontent.com/Chris00/ocaml-appveyor/master/install_oasis_pkg.ml"
+  - ocaml install_oasis_pkg.ml https://github.com/Chris00/cppo/archive/ef5cf96e90009bc6c8035e348c5d043fb5159905.tar.gz
+  - ocamlc -version
 
 build_script:
-  - '%CYG_ROOT%\bin\bash -lc "opam config env"'
-  - '%CYG_ROOT%\bin\bash -lc "opam config var toplevel"'
-  - '%CYG_ROOT%\bin\bash -lc "cd $APPVEYOR_BUILD_FOLDER; eval $(opam config env); export OCAML_TOPLEVEL_PATH=$(opam config var toplevel); oasis setup; ocaml setup.ml -configure --enable-tests && cat setup.data && ocaml setup.ml -build -classic-display"'
+  - cd "%APPVEYOR_BUILD_FOLDER%"
+  - ocaml setup.ml -configure
+  - ocaml setup.ml -build
+  - ocaml setup.ml -install
