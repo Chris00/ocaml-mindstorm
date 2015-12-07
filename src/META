@@ -1,0 +1,12 @@
+# OASIS_START
+# DO NOT EDIT (digest: 7d350a28e929cb0101ae6caf0fa1bc72)
+version = "0.6.1"
+description = "Drive Lego Mindstorms bricks from OCaml"
+requires = "unix bytes"
+archive(byte) = "mindstorm.cma"
+archive(byte, plugin) = "mindstorm.cma"
+archive(native) = "mindstorm.cmxa"
+archive(native, plugin) = "mindstorm.cmxs"
+exists_if = "mindstorm.cma"
+# OASIS_STOP
+

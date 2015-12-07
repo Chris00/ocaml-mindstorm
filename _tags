@@ -1,5 +1,98 @@
 #                                                             -*-conf-*-
 # OASIS_START
+# DO NOT EDIT (digest: 60ba5d1a45cc434ff8a9886b271ad2e9)
+# Ignore VCS directories, you can use the same kind of rule outside
+# OASIS_START/STOP if you want to exclude directories that contains
+# useless stuff for the build process
+true: annot, bin_annot
+<**/.svn>: -traverse
+<**/.svn>: not_hygienic
+".bzr": -traverse
+".bzr": not_hygienic
+".hg": -traverse
+".hg": not_hygienic
+".git": -traverse
+".git": not_hygienic
+"_darcs": -traverse
+"_darcs": not_hygienic
+# Library mindstorm
+"src/mindstorm.cmxs": use_mindstorm
+<src/*.ml{,i,y}>: oasis_library_mindstorm_ccopt
+"src/mindstorm_stubs.c": oasis_library_mindstorm_ccopt
+<src/mindstorm.{cma,cmxa}>: oasis_library_mindstorm_cclib
+"src/libmindstorm_stubs.lib": oasis_library_mindstorm_cclib
+"src/dllmindstorm_stubs.dll": oasis_library_mindstorm_cclib
+"src/libmindstorm_stubs.a": oasis_library_mindstorm_cclib
+"src/dllmindstorm_stubs.so": oasis_library_mindstorm_cclib
+<src/mindstorm.{cma,cmxa}>: use_libmindstorm_stubs
+<src/*.ml{,i,y}>: pkg_bytes
+<src/*.ml{,i,y}>: pkg_unix
+"src/mindstorm_stubs.c": pkg_bytes
+"src/mindstorm_stubs.c": pkg_unix
+# Executable disconnect
+<tests/disconnect.{native,byte}>: pkg_bytes
+<tests/disconnect.{native,byte}>: pkg_unix
+<tests/disconnect.{native,byte}>: use_mindstorm
+# Executable file_list
+<tests/file_list.{native,byte}>: pkg_bytes
+<tests/file_list.{native,byte}>: pkg_unix
+<tests/file_list.{native,byte}>: use_mindstorm
+# Executable info
+<tests/info.{native,byte}>: pkg_bytes
+<tests/info.{native,byte}>: pkg_unix
+<tests/info.{native,byte}>: use_mindstorm
+# Executable keep_alive
+<tests/keep_alive.{native,byte}>: pkg_bytes
+<tests/keep_alive.{native,byte}>: pkg_unix
+<tests/keep_alive.{native,byte}>: use_mindstorm
+# Executable motor
+<tests/motor.{native,byte}>: pkg_bytes
+<tests/motor.{native,byte}>: pkg_unix
+<tests/motor.{native,byte}>: use_mindstorm
+# Executable sensors
+<tests/sensors.{native,byte}>: pkg_bytes
+<tests/sensors.{native,byte}>: pkg_unix
+<tests/sensors.{native,byte}>: use_mindstorm
+# Executable sound
+<tests/sound.{native,byte}>: pkg_bytes
+<tests/sound.{native,byte}>: pkg_unix
+<tests/sound.{native,byte}>: use_mindstorm
+# Executable upload
+<tests/upload.{native,byte}>: pkg_bytes
+<tests/upload.{native,byte}>: pkg_unix
+<tests/upload.{native,byte}>: use_mindstorm
+# Executable ev3_sound
+<tests/ev3_sound.{native,byte}>: pkg_bytes
+<tests/ev3_sound.{native,byte}>: pkg_unix
+<tests/ev3_sound.{native,byte}>: use_mindstorm
+<tests/*.ml{,i,y}>: pkg_bytes
+<tests/*.ml{,i,y}>: pkg_unix
+<tests/*.ml{,i,y}>: use_mindstorm
+# Executable roam
+<examples/roam.{native,byte}>: pkg_bytes
+<examples/roam.{native,byte}>: pkg_unix
+<examples/roam.{native,byte}>: use_mindstorm
+# Executable run_push
+<examples/run_push.{native,byte}>: pkg_bytes
+<examples/run_push.{native,byte}>: pkg_unix
+<examples/run_push.{native,byte}>: use_mindstorm
+# Executable test_speed
+<examples/test_speed.{native,byte}>: pkg_bytes
+<examples/test_speed.{native,byte}>: pkg_unix
+<examples/test_speed.{native,byte}>: use_mindstorm
+# Executable test_threads
+<examples/test_threads.{native,byte}>: pkg_bytes
+<examples/test_threads.{native,byte}>: pkg_threads
+<examples/test_threads.{native,byte}>: pkg_unix
+<examples/test_threads.{native,byte}>: use_mindstorm
+<examples/*.ml{,i,y}>: pkg_threads
+# Executable wander
+<examples/wander.{native,byte}>: pkg_bytes
+<examples/wander.{native,byte}>: pkg_unix
+<examples/wander.{native,byte}>: use_mindstorm
+<examples/*.ml{,i,y}>: pkg_bytes
+<examples/*.ml{,i,y}>: pkg_unix
+<examples/*.ml{,i,y}>: use_mindstorm
 # OASIS_STOP
 
 true: annot
