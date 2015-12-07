@@ -111,7 +111,7 @@ let connect_bluetooth tty =
     close = Unix.close;
     msg_counter = 0 }
 
-#elif defined WIN32
+#elif defined WIN32 || defined WIN64 || defined CYGWIN
 (* Windows *)
 external socket_bluetooth : string -> Unix.file_descr
   = "ocaml_mindstorm_connect"

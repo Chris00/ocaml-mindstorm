@@ -22,7 +22,7 @@ let min i j = if (i:int) < j then i else j
 
 (* [really_input fd buf ofs len] reads [len] bytes from [fd] and store
    them into [buf] starting at position [ofs]. *)
-#ifdef WIN32
+#if defined WIN32 || defined WIN64 || defined CYGWIN
 let really_input_fd =
   let rec loop ntries fd buf i n =
     if ntries > 50 && i = 0 then

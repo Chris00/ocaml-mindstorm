@@ -186,7 +186,7 @@ struct
   let connect ?(check_status=false) socket = failwith "Not yet implemented"
     (* libusb should work *)
 
-#elif defined WIN32 || defined CYGWIN
+#elif defined WIN32 || defined WIN64 || defined CYGWIN
   (* Windows *)
   let bricks () = []
   let connect ?(check_status=false) socket = failwith "Not yet implemented"
@@ -252,7 +252,7 @@ let connect_bluetooth ?(check_status=false) tty =
     close = Unix.close;
     check_status = check_status }
 
-#elif defined WIN32 || defined CYGWIN
+#elif defined WIN32 || defined WIN64 || defined CYGWIN
 (* Windows *)
 external socket_bluetooth : string -> Unix.file_descr
   = "ocaml_mindstorm_connect"

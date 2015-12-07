@@ -7,7 +7,7 @@ open Ocamlbuild_plugin
 let env = BaseEnvLight.load() (* setup.data *)
 
 let arch = String.uppercase(BaseEnvLight.var_get "architecture" env)
-let os_type = String.uppercase(BaseEnvLight.var_get "os_type" env)
+let system = String.uppercase(BaseEnvLight.var_get "system" env)
 let has_usb = bool_of_string(BaseEnvLight.var_get "has_usb" env)
 let ocaml_version = BaseEnvLight.var_get "ocaml_version" env
 
@@ -21,7 +21,7 @@ let my_dispatch = function
                            "src" / "unixsupport_win.h"];
      (* _tags cannot used in FilesAB (sic), configure preprocessing here. *)
      let pp = sprintf "cppo -D %s -D %s%s -V OCAML:%s"
-                      os_type arch (if has_usb then " -D HAS_USB" else "")
+                      system arch (if has_usb then " -D HAS_USB" else "")
                       ocaml_version in
      let pp = S[A "-pp"; A  pp] in
      flag ["pp_mindstorm"; "ocamldep"] pp;
