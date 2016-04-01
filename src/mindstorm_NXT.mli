@@ -229,15 +229,14 @@ sig
   val speed : ?tach_limit:int -> ?brake:bool -> ?sync:bool
     -> ?turn_ratio:int -> int -> state
     (** [speed s] returns a state where [speed] is [s], [motor_on] is
-        true if and only if [s <> 0], and [run_state
-        = `Running].
+        [true] if and only if [s <> 0], and [run_state = `Running].
 
         @param tach_limit set the number of degrees to rotate.
            The movement is unfortunately not fully accurate.
-           Default [0] which means "no limit".
-        @param brake turns on brake.  Default [true].
-        @param sync  turn on [`Motor_sync].  Default [false].
-        @param turn_ratio set a turn-ratio.  Default [0]. *)
+           Default: [0] which means "no limit".
+        @param brake turns on brake.  Default: [true].
+        @param sync  turn on [`Motor_sync].  Default: [false].
+        @param turn_ratio set a turn-ratio.  Default: [0]. *)
 
   val set : ?check_status:bool -> 'a conn -> port -> state -> unit
     (** [set conn p st] sets the state of the motor connected to the
@@ -329,7 +328,7 @@ sig
       The LEGO® NXT 2.0 (8547) includes a color sensor with a
       tri-color led.  The following values allow to configure it.  If
       you have an older brick, this may require that you update its
-      firmware.  Todo it under Linux, you can issue the command
+      firmware.  To do it under Linux, you can issue the command
       [./fwflash path_to_firmware.rfw] (as root) where [fwflash] comes
       from {{:http://code.google.com/p/libnxt/}libnxt}.  The firmware
       1.28 can be dowloaded from

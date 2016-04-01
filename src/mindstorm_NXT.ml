@@ -225,7 +225,7 @@ struct
   (* No USB libary *)
   let bricks () = []
   let connect ?(check_status=false) socket =
-    failwith "The Mindstorm module was compliled without USB support"
+    failwith "The Mindstorm module was compiled without USB support"
 #endif
 end
 

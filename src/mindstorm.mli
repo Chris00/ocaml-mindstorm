@@ -96,7 +96,7 @@ shown):
         ...
 v}
 
-You should then be able to connect to the brick without confirmation
+You should then be able to connect to the brick without a confirmation
 being requested.
 
 
@@ -175,7 +175,8 @@ Once the fantom drivers are on your machine (which is the case if you
 installed the LEGO® NXTG software), the above method does not work
 anymore.  It is then probably necessary to use these drivers through
 the {{:http://mindstorms.lego.com/Overview/NXTreme.aspx}Driver SDK}.
-This will be investigated in a subsequent revision of this library.
+This will be investigated in a subsequent revision of this library
+but you are encouraged to contribute.
 
 
 
