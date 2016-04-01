@@ -12,6 +12,7 @@ License:     LGPL-2.1 with OCaml linking exception
 Homepage:    http://forge.ocamlcore.org/projects/ocaml-mindstorm/
 Plugins:     META (0.4)
 OCamlVersion: >= 3.12
+PreConfCommand: ocaml pp.ml
 
 Flag has_usb
   Description: Whether libusb development files are installed

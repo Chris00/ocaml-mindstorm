@@ -12,12 +12,16 @@ DISTFILES = Makefile myocamlbuild.ml _oasis _opam setup.ml _tags \
 ROOT_TARBALL=$(PKGNAME)-$(VERSION)
 PKG_TARBALL=$(PKGNAME)-$(VERSION).tar.gz
 
+# For the documentation, it is easier if the .mli file doesn't contain
+# macros.  So generate the files (see pp.ml) and include them in the tarball.
+GENERATED_FILES=$(addprefix src/, mindstorm_NXT.mli mindstorm_NXT_lwt.mli)
+
 .PHONY: all byte native configure doc test install uninstall reinstall
 
 all byte native: configure
 	ocaml setup.ml -build
 
-configure: setup.ml
+configure $(GENERATED_FILES): setup.ml src/mindstorm_NXT.pp.mli
 	ocaml $< -configure --enable-tests
 
 setup.ml: _oasis
@@ -48,7 +52,7 @@ website-img:
 	fi
 
 .PHONY: dist tar
-dist tar:
+dist tar: $(GENERATED_FILES)
 	mkdir -p $(ROOT_TARBALL)
 	for f in $(DISTFILES); do \
 	  cp -r --parents $$f $(ROOT_TARBALL); \

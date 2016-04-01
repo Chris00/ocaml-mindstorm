@@ -9,3 +9,6 @@ _build/
 setup.data
 setup.log
 *.tar.gz
+# Generated
+src/mindstorm_NXT.mli
+src/mindstorm_NXT_lwt.mli
