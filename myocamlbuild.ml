@@ -1,5 +1,6 @@
 (* OASIS_START *)
 (* OASIS_STOP *)
+#4
 
 open Printf
 open Ocamlbuild_plugin
