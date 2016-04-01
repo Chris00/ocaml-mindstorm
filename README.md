@@ -6,7 +6,7 @@ Mindstorm
 Prerequisite under Unix
 -----------------------
 
-You need the package `libbluetooth2-dev` (under Debian) or equivalent.
+You need the package `libbluetooth-dev` (under Debian) or equivalent.
 For the USB connection, you must install the package `libusb-1.0-0-dev`
 (its presence should be automatically detected).
 
