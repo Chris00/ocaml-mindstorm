@@ -29,8 +29,7 @@ let really_input_fd =
       (* Naive way of detecting that we are not connected -- because,
          when the brick is off, windows connects and "send" the data
          but always reads 0 bytes back. *)
-      raise(Unix.Unix_error(Unix.EHOSTDOWN,
-                            "Mindstrorm.connect_bluethooth", ""));
+      raise(Unix.Unix_error(Unix.EHOSTDOWN, MODULE(connect_bluethooth), ""));
     let r = Unix.read fd buf i n in
     if r < n then (
       (* Unix.select implemented on windows: [fd] is a file handle, not
@@ -99,7 +98,7 @@ let uint32 s i =
     (* OCaml int are 31 bits (on a 32 bits platform), thus raise an
        exception if the last bit is set. *)
     if Bytes.get s (i + 3) >= '\x40' then
-      failwith "Mindstorm.uint32: overflow (32 bits)";
+      failwith MODULE(uint32: overflow (32 bits));
 #endif
   Char.code(Bytes.get s i)
   lor (Char.code(Bytes.get s (i + 1)) lsl 8)
@@ -124,7 +123,7 @@ let int32 s i =
     (* negative number *)
 #ifndef AMD64
     (* 32 bits architecture *)
-    if msb land 0x40 = 0 then failwith "Mindstorm.int32: overflow (32 bits)";
+    if msb land 0x40 = 0 then failwith MODULE(int32: overflow (32 bits));
 #endif
     let x = Char.code (Bytes.get s i)
             lor (Char.code(Bytes.get s (i + 1)) lsl 8)
@@ -141,7 +140,7 @@ let int32 s i =
   else (
     (* positive number *)
 #ifndef AMD64
-    if msb >= 0x40 then failwith "Mindstorm.int32: overflow (32 bits)";
+    if msb >= 0x40 then failwith MODULE(int32: overflow (32 bits));
 #endif
     Char.code (Bytes.get s i)
     lor (Char.code(Bytes.get s (i + 1)) lsl 8)
@@ -163,13 +162,13 @@ let get_filename s ofs =
   try
     let i = Bytes.index_from s ofs '\000' in
     if i > ofs + 19 then
-      failwith "Mindstorm: invalid filename send by the brick!";
+      failwith MODULE_ERR(invalid filename send by the brick!);
     Bytes.sub_string s ofs (i - ofs)
   with Not_found ->
-    failwith "Mindstorm: invalid filename send by the brick!"
+    failwith MODULE_ERR(invalid filename send by the brick!)
 
 let blit_filename : string -> string -> Bytes.t -> int -> unit =
-  (** [check_filename funname fname pkg ofs] raises
+  (** [blit_filename funname fname pkg ofs] raises
       [Invalid_argument] if the filename [fname] is not valid
       according to the brick limitations; otherwise copy it to [pkg]
       starting at [ofs].  *)

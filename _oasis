@@ -22,7 +22,6 @@ Library mindstorm
   Path:       src
   BuildTools: ocamlbuild
   Modules:    Mindstorm, Mindstorm_NXT, Mindstorm_EV3
-  InternalModules: Mindstorm_common
   BuildDepends: unix, bytes
   BuildTools+: cppo
   CSources:   mindstorm_stubs.c

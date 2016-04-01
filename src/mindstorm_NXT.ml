@@ -30,6 +30,11 @@
    - optional timeouts (for reading and receiving status)?
 *)
 
+#ifndef MODULE_ERR
+#define MODULE_ERR(err) STRINGIFY(Mindstorm.NXT: err)
+#define MODULE(fn) STRINGIFY(Mindstorm.NXT.fn)
+#endif
+
 include Mindstorm_common
 
 type error =
@@ -72,15 +77,19 @@ type error =
   | Out_of_memory (** Insufficient memory available *)
   | Bad_arg (** Bad arguments *)
 
+#ifdef LWT
+exception Error = Mindstorm_NXT.Error
+exception File_not_found = Mindstorm_NXT.File_not_found
+#else
 exception Error of error
-
 exception File_not_found
+#endif
 
 let success_char = '\x00'
 let eof_char = '\x85'
 
 let error =
-  let e = Array.make 256 (Failure "Mindstorm.NXT: undocumented error") in
+  let e = Array.make 256 (Failure MODULE_ERR(undocumented error)) in
   (* Communication protocol errors *)
   e.(0x81) <- Error No_more_handles;
   e.(0x82) <- Error No_space;
@@ -300,7 +309,7 @@ let open_in conn fname =
   Bytes.set pkg 1 '\000'; (* size, MSB *)
   Bytes.set pkg 2 '\x01';
   Bytes.set pkg 3 '\x80'; (* OPEN READ *)
-  blit_filename "Mindstorm.open_in" fname pkg 4;
+  blit_filename MODULE(open_in) fname pkg 4;
   conn.send conn.fd pkg;
   let ans = recv conn 8 in
   let len = uint32 ans 4 in (* len <= 64Kb of RAM *)
@@ -334,8 +343,9 @@ let close_in ch =
 
 let input ch buf ofs len =
   if ofs < 0 || len < 0 || ofs + len > Bytes.length buf || len > 0xFFFF then
-    invalid_arg "Mindstorm.input";
-  if ch.in_left < 0 then raise(Sys_error "Closed NXT in_channel");
+    invalid_arg MODULE(input);
+  if ch.in_left < 0 then
+    raise(Sys_error MODULE_ERR(Closed NXT in_channel));
   if ch.in_left = 0 then raise End_of_file;
   if len = 0 then 0
   else begin
@@ -381,13 +391,13 @@ type out_flag =
 
 (* FIXME: On 64 bits, one must check [length < 2^32] => AMD64 macro*)
 let open_out_gen conn flag_byte length fname =
-  if length < 0 then invalid_arg "Mindstorm.open_out";
+  if length < 0 then invalid_arg MODULE(open_out);
   let pkg = Bytes.create 28 in
   Bytes.set pkg 0 '\026'; (* size, LSB *)
   Bytes.set pkg 1 '\000'; (* size, MSB *)
   Bytes.set pkg 2 '\x01';
   Bytes.set pkg 3 flag_byte; (* type of open *)
-  blit_filename "Mindstorm.open_out" fname pkg 4;
+  blit_filename MODULE(open_out) fname pkg 4;
   copy_uint32 length pkg 24; (* length <= 64Kb of RAM *)
   conn.send conn.fd pkg;
   let ans = recv conn 4 in
@@ -405,7 +415,7 @@ let open_out_append conn fname =
   Bytes.set pkg 1 '\000'; (* size, MSB *)
   Bytes.set pkg 2 '\x01';
   Bytes.set pkg 3 '\x8C'; (* OPEN APPEND DATA *)
-  blit_filename "Mindstorm.open_out" fname pkg 4;
+  blit_filename MODULE(open_out) fname pkg 4;
   conn.send conn.fd pkg;
   let ans = recv conn 8 in
   { out_fd = conn.fd;
@@ -443,7 +453,7 @@ let close_out ch =
 
 let output ch buf ofs len =
   if ofs < 0 || len < 0 || ofs + len > String.length buf || len > 0xFFFC then
-    invalid_arg "Mindstorm.output";
+    invalid_arg MODULE(output);
   if ch.out_closed then raise(Sys_error "Closed NXT out_channel");
   let pkg = Bytes.create (5 + len) in
   copy_uint16 (len + 3) pkg 0; (* 2 BT length bytes; len+3 <= 0xFFFF *)
@@ -463,7 +473,7 @@ let remove conn fname =
   Bytes.set pkg 1 '\000'; (* size, MSB *)
   Bytes.set pkg 2 '\x01';
   Bytes.set pkg 3 '\x85'; (* DELETE *)
-  blit_filename "Mindstorm.remove" fname pkg 4;
+  blit_filename MODULE(remove) fname pkg 4;
   conn.send conn.fd pkg;
   ignore(recv conn 23) (* check status *)
 
@@ -501,7 +511,7 @@ struct
     Bytes.set pkg 1 '\000'; (* size, MSB *)
     Bytes.set pkg 2 '\x01';
     Bytes.set pkg 3 '\x86'; (* FIND FIRST *)
-    blit_filename "Mindstorm.find" fpatt pkg 4;
+    blit_filename MODULE(find) fpatt pkg 4;
     conn.send conn.fd pkg;
     let ans = recv conn 28 in (* might raise File_not_found *)
     { it_fd = conn.fd;
@@ -513,16 +523,18 @@ struct
       it_flength = uint32 ans 24; (* length <= 64Kb of RAM *)
     }
 
+  let closed_exn = Sys_error MODULE_ERR(Closed NXT file_iterator)
+
   let current i =
-    if i.it_closed then raise(Sys_error "Closed NXT file_iterator");
+    if i.it_closed then raise closed_exn;
     i.it_fname
 
   let current_size i =
-    if i.it_closed then raise(Sys_error "Closed NXT file_iterator");
+    if i.it_closed then raise closed_exn;
     i.it_flength
 
   let next i =
-    if i.it_closed then raise(Sys_error "Closed NXT file_iterator");
+    if i.it_closed then raise closed_exn;
     let pkg = Bytes.create 5 in
     Bytes.set pkg 0 '\003'; (* size, LSB *)
     Bytes.set pkg 1 '\000'; (* size, MSB *)
@@ -598,10 +610,10 @@ let set_brick_name ?check_status conn name =
   let check_status = default_check_status conn check_status in
   let len = String.length name in
   if len > 15 then
-    invalid_arg "Mindstorm.set_brick_name: name too long (max 15 chars)";
+    invalid_arg MODULE(set_brick_name: name too long (max 15 chars));
   for i = 0 to len - 1 do
     if name.[i] < ' ' || name.[i] >= '\127' then
-      invalid_arg "Mindstorm.set_brick_name: name contains invalid chars";
+      invalid_arg MODULE(set_brick_name: name contains invalid chars);
   done;
   let pkg = Bytes.create 20 in
   Bytes.set pkg 0 '\018'; (* size, LSB *)
@@ -728,7 +740,7 @@ struct
   let start ?check_status conn name =
     let check_status = default_check_status conn check_status in
     cmd conn ~check_status ~byte1:'\x00' ~n:22  begin fun pkg ->
-      blit_filename "Mindstorm.Program.start" name pkg 4
+      blit_filename MODULE(Program.start) name pkg 4
     end
 
   let stop ?check_status conn =
@@ -784,7 +796,7 @@ struct
   let set ?check_status conn port st =
     let check_status = default_check_status conn check_status in
     if st.tach_limit < 0 then
-      invalid_arg "Mindstorm.Motor.set: state.tach_limit must be >= 0";
+      invalid_arg MODULE(Motor.set: state.tach_limit must be >= 0);
     (* SETOUTPUTSTATE *)
     cmd conn ~check_status ~byte1:'\x04' ~n:13   begin fun pkg ->
       Bytes.set pkg 4 port;
@@ -997,10 +1009,11 @@ struct
     [| `Black (* unused *) ; `Black; `Blue; `Green; `Yellow; `Red; `White |]
   let color_of_data data =
     if data.sensor_type <> `Color_full then
-      invalid_arg "Mindstorm.Sensor.color_of_scaled: the sensor type must \
-	be `Color_full";
+      invalid_arg MODULE(Sensor.color_of_scaled: the sensor
+                         type must be `Color_full);
     if data.scaled < 1 || data.scaled > 6 then
-      invalid_arg "Mindstorm.Sensor.color_of_scaled: scaled data out of range";
+      invalid_arg MODULE(Sensor.color_of_scaled: scaled data
+                         out of range);
     color_of_scaled_tab.(data.scaled)
 
 
@@ -1027,9 +1040,9 @@ struct
   let write ?check_status conn port ?(rx_length=0) tx_data =
     let check_status = default_check_status conn check_status in
     let n = String.length tx_data in
-    if n > 255 then invalid_arg "Mindstorm.Sensor.write: length tx_data > 255";
+    if n > 255 then invalid_arg MODULE(Sensor.write: length tx_data > 255);
     if rx_length < 0 || rx_length > 255 then
-      invalid_arg "Mindstorm.Sensor.write: length rx_length not in 0 .. 255";
+      invalid_arg MODULE(Sensor.write: length rx_length not in 0 .. 255);
     let pkg = Bytes.create (7 + n) in
     copy_uint16 (n + 5) pkg 0; (* 2 bluetooth bytes *)
     Bytes.set pkg 2 (if check_status then '\x00' else '\x80');
@@ -1104,8 +1117,9 @@ struct
       end
 
     let write_val ~check_status us cmd byte2 v =
-      if v < 0 || v > 255 then invalid_arg(Printf.sprintf "Mindstorm.Sensor.\
-		Ultrasonic.set: %s arg not in 0 .. 255" cmd);
+      if v < 0 || v > 255 then
+        invalid_arg(Printf.sprintf MODULE(Sensor.Ultrasonic.set:
+                                          %s arg not in 0 .. 255) cmd);
       write_cmd ~check_status us byte2 (Char.unsafe_chr v)
 
     let set ?(check_status=true) us cmd =
@@ -1162,7 +1176,7 @@ struct
       | '\x02' -> `Meas_cont
       | '\x03' -> `Event
       | '\x04' -> `Reset
-      | _ -> failwith "Mindstorm.Sensor.Ultrasonic.get_state"
+      | _ -> failwith MODULE(Sensor.Ultrasonic.get_state)
 
     let get us var =
       (* Retry any pending garbage bytes in the NXT buffers.  FIXME:
@@ -1186,7 +1200,7 @@ struct
                  );
       (* Check the status of I2C message channel until idle, timeout or
          an error occurs. FIXME: until? needed? *)
-(*    if not(data_ready us) then failwith "Mindstorm.Sensor.Ultrasonic.get"; *)
+(*    if not(data_ready us) then failwith MODULE(Sensor.Ultrasonic.get); *)
       (* Read sensor data *)
       let data = lsread us in
       Char.code (Bytes.get data 4)
@@ -1200,7 +1214,7 @@ struct
     let check_status = default_check_status conn check_status in
     cmd conn ~check_status ~byte1:'\x02' ~n:23 (fun pkg ->
       Bytes.set pkg 4 (if loop then '\x01' else '\x00');
-      blit_filename "Mindstorm.Sound.play" fname pkg 5
+      blit_filename MODULE(Sound.play) fname pkg 5
     )
 
   let stop ?check_status conn =
@@ -1210,7 +1224,7 @@ struct
   let play_tone ?check_status conn freq duration =
     let check_status = default_check_status conn check_status in
     if freq < 200 || freq > 14000 then
-      invalid_arg "Mindstorm.Sound.play_tone: frequency not in 200 .. 14000";
+      invalid_arg MODULE(Sound.play_tone: frequency not in 200 .. 14000);
     cmd conn ~check_status ~byte1:'\x03' ~n:6 (fun pkg ->
       copy_uint16 freq pkg 4;
       copy_uint16 duration pkg 6
@@ -1234,7 +1248,8 @@ struct
 
   let write ?(check_status=true) conn mailbox msg =
     let len = String.length msg in
-    if len > 58 then invalid_arg "Mindstorm.Message.write: message length > 58";
+    if len > 58 then
+      invalid_arg MODULE(Message.write: message length > 58);
     let pkg = Bytes.create (len + 7) in
     copy_uint16 (len + 5) pkg 0; (* cmd length = 4 + msg length + one '\000' *)
     Bytes.set pkg 2 (if check_status then '\x00' else '\x80');

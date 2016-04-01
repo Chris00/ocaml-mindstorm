@@ -18,7 +18,12 @@
 (* References: LEGO MINDSTORMS EV3 "Communication Developer Kit" and
    "Firmware Developer Kit". *)
 
-include Mindstorm_common
+#ifndef MODULE_ERR
+#define MODULE_ERR(err) STRINGIFY(Mindstorm.EV3: err)
+#define MODULE(fn) STRINGIFY(Mindstorm.EV3.fn)
+#endif
+
+#include "mindstorm_common.ml"
 
 (** Handling errors
  ***********************************************************************)
@@ -40,7 +45,7 @@ type error =
 exception Error of error
 
 let error =
-  let e = Array.make 256 (Failure "Mindstorm.NXT: undocumented error") in
+  let e = Array.make 256 (Failure MODULE_ERR(undocumented error)) in
   e.(0x00) <- Failure "Should not happen, contact the Mindstorm developer!";
   e.(0x01) <- Error Unknown_handle;
   e.(0x02) <- Error Handle_not_ready;
