@@ -47,6 +47,7 @@ open Lwt
 #define UNIX(fn) Lwt_unix.fn
 #define TRY_BIND(expr0, v, expr_v, exn_patt) \
   Lwt.try_bind (fun () -> expr0) (fun v -> expr_v) (function exn_patt)
+#define EXCEPTION(e) e
 
 #else
 #define ONLY_LWT(e)
@@ -56,14 +57,20 @@ open Lwt
 #define FAIL(exn) raise(exn)
 #define UNIX(fn) Unix.fn
 
+#if OCAML_MAJOR >= 4 && OCAML_MINOR >= 2
+(* More efficient *)
+#define TRY_BIND(expr0, v, expr_v, exn_patt) \
+  (match expr0 with v -> (expr_v) | exn_patt)
+#define EXCEPTION(e) exception e
+
+#else
 type 'a val_or_exn = Val of 'a | Exn of exn
 #define TRY_BIND(expr0, v, expr_v, exn_patt) \
   (match (try Val(expr0) with exn_ -> Exn exn_) with \
    | Val v -> (expr_v) \
    | Exn exn_ -> (match exn_ with exn_patt))
-
-(* #define TRY_BIND(expr0, v, expr_v, exn_patt) \ *)
-(*   (try expr0 with val v -> (expr_v) | exn_patt) *)
+#define EXCEPTION(e) e
+#endif
 
 #endif
 
@@ -629,33 +636,35 @@ struct
     TRY_BIND(f i.it_fname i.it_flength,
              (), (TRY_BIND(next i,
                            (), iter_loop f i,
-                           File_not_found -> RETURN()
-                         | e -> EXEC(close i) FAIL(e)
+                           EXCEPTION(File_not_found) -> RETURN()
+                         | EXCEPTION(e) -> EXEC(close i) FAIL(e)
                  )),
-             e -> EXEC(close i) (* exn raised by [f] must close the iterator *)
-                  FAIL(e))
+             EXCEPTION(e) ->
+               EXEC(close i) (* exn raised by [f] must close the iterator *)
+               FAIL(e))
 
   let iter conn ~f fpatt =
     TRY_BIND(patt conn fpatt,
              i, iter_loop f i,
-             File_not_found -> RETURN()
-           | e -> FAIL(e))
+             EXCEPTION(File_not_found) -> RETURN()
+           | EXCEPTION(e) -> FAIL(e))
 
   let rec fold_loop f i a =
     TRY_BIND(f i.it_fname i.it_flength a,
              a, (TRY_BIND(next i,
                           (), fold_loop f i a,
-                          File_not_found -> RETURN(a)
-                        | e -> EXEC(close i) FAIL(e)
+                          EXCEPTION(File_not_found) -> RETURN(a)
+                        | EXCEPTION(e) -> EXEC(close i) FAIL(e)
                 )),
-             e -> EXEC(close i) (* exn raised by [f] must close the iterator *)
-                  FAIL(e))
+             EXCEPTION(e) ->
+               EXEC(close i) (* exn raised by [f] must close the iterator *)
+               FAIL(e))
 
   let fold conn ~f fpatt a0 =
     TRY_BIND(patt conn fpatt,
              i, fold_loop f i a0,
-             File_not_found -> RETURN(a0)
-           | e -> FAIL(e))
+             EXCEPTION(File_not_found) -> RETURN(a0)
+           | EXCEPTION(e) -> FAIL(e))
 
   let map conn ~f patt =
     let l = ref [] in
