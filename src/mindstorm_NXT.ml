@@ -31,13 +31,45 @@
 *)
 
 #ifndef MODULE_ERR
+(* Macros to use the correct module name in errors. *)
 #define MODULE_ERR(err) STRINGIFY(Mindstorm.NXT: err)
 #define MODULE(fn) STRINGIFY(Mindstorm.NXT.fn)
 #endif
 
-include Mindstorm_common
+(* Monadic bindings and their imperative counterparts. *)
+#ifdef LWT
+open Lwt
+#define ONLY_LWT(e) e
+#define LET(v, expr) (expr) >>= fun v ->
+#define EXEC(expr) (expr) >>= fun () ->
+#define RETURN(x) Lwt.return(x)
+#define FAIL(exn) Lwt.fail(exn)
+#define UNIX(fn) Lwt_unix.fn
+#define TRY_BIND(expr0, v, expr_v, exn_patt) \
+  Lwt.try_bind (fun () -> expr0) (fun v -> expr_v) (function exn_patt)
 
-type error =
+#else
+#define ONLY_LWT(e)
+#define LET(v, expr) let v = expr in
+#define EXEC(expr) (expr);
+#define RETURN(x) (x)
+#define FAIL(exn) raise(exn)
+#define UNIX(fn) Unix.fn
+
+type 'a val_or_exn = Val of 'a | Exn of exn
+#define TRY_BIND(expr0, v, expr_v, exn_patt) \
+  (match (try Val(expr0) with exn_ -> Exn exn_) with \
+   | Val v -> (expr_v) \
+   | Exn exn_ -> (match exn_ with exn_patt))
+
+(* #define TRY_BIND(expr0, v, expr_v, exn_patt) \ *)
+(*   (try expr0 with val v -> (expr_v) | exn_patt) *)
+
+#endif
+
+#include "mindstorm_common.ml"
+
+type error ONLY_LWT(= Mindstorm_NXT.error) =
   | No_more_handles
   | No_space
   | No_more_files
@@ -131,19 +163,28 @@ let error =
   e
 
 let check_status_as_exn status =
-  if status <> success_char then raise(error.(Char.code status))
+  if status <> success_char then FAIL(error.(Char.code status))
+  else RETURN()
 
 (* ---------------------------------------------------------------------- *)
 (** Connection *)
 
 type usb
-type bluetooth = Unix.file_descr
+type bluetooth = UNIX(file_descr)
 
 (* The type parameter is because we want to distinguish usb and
    bluetooth connections as some commands are only available through USB. *)
+#ifdef LWT
+type 'a conn_send = 'a -> Bytes.t -> unit Lwt.t
+type 'a conn_recv = 'a -> int -> Bytes.t Lwt.t
+type 'a conn_really_input = 'a -> Bytes.t -> int -> int -> unit Lwt.t
+type 'a conn_close = 'a -> unit Lwt.t
+#else
 type 'a conn_send = 'a -> Bytes.t -> unit
 type 'a conn_recv = 'a -> int -> Bytes.t
 type 'a conn_really_input = 'a -> Bytes.t -> int -> int -> unit
+type 'a conn_close = 'a -> unit
+#endif
 type 'a conn = {
   fd : 'a;
   (* We need specialized function depending on the fact that the
@@ -165,7 +206,7 @@ type 'a conn = {
      and puts thrm in [buf] starting at position [ofs].  Do NOT read
      the bluetooth prefix bytes, so should not be used for packages
      but only for additional data. *)
-  close : 'a -> unit;
+  close : 'a conn_close;
   (* Close the connection. *)
   check_status : bool;
   (* Default value of the [check_status] optional arg. *)
@@ -174,9 +215,9 @@ type 'a conn = {
 let close conn = conn.close conn.fd
 
 let recv conn n =
-  let pkg = conn.recv conn.fd n in
-  check_status_as_exn (Bytes.get pkg 2);
-  pkg
+  LET(pkg, conn.recv conn.fd n)
+  EXEC(check_status_as_exn (Bytes.get pkg 2))
+  RETURN(pkg)
 
 let default_check_status conn = function
   | None -> conn.check_status
@@ -191,14 +232,16 @@ struct
 #ifdef HAS_USB
 #ifdef MACOSX
   (* Mac OS X *)
-  let bricks () = []
-  let connect ?(check_status=false) socket = failwith "Not yet implemented"
+  let bricks () = RETURN([])
+  let connect ?(check_status=false) socket =
+    FAIL(Failure "Not yet implemented")
     (* libusb should work *)
 
 #elif defined WIN32 || defined WIN64 || defined CYGWIN
   (* Windows *)
-  let bricks () = []
-  let connect ?(check_status=false) socket = failwith "Not yet implemented"
+  let bricks () = RETURN([])
+  let connect ?(check_status=false) socket =
+    FAIL(Failure "Not yet implemented")
     (* See http://www.microsoft.com/whdc/connect/usb/winusb_howto.mspx *)
 
 #else
@@ -214,76 +257,101 @@ struct
 
   let () = at_exit exit_libusb
 
+#ifdef LWT
+  (* Is there a better solution? *)
+  let bricks = Lwt_preemptive.detach bricks
+  let connect_device = Lwt_preemptive.detach connect_device
+  let close = Lwt_preemptive.detach close
+  let write usb s ofs len =
+    Lwt_preemptive.detach (write usb s ofs) len
+  let really_input usb s ofs len =
+    Lwt_preemptive.detach (really_input usb s ofs) len
+#endif
+
   let recv usb n =
     let buf = Bytes.create n in
-    really_input usb buf 0 n;
-    buf
+    EXEC(really_input usb buf 0 n)
+    RETURN(buf)
 
   (* Ignore the first 2 bytes of [pkg] that are for bluetooth only *)
   let send fd pkg = write fd pkg 2 (Bytes.length pkg - 2)
 
   let connect ?(check_status=false) dev =
-    let fd = connect_device dev in
-    { fd = fd;  send = send;
-      recv = recv;  really_input = really_input;
-      close = close;
-      check_status = check_status }
+    LET(fd, connect_device dev)
+    RETURN({ fd = fd;  send = send;
+             recv = recv;  really_input = really_input;
+             close = close;
+             check_status = check_status })
 
 #endif
 #else
   (* No USB libary *)
-  let bricks () = []
+  let bricks () = RETURN([])
   let connect ?(check_status=false) socket =
-    failwith "The Mindstorm module was compiled without USB support"
+    FAIL(Failure "The Mindstorm module was compiled without USB support")
 #endif
 end
 
 (** Bluetooth -------------------- *)
 
-let bt_send fd pkg = ignore(Unix.write fd pkg 0 (Bytes.length pkg))
+let bt_send fd pkg =
+  LET(_, UNIX(write) fd pkg 0 (Bytes.length pkg))
+  RETURN()
 
 let bt_recv fd n =
-  let _size = really_read fd 2 in
-  let pkg = really_read fd n in
+  LET(_size, really_read fd 2)
+  LET(pkg, really_read fd n)
   assert(Bytes.get pkg 0 = '\x02');
   (* pkg.[1] is the cmd id, do we check it ?? *)
   (* We wanted to check the status and raise the corresponding
      exception here but we cannot because of the behavior of [input]. *)
-  pkg
+  RETURN(pkg)
 
 
 #ifdef MACOSX
 (* Mac OS X *)
 let connect_bluetooth ?(check_status=false) tty =
-  let fd = Unix.openfile tty [Unix.O_RDWR] 0o660 in
-  { fd = fd;  send = bt_send;
-    recv = bt_recv;  really_input = really_input_fd;
-    close = Unix.close;
-    check_status = check_status }
+  LET(fd, UNIX(openfile) tty [Unix.O_RDWR] 0o660)
+  RETURN({ fd = fd;  send = bt_send;
+           recv = bt_recv;  really_input = really_input_fd;
+           close = UNIX(close);
+           check_status = check_status })
 
 #elif defined WIN32 || defined WIN64 || defined CYGWIN
 (* Windows *)
 external socket_bluetooth : string -> Unix.file_descr
   = "ocaml_mindstorm_connect"
 
+#ifdef LWT
+let socket_bluetooth s =
+  Lwt_preemptive.detach socket_bluetooth s >>= fun fd ->
+  Lwt.return(Lwt_unix.of_unix_file_descr fd)
+#endif
+
 let connect_bluetooth ?(check_status=false) addr =
-  let fd = socket_bluetooth ("\\\\.\\" ^ addr) in
-  { fd = fd;  send = bt_send;
-    recv = bt_recv;  really_input = really_input_fd;
-    close = Unix.close;
-    check_status = check_status }
+  LET(fd, socket_bluetooth ("\\\\.\\" ^ addr))
+  RETURN({ fd = fd;  send = bt_send;
+           recv = bt_recv;  really_input = really_input_fd;
+           close = Unix.close;
+           check_status = check_status })
 
 #else
 (* Unix *)
 external socket_bluetooth : string -> Unix.file_descr
   = "ocaml_mindstorm_connect"
 
+#ifdef LWT
+let socket_bluetooth s =
+  Lwt_preemptive.detach socket_bluetooth s >>= fun fd ->
+  Lwt.return(Lwt_unix.of_unix_file_descr fd)
+#endif
+
 let connect_bluetooth ?(check_status=false) addr =
-  let fd = socket_bluetooth addr in
-  { fd = fd;  send = bt_send;
-    recv = bt_recv;  really_input = really_input_fd;
-    close = Unix.close;
-    check_status = check_status }
+  LET(fd, socket_bluetooth addr)
+  RETURN({ fd = fd;  send = bt_send;
+           recv = bt_recv;  really_input = really_input_fd;
+           close = UNIX(close);
+           check_status = check_status })
 
 #endif
 
@@ -310,21 +378,21 @@ let open_in conn fname =
   Bytes.set pkg 2 '\x01';
   Bytes.set pkg 3 '\x80'; (* OPEN READ *)
   blit_filename MODULE(open_in) fname pkg 4;
-  conn.send conn.fd pkg;
-  let ans = recv conn 8 in
+  EXEC(conn.send conn.fd pkg)
+  LET(ans, recv conn 8)
   let len = uint32 ans 4 in (* len <= 64Kb of RAM *)
-  { in_fd = conn.fd;
-    in_send = conn.send;
-    in_recv = conn.recv;
-    in_really_input = conn.really_input;
-    in_handle = Bytes.get ans 3;
-    in_length = len;
-    in_left = len;
-  }
+  RETURN({ in_fd = conn.fd;
+           in_send = conn.send;
+           in_recv = conn.recv;
+           in_really_input = conn.really_input;
+           in_handle = Bytes.get ans 3;
+           in_length = len;
+           in_left = len;
+         })
 
 let in_channel_length ch =
-  if ch.in_left < 0 then raise(Sys_error "Closed NXT in_channel");
-  ch.in_length
+  if ch.in_left < 0 then FAIL(Sys_error "Closed NXT in_channel")
+  else RETURN(ch.in_length)
 
 let close_in ch =
   if ch.in_left >= 0 then begin
@@ -335,19 +403,19 @@ let close_in ch =
     Bytes.set pkg 2 '\x01';
     Bytes.set pkg 3 '\x84'; (* CLOSE *)
     Bytes.set pkg 4 ch.in_handle;
-    ch.in_send ch.in_fd pkg;
-    let ans = ch.in_recv ch.in_fd 4 in
+    EXEC(ch.in_send ch.in_fd pkg)
+    LET(ans, ch.in_recv ch.in_fd 4)
     ch.in_left <- -1;
-    check_status_as_exn (Bytes.get ans 2);
+    check_status_as_exn (Bytes.get ans 2)
   end
+  else RETURN()
 
 let input ch buf ofs len =
   if ofs < 0 || len < 0 || ofs + len > Bytes.length buf || len > 0xFFFF then
-    invalid_arg MODULE(input);
-  if ch.in_left < 0 then
-    raise(Sys_error MODULE_ERR(Closed NXT in_channel));
-  if ch.in_left = 0 then raise End_of_file;
-  if len = 0 then 0
+    invalid_arg MODULE(input)
+  else if ch.in_left < 0 then FAIL(Sys_error MODULE_ERR(Closed NXT in_channel))
+  else if ch.in_left = 0 then FAIL(End_of_file)
+  else if len = 0 then RETURN(0)
   else begin
     let len_to_read = min len ch.in_left (* > 0 *) in
     let pkg = Bytes.create 7 in
@@ -357,20 +425,20 @@ let input ch buf ofs len =
     Bytes.set pkg 3 '\x82'; (* READ *)
     Bytes.set pkg 4 ch.in_handle;
     copy_uint16 len_to_read pkg 5;
-    ch.in_send ch.in_fd pkg;
+    EXEC(ch.in_send ch.in_fd pkg)
     (* Variable length return package.  The number of bytes that was
        requested [len_to_read] is always returned.  Beware that if we
        read the last bytes -- even if there were indeed bytes to read --
        the status will indicate EOF. *)
-    let ans = ch.in_recv ch.in_fd 6 in
+    LET(ans, ch.in_recv ch.in_fd 6)
     let r = uint16 ans 4 in (* # bytes read *)
     assert(r = len_to_read);
-    ch.in_really_input ch.in_fd buf ofs len_to_read;
+    EXEC(ch.in_really_input ch.in_fd buf ofs len_to_read)
     ch.in_left <- ch.in_left - len_to_read;
     let status = Bytes.get ans 2 in
     (* We manage EOF ourselves to respect OCaml conventions: *)
-    if status = success_char || status = eof_char then len_to_read
-    else (check_status_as_exn status; 0)
+    if status = success_char || status = eof_char then RETURN(len_to_read)
+    else (EXEC(check_status_as_exn status) RETURN(0))
   end
 
 type 'a out_channel = {
@@ -399,15 +467,15 @@ let open_out_gen conn flag_byte length fname =
   Bytes.set pkg 3 flag_byte; (* type of open *)
   blit_filename MODULE(open_out) fname pkg 4;
   copy_uint32 length pkg 24; (* length <= 64Kb of RAM *)
-  conn.send conn.fd pkg;
-  let ans = recv conn 4 in
-  { out_fd = conn.fd;
-    out_send = conn.send;
-    out_recv = conn.recv;
-    out_handle = Bytes.get ans 3;
-    out_length = length;
-    out_closed = false;
-  }
+  EXEC(conn.send conn.fd pkg)
+  LET(ans, recv conn 4)
+  RETURN({ out_fd = conn.fd;
+           out_send = conn.send;
+           out_recv = conn.recv;
+           out_handle = Bytes.get ans 3;
+           out_length = length;
+           out_closed = false;
+         })
 
 let open_out_append conn fname =
   let pkg = Bytes.create 24 in
@@ -416,15 +484,15 @@ let open_out_append conn fname =
   Bytes.set pkg 2 '\x01';
   Bytes.set pkg 3 '\x8C'; (* OPEN APPEND DATA *)
   blit_filename MODULE(open_out) fname pkg 4;
-  conn.send conn.fd pkg;
-  let ans = recv conn 8 in
-  { out_fd = conn.fd;
-    out_send = conn.send;
-    out_recv = conn.recv;
-    out_handle = Bytes.get ans 3;
-    out_length = uint32 ans 4; (* <= 64Kb of RAM *)
-    out_closed = false;
-  }
+  EXEC(conn.send conn.fd pkg)
+  LET(ans, recv conn 8)
+  RETURN({ out_fd = conn.fd;
+           out_send = conn.send;
+           out_recv = conn.recv;
+           out_handle = Bytes.get ans 3;
+           out_length = uint32 ans 4; (* <= 64Kb of RAM *)
+           out_closed = false;
+         })
 
 let open_out conn (flag: out_flag) fname =
   match flag with
@@ -445,11 +513,12 @@ let close_out ch =
     Bytes.set pkg 2 '\x01';
     Bytes.set pkg 3 '\x84'; (* CLOSE *)
     Bytes.set pkg 4 ch.out_handle;
-    ch.out_send ch.out_fd pkg;
-    let ans = ch.out_recv ch.out_fd 4 in
+    EXEC(ch.out_send ch.out_fd pkg)
+    LET(ans, ch.out_recv ch.out_fd 4)
     ch.out_closed <- true; (* let the channel be closed even in case of error *)
-    check_status_as_exn (Bytes.get ans 2);
+    check_status_as_exn (Bytes.get ans 2)
   end
+  else RETURN()
 
 let output ch buf ofs len =
   if ofs < 0 || len < 0 || ofs + len > String.length buf || len > 0xFFFC then
@@ -461,10 +530,10 @@ let output ch buf ofs len =
   Bytes.set pkg 3 '\x83'; (* WRITE *)
   Bytes.set pkg 4 ch.out_handle;
   String.blit buf ofs pkg 5 len;
-  ch.out_send ch.out_fd pkg;
-  let ans = ch.out_recv ch.out_fd 6 in
-  check_status_as_exn (Bytes.get ans 2);
-  uint16 ans 4
+  EXEC(ch.out_send ch.out_fd pkg)
+  LET(ans, ch.out_recv ch.out_fd 6)
+  EXEC(check_status_as_exn (Bytes.get ans 2))
+  RETURN(uint16 ans 4)
 
 
 let remove conn fname =
@@ -474,9 +543,9 @@ let remove conn fname =
   Bytes.set pkg 2 '\x01';
   Bytes.set pkg 3 '\x85'; (* DELETE *)
   blit_filename MODULE(remove) fname pkg 4;
-  conn.send conn.fd pkg;
-  ignore(recv conn 23) (* check status *)
-
+  EXEC(conn.send conn.fd pkg)
+  LET(_, recv conn 23) (* check status *)
+  RETURN()
 
 module Find =
 struct
@@ -499,11 +568,12 @@ struct
       Bytes.set pkg 2 '\x01';
       Bytes.set pkg 3 '\x84'; (* CLOSE *)
       Bytes.set pkg 4 it.it_handle;
-      it.it_send it.it_fd pkg;
-      let ans = it.it_recv it.it_fd 4 in
+      EXEC(it.it_send it.it_fd pkg)
+      LET(ans, it.it_recv it.it_fd 4)
       it.it_closed <- true; (* close even if an exception is raised *)
-      check_status_as_exn (Bytes.get ans 2);
+      check_status_as_exn (Bytes.get ans 2)
     end
+    else RETURN()
 
   let patt conn fpatt =
     let pkg = Bytes.create 24 in
@@ -512,75 +582,84 @@ struct
     Bytes.set pkg 2 '\x01';
     Bytes.set pkg 3 '\x86'; (* FIND FIRST *)
     blit_filename MODULE(find) fpatt pkg 4;
-    conn.send conn.fd pkg;
-    let ans = recv conn 28 in (* might raise File_not_found *)
-    { it_fd = conn.fd;
-      it_send = conn.send;
-      it_recv = conn.recv;
-      it_handle = Bytes.get ans 3;
-      it_closed = false;
-      it_fname = get_filename ans 4;
-      it_flength = uint32 ans 24; (* length <= 64Kb of RAM *)
-    }
+    EXEC(conn.send conn.fd pkg)
+    LET(ans, recv conn 28) (* might raise File_not_found *)
+    RETURN({ it_fd = conn.fd;
+             it_send = conn.send;
+             it_recv = conn.recv;
+             it_handle = Bytes.get ans 3;
+             it_closed = false;
+             it_fname = get_filename ans 4;
+             it_flength = uint32 ans 24; (* length <= 64Kb of RAM *)
+           })
 
   let closed_exn = Sys_error MODULE_ERR(Closed NXT file_iterator)
 
   let current i =
-    if i.it_closed then raise closed_exn;
-    i.it_fname
+    if i.it_closed then FAIL(closed_exn)
+    else RETURN(i.it_fname)
 
   let current_size i =
-    if i.it_closed then raise closed_exn;
-    i.it_flength
+    if i.it_closed then FAIL(closed_exn)
+    else RETURN(i.it_flength)
 
   let next i =
-    if i.it_closed then raise closed_exn;
-    let pkg = Bytes.create 5 in
-    Bytes.set pkg 0 '\003'; (* size, LSB *)
-    Bytes.set pkg 1 '\000'; (* size, MSB *)
-    Bytes.set pkg 2 '\x01';
-    Bytes.set pkg 3 '\x87'; (* FIND NEXT *)
-    Bytes.set pkg 4 i.it_handle;
-    i.it_send i.it_fd pkg;
-    let ans = i.it_recv i.it_fd 28 in
-    i.it_fname <- get_filename ans 4;
-    i.it_flength <- uint32 ans 24; (* length <= 64Kb of RAM *)
-    (* In the case the status is File_not_found, the doc says the
-       handle is closed by the brick. (FIXME: confirm?) *)
-    if Bytes.get ans 2 = eof_char then i.it_closed <- true;
-    check_status_as_exn (Bytes.get ans 2)
+    if i.it_closed then FAIL(closed_exn)
+    else (
+      let pkg = Bytes.create 5 in
+      Bytes.set pkg 0 '\003'; (* size, LSB *)
+      Bytes.set pkg 1 '\000'; (* size, MSB *)
+      Bytes.set pkg 2 '\x01';
+      Bytes.set pkg 3 '\x87'; (* FIND NEXT *)
+      Bytes.set pkg 4 i.it_handle;
+      EXEC(i.it_send i.it_fd pkg)
+      LET(ans, i.it_recv i.it_fd 28)
+      i.it_fname <- get_filename ans 4;
+      i.it_flength <- uint32 ans 24; (* length <= 64Kb of RAM *)
+      (* In the case the status is File_not_found, the doc says the
+         handle is closed by the brick. (FIXME: confirm?) *)
+      if Bytes.get ans 2 = eof_char then i.it_closed <- true;
+      check_status_as_exn (Bytes.get ans 2)
+    )
+
+  let rec iter_loop f i =
+    TRY_BIND(f i.it_fname i.it_flength,
+             (), (TRY_BIND(next i,
+                           (), iter_loop f i,
+                           File_not_found -> RETURN()
+                         | e -> EXEC(close i) FAIL(e)
+                 )),
+             e -> EXEC(close i) (* exn raised by [f] must close the iterator *)
+                  FAIL(e))
 
   let iter conn ~f fpatt =
-    match (try Some(patt conn fpatt) with File_not_found -> None) with
-    | None -> ()
-    | Some i ->
-        try
-          let has_more = ref true in
-          while !has_more do
-            f i.it_fname i.it_flength;
-            (try next i with File_not_found -> has_more := false)
-          done
-        with e ->
-          close i; raise e (* exn raised by [f] must close the iterator *)
+    TRY_BIND(patt conn fpatt,
+             i, iter_loop f i,
+             File_not_found -> RETURN()
+           | e -> FAIL(e))
+
+  let rec fold_loop f i a =
+    TRY_BIND(f i.it_fname i.it_flength a,
+             a, (TRY_BIND(next i,
+                          (), fold_loop f i a,
+                          File_not_found -> RETURN(a)
+                        | e -> EXEC(close i) FAIL(e)
+                )),
+             e -> EXEC(close i) (* exn raised by [f] must close the iterator *)
+                  FAIL(e))
 
   let fold conn ~f fpatt a0 =
-    match (try Some(patt conn fpatt) with File_not_found -> None) with
-    | None -> a0
-    | Some i ->
-        let a = ref a0 in
-        try
-          let has_more = ref true in
-          while !has_more do
-            a := f i.it_fname i.it_flength !a;
-            (try next i with File_not_found -> has_more := false)
-          done;
-          !a
-        with e -> close i; raise e
+    TRY_BIND(patt conn fpatt,
+             i, fold_loop f i a0,
+             File_not_found -> RETURN(a0)
+           | e -> FAIL(e))
 
   let map conn ~f patt =
     let l = ref [] in
-    iter conn ~f:(fun name length -> l := f name length :: !l) patt;
-    List.rev !l
+    EXEC(iter conn patt ~f:(fun name length ->
+             LET(v, f name length)
+             RETURN(l := v :: !l)))
+    RETURN(List.rev !l)
 end
 
 (* ---------------------------------------------------------------------- *)
@@ -588,10 +667,10 @@ end
 
 let firmware_version_pkg = Bytes.of_string "\002\000\x01\x88"
 let firmware_version conn =
-  conn.send conn.fd firmware_version_pkg;
-  let ans = recv conn 7 in
-  (Char.code(Bytes.get ans 4), Char.code(Bytes.get ans 3),
-   Char.code(Bytes.get ans 6), Char.code(Bytes.get ans 5))
+  EXEC(conn.send conn.fd firmware_version_pkg)
+  LET(ans, recv conn 7)
+  RETURN((Char.code(Bytes.get ans 4), Char.code(Bytes.get ans 3),
+          Char.code(Bytes.get ans 6), Char.code(Bytes.get ans 5)))
 
 let boot conn =
   let arg = "Let's dance: SAMBA" in
@@ -603,8 +682,9 @@ let boot conn =
   Bytes.set pkg 3 '\x97'; (* BOOT COMMAND *)
   String.blit arg 0 pkg 4 len;
   Bytes.fill pkg (4 + len) (19 - len) '\000';
-  conn.send conn.fd pkg;
-  ignore(recv conn 7)
+  EXEC(conn.send conn.fd pkg)
+  LET(_, recv conn 7)
+  RETURN()
 
 let set_brick_name ?check_status conn name =
   let check_status = default_check_status conn check_status in
@@ -622,11 +702,11 @@ let set_brick_name ?check_status conn name =
   Bytes.set pkg 3 '\x98'; (* SET BRICK NAME *)
   String.blit name 0 pkg 4 len;
   Bytes.fill pkg (4 + len) (16 - len) '\000'; (* pad if needed *)
-  conn.send conn.fd pkg;
-  if check_status then ignore(recv conn 3)
+  EXEC(conn.send conn.fd pkg)
+  if check_status then (LET(_, recv conn 3) RETURN())
+  else RETURN()
 
-
-type brick_info = {
+type brick_info ONLY_LWT(= Mindstorm_NXT.brick_info) = {
   brick_name : string;
   bluetooth_addr : string;
   signal_strength : int;
@@ -649,24 +729,26 @@ let string_of_bluetooth_addr =
 
 let device_info_pkg = Bytes.of_string "\002\000\x01\x9B"
 let get_device_info conn =
-  conn.send conn.fd device_info_pkg; (* GET DEVICE INFO *)
-  let ans = recv conn 33 in
-  { brick_name = get_brick_name ans 3 17; (* 14 chars + null *)
-    bluetooth_addr = (* ans.[18 .. 24], drop null terminator *)
-      string_of_bluetooth_addr(Bytes.sub_string ans 18 6);
-    signal_strength = uint32 ans 25; (* always return 0! *)
-    free_user_flash = uint32 ans 29; (* <= 64Kb of RAM *)
-  }
+  EXEC(conn.send conn.fd device_info_pkg) (* GET DEVICE INFO *)
+  LET(ans, recv conn 33)
+  RETURN({ brick_name = get_brick_name ans 3 17; (* 14 chars + null *)
+           bluetooth_addr = (* ans.[18 .. 24], drop null terminator *)
+             string_of_bluetooth_addr(Bytes.sub_string ans 18 6);
+           signal_strength = uint32 ans 25; (* always return 0! *)
+           free_user_flash = uint32 ans 29; (* <= 64Kb of RAM *)
+         })
 
 let delete_user_flash_pkg = Bytes.of_string "\002\000\x01\xA0"
 let delete_user_flash conn =
-  conn.send conn.fd delete_user_flash_pkg; (* DELETE USER FLASH *)
-  ignore(recv conn 3)
+  EXEC(conn.send conn.fd delete_user_flash_pkg) (* DELETE USER FLASH *)
+  LET(_, recv conn 3)
+  RETURN()
 
 let bluetooth_reset_pkg = Bytes.of_string "\002\000\x01\xA4"
 let bluetooth_reset conn =
-  conn.send conn.fd bluetooth_reset_pkg; (* BLUETOOTH FACTORY RESET *)
-  ignore(recv conn 3)
+  EXEC(conn.send conn.fd bluetooth_reset_pkg) (* BLUETOOTH FACTORY RESET *)
+  LET(_, recv conn 3)
+  RETURN()
 
 let char_of_buffer_type = function
   | `Poll_buffer -> '\x00'
@@ -679,9 +761,9 @@ let poll_length conn buf =
   Bytes.set pkg 2 '\x01';
   Bytes.set pkg 3 '\xA1'; (* POLL COMMAND LENGTH *)
   Bytes.set pkg 4 (char_of_buffer_type buf);
-  conn.send conn.fd pkg;
-  let ans = recv conn 5 in
-  Char.code(Bytes.get ans 4)
+  EXEC(conn.send conn.fd pkg)
+  LET(ans, recv conn 5)
+  RETURN(Char.code(Bytes.get ans 4))
 
 let poll_command conn buf len =
  let pkg = Bytes.create 6 in
@@ -691,24 +773,24 @@ let poll_command conn buf len =
   Bytes.set pkg 3 '\xA2'; (* POLL COMMAND *)
   Bytes.set pkg 4 (char_of_buffer_type buf);
   Bytes.set pkg 5 (char_of_int len);
-  conn.send conn.fd pkg;
-  let ans = recv conn 65 in
-  (Char.code(Bytes.get ans 4),
-   Bytes.sub_string ans 5 60) (* FIXME: Null terminator? *)
+  EXEC(conn.send conn.fd pkg)
+  LET(ans, recv conn 65)
+  RETURN((Char.code(Bytes.get ans 4),
+          Bytes.sub_string ans 5 60)) (* FIXME: Null terminator? *)
 
 
 let keep_alive_pkg = Bytes.of_string "\002\000\x00\x0D"
 let keep_alive conn =
-  conn.send conn.fd keep_alive_pkg; (* KEEPALIVE *)
-  let ans = recv conn 7 in
-  uint32 ans 3 (* FIXME: # of miliseconds can overflow 30 bits? *)
+  EXEC(conn.send conn.fd keep_alive_pkg) (* KEEPALIVE *)
+  LET(ans, recv conn 7)
+  RETURN(uint32 ans 3) (* FIXME: # of miliseconds can overflow 30 bits? *)
 
 
 let battery_level_pkg = Bytes.of_string "\002\000\x00\x0B"
 let battery_level conn =
-  conn.send conn.fd battery_level_pkg; (* GETBATTERYLEVEL *)
-  let ans = recv conn 5 in
-  uint16 ans 3
+  EXEC(conn.send conn.fd battery_level_pkg) (* GETBATTERYLEVEL *)
+  LET(ans, recv conn 5)
+  RETURN(uint16 ans 3)
 
 
 (* ---------------------------------------------------------------------- *)
@@ -731,9 +813,9 @@ let cmd conn ~check_status ~byte1 ~n fill =
   Bytes.set pkg 2 (if check_status then '\x00' else '\x80');
   Bytes.set pkg 3 byte1;
   fill pkg;
-  conn.send conn.fd pkg;
-  if check_status then ignore(recv conn 3)
-
+  EXEC(conn.send conn.fd pkg)
+  if check_status then (LET(_, recv conn 3) RETURN())
+  else RETURN()
 
 module Program =
 struct
@@ -749,9 +831,9 @@ struct
 
   let name_pkg = Bytes.of_string "\002\000\x00\x11"
   let name conn =
-    conn.send conn.fd name_pkg; (* GETCURRENTPROGRAMNAME *)
-    let ans = recv conn 23 in
-    get_filename ans 3
+    EXEC(conn.send conn.fd name_pkg) (* GETCURRENTPROGRAMNAME *)
+    LET(ans, recv conn 23)
+    RETURN(get_filename ans 3)
 end
 
 
@@ -771,7 +853,8 @@ struct
          one REG_MODE value at a time." *)
   type run_state = [ `Idle | `Ramp_up | `Running | `Ramp_down ]
 
-  type state = {
+
+  type state ONLY_LWT(= Mindstorm_NXT.Motor.state) = {
     speed : int;
     motor_on : bool; (* FIXME: do we remove this and set
                         motor_on = (speed <> 0) ? *)
@@ -828,8 +911,8 @@ struct
     Bytes.set pkg 2 '\x00'; (* get an answer *)
     Bytes.set pkg 3 '\x06'; (* GETOUTPUTSTATE *)
     Bytes.set pkg 4 motor;
-    conn.send conn.fd pkg;
-    let ans = recv conn 25 in
+    EXEC(conn.send conn.fd pkg)
+    LET(ans, recv conn 25)
     let mode = Char.code(Bytes.get ans 5) in
     let st =
       { speed = signed_code (Bytes.get ans 4);
@@ -853,7 +936,7 @@ struct
     and rotation_count = int32 ans 21
       (* The Exec. File Spec. says ROTATION_COUNT Legal value range is
          [-2147483648, 2147483647] so all 32 bits may be used. *) in
-    (st, tach_count, block_tach_count, rotation_count)
+    RETURN((st, tach_count, block_tach_count, rotation_count))
 
 
   let reset_pos ?check_status conn ?(relative=false) port =
@@ -946,7 +1029,7 @@ struct
                       );
     end
 
-  type data = {
+  type data ONLY_LWT(= Mindstorm_NXT.Sensor.data) = {
     sensor_type : sensor_type;
     mode : mode;
     valid : bool;
@@ -964,46 +1047,46 @@ struct
     Bytes.set pkg 2 '\x00'; (* get a reply *)
     Bytes.set pkg 3 '\x07'; (* GETINPUTVALUES *)
     Bytes.set pkg 4 (char_of_port port);
-    conn.send conn.fd pkg;
-    let ans = recv conn 16 in
-    { valid = Bytes.get ans 4 <> '\x00';
-      sensor_type = (match Bytes.get ans 6 with
-                     | '\x00' -> `No_sensor
-                     | '\x01' -> `Switch
-                     | '\x02' -> `Temperature
-                     | '\x03' -> `Reflection
-                     | '\x04' -> `Angle
-                     | '\x05' -> `Light_active
-                     | '\x06' -> `Light_inactive
-                     | '\x07' -> `Sound_db
-                     | '\x08' -> `Sound_dba
-                     | '\x09' -> `Custom
-                     | '\x0A' -> `Lowspeed
-                     | '\x0B' -> `Lowspeed_9v
-                     | '\x0C' -> `Highspeed
-                     | '\x0D' -> `Color_full
-                     | '\x0E' -> `Color_red
-                     | '\x0F' -> `Color_green
-                     | '\x10' -> `Color_blue
-                     | '\x11' -> `Color_none
+    EXEC(conn.send conn.fd pkg)
+    LET(ans, recv conn 16)
+    RETURN({ valid = Bytes.get ans 4 <> '\x00';
+             sensor_type = (match Bytes.get ans 6 with
+                            | '\x00' -> `No_sensor
+                            | '\x01' -> `Switch
+                            | '\x02' -> `Temperature
+                            | '\x03' -> `Reflection
+                            | '\x04' -> `Angle
+                            | '\x05' -> `Light_active
+                            | '\x06' -> `Light_inactive
+                            | '\x07' -> `Sound_db
+                            | '\x08' -> `Sound_dba
+                            | '\x09' -> `Custom
+                            | '\x0A' -> `Lowspeed
+                            | '\x0B' -> `Lowspeed_9v
+                            | '\x0C' -> `Highspeed
+                            | '\x0D' -> `Color_full
+                            | '\x0E' -> `Color_red
+                            | '\x0F' -> `Color_green
+                            | '\x10' -> `Color_blue
+                            | '\x11' -> `Color_none
+                            | _ -> raise(Error Out_of_range));
+             mode = (match Bytes.get ans 7 with
+                     | '\x00' -> `Raw
+                     | '\x20' -> `Bool
+                     | '\x40' -> `Transition_cnt
+                     | '\x60' -> `Period_counter
+                     | '\x80' -> `Pct_full_scale
+                     | '\xA0' -> `Celsius
+                     | '\xC0' -> `Fahrenheit
+                     | '\xE0' -> `Angle_steps
+                     | '\x1F' -> `Slope_mask
+                     (*| '\xE0' -> `Mode_mask*)
                      | _ -> raise(Error Out_of_range));
-        mode = (match Bytes.get ans 7 with
-                | '\x00' -> `Raw
-                | '\x20' -> `Bool
-                | '\x40' -> `Transition_cnt
-                | '\x60' -> `Period_counter
-                | '\x80' -> `Pct_full_scale
-                | '\xA0' -> `Celsius
-                | '\xC0' -> `Fahrenheit
-                | '\xE0' -> `Angle_steps
-                | '\x1F' -> `Slope_mask
-                (*| '\xE0' -> `Mode_mask*)
-                | _ -> raise(Error Out_of_range));
-      raw = uint16 ans 8;
-      normalized = uint16 ans 10;
-      scaled = int16 ans 12;
-      (* calibrated = int16 and 14; *)
-    }
+             raw = uint16 ans 8;
+             normalized = uint16 ans 10;
+             scaled = int16 ans 12;
+             (* calibrated = int16 and 14; *)
+    })
 
   let color_of_scaled_tab =
     [| `Black (* unused *) ; `Black; `Blue; `Green; `Yellow; `Red; `White |]
@@ -1033,9 +1116,9 @@ struct
     Bytes.set pkg 2 '\x00';
     Bytes.set pkg 3 '\x0E'; (* LSGETSTATUS *)
     Bytes.set pkg 4 (char_of_port port);
-    conn.send conn.fd pkg;
-    let ans = recv conn 4 in
-    Char.code (Bytes.get ans 3)
+    EXEC(conn.send conn.fd pkg)
+    LET(ans, recv conn 4)
+    RETURN(Char.code (Bytes.get ans 3))
 
   let write ?check_status conn port ?(rx_length=0) tx_data =
     let check_status = default_check_status conn check_status in
@@ -1051,8 +1134,9 @@ struct
     Bytes.set pkg 5 (Char.unsafe_chr n); (* tx bytes (# bytes sent) *)
     Bytes.set pkg 6 (Char.unsafe_chr rx_length);
     String.blit tx_data 0 pkg 7 n;
-    conn.send conn.fd pkg;
-    if check_status then ignore(recv conn 3)
+    EXEC(conn.send conn.fd pkg)
+    if check_status then (LET(_, recv conn 3) RETURN())
+    else RETURN()
 
   let read conn port =
     let pkg = Bytes.create 5 in
@@ -1061,10 +1145,10 @@ struct
     Bytes.set pkg 2 '\x00';
     Bytes.set pkg 3 '\x10'; (* LSREAD *)
     Bytes.set pkg 4 (char_of_port port);
-    conn.send conn.fd pkg;
-    let ans = recv conn 20 in
+    EXEC(conn.send conn.fd pkg)
+    LET(ans, recv conn 20)
     let rx_length = min (Char.code (Bytes.get ans 3)) 16 in
-    Bytes.sub_string ans 4 rx_length
+    RETURN(Bytes.sub_string ans 4 rx_length)
 
   (** Ultrasonic sensor *)
   (* Specification of the I2C protocol for the ultrasonic sensor given
@@ -1083,7 +1167,7 @@ struct
     let make conn port =
       (* We need to let the I2C time to init, so better to check the
          return status. *)
-      set ~check_status:true conn port `Lowspeed_9v `Raw;
+      EXEC(set ~check_status:true conn port `Lowspeed_9v `Raw)
       let port = char_of_port port in
       let ls_status = Bytes.create 5 in
       Bytes.set ls_status 0 '\003'; (* 2 BT bytes *)
@@ -1091,12 +1175,12 @@ struct
       Bytes.set ls_status 2 '\x00';
       Bytes.set ls_status 3 '\x0E'; (* LSGETSTATUS *)
       Bytes.set ls_status 4 port;
-      { u_fd = conn.fd;
-        u_send = conn.send;
-        u_recv = conn.recv;
-        port = port;
-        ls_status = ls_status;
-      }
+      RETURN({ u_fd = conn.fd;
+               u_send = conn.send;
+               u_recv = conn.recv;
+               port = port;
+               ls_status = ls_status;
+             })
 
     let write_cmd ~check_status us byte2 byte3 =
       (* Special write because the string length is statically known *)
@@ -1110,11 +1194,12 @@ struct
       Bytes.set pkg 7 '\x02'; (* 1st byte of command: I2C dev *)
       Bytes.set pkg 8 byte2;  (* 2nd byte of command *)
       Bytes.set pkg 9 byte3;  (* 3rd byte of command *)
-      us.u_send us.u_fd pkg;
+      EXEC(us.u_send us.u_fd pkg)
       if check_status then begin
-        let ans = us.u_recv us.u_fd 3 in
-        check_status_as_exn (Bytes.get ans 2)
-      end
+          LET(ans, us.u_recv us.u_fd 3)
+          check_status_as_exn (Bytes.get ans 2)
+        end
+      else RETURN()
 
     let write_val ~check_status us cmd byte2 v =
       if v < 0 || v > 255 then
@@ -1142,10 +1227,10 @@ struct
       Bytes.set pkg 2 '\x00';
       Bytes.set pkg 3 '\x10'; (* LSREAD *)
       Bytes.set pkg 4 us.port;
-      us.u_send us.u_fd pkg;
-      let ans = us.u_recv us.u_fd 20 in
-      check_status_as_exn (Bytes.get ans 2);
-      ans (* I2C data starts at byte 4 *)
+      EXEC(us.u_send us.u_fd pkg)
+      LET(ans, us.u_recv us.u_fd 20)
+      EXEC(check_status_as_exn (Bytes.get ans 2))
+      RETURN(ans) (* I2C data starts at byte 4 *)
 
     let lswrite us addr =
       let pkg = Bytes.create 9 in
@@ -1158,25 +1243,26 @@ struct
       Bytes.set pkg 7 '\x02'; (* 1st byte of command: I2C dev *)
       Bytes.set pkg 8 addr;
       (* 'Restart Messaging + 0x03', is sent by the brick itself. *)
-      us.u_send us.u_fd pkg;
-      let ans = us.u_recv us.u_fd 3 in
+      EXEC(us.u_send us.u_fd pkg)
+      LET(ans, us.u_recv us.u_fd 3)
       check_status_as_exn (Bytes.get ans 2)
 
     let data_ready us =
-      us.u_send us.u_fd us.ls_status;
-      let ans = us.u_recv us.u_fd 4 in
-      check_status_as_exn (Bytes.get ans 2);
-      Bytes.get ans 3 <> '\000'
+      EXEC(us.u_send us.u_fd us.ls_status)
+      LET(ans, us.u_recv us.u_fd 4)
+      EXEC(check_status_as_exn (Bytes.get ans 2))
+      RETURN(Bytes.get ans 3 <> '\000')
 
     let get_state us =
-      lswrite us '\x41'; (* Read command state *)
-      match Bytes.get (lsread us) 4 with
-      | '\x00' -> `Off
-      | '\x01' -> `Meas
-      | '\x02' -> `Meas_cont
-      | '\x03' -> `Event
-      | '\x04' -> `Reset
-      | _ -> failwith MODULE(Sensor.Ultrasonic.get_state)
+      EXEC(lswrite us '\x41') (* Read command state *)
+      LET(ans, lsread us)
+      match Bytes.get ans 4 with
+      | '\x00' -> RETURN(`Off)
+      | '\x01' -> RETURN(`Meas)
+      | '\x02' -> RETURN(`Meas_cont)
+      | '\x03' -> RETURN(`Event)
+      | '\x04' -> RETURN(`Reset)
+      | _ -> FAIL(Failure(MODULE(Sensor.Ultrasonic.get_state)))
 
     let get us var =
       (* Retry any pending garbage bytes in the NXT buffers.  FIXME:
@@ -1184,26 +1270,26 @@ struct
          bytes are to be read!  *)
       (* ignore(lsread us); *)
       (* Retrieve the data of [var] *)
-      lswrite us (match var with (* 2nd byte of command: var to read *)
-                  | `Byte0 -> '\x42'
-                  | `Byte1 -> '\x43'
-                  | `Byte2 -> '\x44'
-                  | `Byte3 -> '\x45'
-                  | `Byte4 -> '\x46'
-                  | `Byte5 -> '\x47'
-                  | `Byte6 -> '\x48'
-                  | `Byte7 -> '\x49'
-                  | `Meas_interval -> '\x40'
-                  | `Zero -> '\x50'
-                  | `Scale_mul -> '\x51'
-                  | `Scale_div -> '\x52'
-                 );
+      let v = match var with (* 2nd byte of command: var to read *)
+        | `Byte0 -> '\x42'
+        | `Byte1 -> '\x43'
+        | `Byte2 -> '\x44'
+        | `Byte3 -> '\x45'
+        | `Byte4 -> '\x46'
+        | `Byte5 -> '\x47'
+        | `Byte6 -> '\x48'
+        | `Byte7 -> '\x49'
+        | `Meas_interval -> '\x40'
+        | `Zero -> '\x50'
+        | `Scale_mul -> '\x51'
+        | `Scale_div -> '\x52' in
+      EXEC(lswrite us v)
       (* Check the status of I2C message channel until idle, timeout or
          an error occurs. FIXME: until? needed? *)
 (*    if not(data_ready us) then failwith MODULE(Sensor.Ultrasonic.get); *)
       (* Read sensor data *)
-      let data = lsread us in
-      Char.code (Bytes.get data 4)
+      LET(data, lsread us)
+      RETURN(Char.code (Bytes.get data 4))
 
   end
 end
@@ -1258,8 +1344,9 @@ struct
     Bytes.set pkg 5 (Char.unsafe_chr len);
     String.blit msg 0 pkg 6 len;
     Bytes.set pkg (len+6) '\000';
-    conn.send conn.fd pkg;
-    if check_status then ignore(recv conn 3)
+    EXEC(conn.send conn.fd pkg)
+    if check_status then (LET(_, recv conn 3) RETURN())
+    else RETURN()
 
   let read conn ?(remove=false) mailbox =
     let pkg = Bytes.create 7 in
@@ -1270,8 +1357,8 @@ struct
     Bytes.set pkg 4 (char_of_mailbox mailbox); (* remote inbox *)
     Bytes.set pkg 5 '\000'; (* local inbox; unused.  FIXME: normal? *)
     Bytes.set pkg 6 (if remove then '\x01' else '\x00');
-    conn.send conn.fd pkg;
-    let ans = recv conn 64 in
+    EXEC(conn.send conn.fd pkg)
+    LET(ans, recv conn 64)
     let len = try Bytes.index_from ans 5 '\000' - 5 with Not_found -> 59 in
-    Bytes.sub_string ans 5 len
+    RETURN(Bytes.sub_string ans 5 len)
 end

@@ -27,6 +27,8 @@ let my_dispatch = function
      let pp = S[A "-pp"; A  pp] in
      flag ["pp_mindstorm"; "ocamldep"] pp;
      flag ["pp_mindstorm"; "ocaml"; "compile"] pp;
+     dep ["ocamldep"] & ["src/mindstorm_common.ml"];
+     dep ["ocaml"; "compile"] & ["src/mindstorm_common.ml"];
 
      dep ["doc"; "docdir"; "extension:html"; "ocaml"] &
        ["doc/intro.txt"];

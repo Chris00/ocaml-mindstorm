@@ -18,11 +18,15 @@ Flag has_usb
   Description: Whether libusb development files are installed
   Default: false
 
+Flag lwt
+  Description: Whether the Lwt package is present
+  Default: false
+
 Library mindstorm
   Path:       src
   BuildTools: ocamlbuild
-  Modules:    Mindstorm, Mindstorm_NXT, Mindstorm_EV3
-  BuildDepends: unix, bytes
+  Modules:    Mindstorm, Mindstorm_NXT, Mindstorm_NXT_lwt, Mindstorm_EV3
+  BuildDepends: unix, bytes, threads, lwt, lwt.unix, lwt.preemptive
   BuildTools+: cppo
   CSources:   mindstorm_stubs.c
   if architecture(amd64)

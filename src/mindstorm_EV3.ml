@@ -23,6 +23,13 @@
 #define MODULE(fn) STRINGIFY(Mindstorm.EV3.fn)
 #endif
 
+#define ONLY_LWT(e)
+#define LET(v, expr) let v = expr in
+#define EXEC(expr) (expr);
+#define RETURN(x) (x)
+#define FAIL(exn) raise(exn)
+#define UNIX(fn) Unix.fn
+
 #include "mindstorm_common.ml"
 
 (** Handling errors

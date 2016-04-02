@@ -21,8 +21,8 @@ GENERATED_FILES=$(addprefix src/, mindstorm_NXT.mli mindstorm_NXT_lwt.mli)
 all byte native: configure
 	ocaml setup.ml -build
 
-configure $(GENERATED_FILES): setup.ml src/mindstorm_NXT.pp.mli
-	ocaml $< -configure --enable-tests
+configure $(GENERATED_FILES): setup.ml src/mindstorm_NXT.pp.mli pp.ml
+	ocaml $< -configure --enable-tests --enable-lwt
 
 setup.ml: _oasis
 	oasis setup -setup-update dynamic

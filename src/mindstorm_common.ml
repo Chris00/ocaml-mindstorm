@@ -25,12 +25,14 @@ let min i j = if (i:int) < j then i else j
 #if defined WIN32 || defined WIN64 || defined CYGWIN
 let really_input_fd =
   let rec loop ntries fd buf i n =
-    if ntries > 50 && i = 0 then
-      (* Naive way of detecting that we are not connected -- because,
-         when the brick is off, windows connects and "send" the data
-         but always reads 0 bytes back. *)
-      raise(Unix.Unix_error(Unix.EHOSTDOWN, MODULE(connect_bluethooth), ""));
-    let r = Unix.read fd buf i n in
+    EXEC(if ntries > 50 && i = 0 then
+           (* Naive way of detecting that we are not connected -- because,
+              when the brick is off, windows connects and "send" the data
+              but always reads 0 bytes back. *)
+           FAIL(Unix.Unix_error(Unix.EHOSTDOWN,
+                                MODULE(connect_bluethooth), ""))
+         else RETURN())
+    LET(r, UNIX(read) fd buf i n)
     if r < n then (
       (* Unix.select implemented on windows: [fd] is a file handle, not
          a socket. *)
@@ -42,21 +44,26 @@ let really_input_fd =
 (* Unix & Mac OS X *)
 let really_input_fd =
   let rec loop fd buf i n =
-    let r = Unix.read fd buf i n in
+    LET(r, UNIX(read) fd buf i n)
     if r < n then (
       (* The doc says 60ms are needed to switch from receive to
          transmit mode. *)
+#ifdef LWT
+      Lwt_unix.sleep 0.060 >>= fun () ->
+#else
       ignore(Unix.select [fd] [] [] 0.060);
+#endif
       loop fd buf (i + r) (n - r)
-    ) in
+    )
+    else RETURN() in
   fun fd buf ofs n -> loop fd buf ofs n
 
 #endif
 
 let really_read fd n =
   let buf = Bytes.create n in
-  really_input_fd fd buf 0 n;
-  buf
+  EXEC(really_input_fd fd buf 0 n)
+  RETURN(buf)
 
 (* Char of a signed int, 2's complement.  All uses of this function
    are for values in the range -100 .. 100, so if outside the value is

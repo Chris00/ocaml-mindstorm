@@ -109,13 +109,13 @@ type error IF_LWT(= Mindstorm_NXT.error,) =
   | Bad_arg (** Bad arguments *)
 
 
-exception Error IF_LWT(= Mindstorm_NXT.Error, of error)
+exception Error of error
   (** This exception can be raised by any of the functions below
       except when the optional argument [~check_status] is set to
       false.  Note that checking for errors leads to up to
       approximately a 60ms latency between two commands.  *)
 
-exception File_not_found IF_LWT(= Mindstorm_NXT.File_not_found,)
+exception File_not_found
   (** Raised to indicate that a file is not present on the brick. *)
 
 
@@ -732,7 +732,7 @@ val set_brick_name : ?check_status:bool -> 'a conn -> string -> unit LWT
       brick (and raise [Error] accordingly).  Default: see
       {!Mindstorm.NXT.connect_bluetooth}.  *)
 
-type brick_info IF_LWT(= Mindstorm_NTX.brick_info,) = {
+type brick_info IF_LWT(= Mindstorm_NXT.brick_info,) = {
   brick_name : string;
     (** NXT name (set with {!Mindstorm.NXT.set_brick_name}) *)
   bluetooth_addr : string; (** Bluetooth address *)
