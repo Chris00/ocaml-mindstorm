@@ -34,6 +34,12 @@ module NXT = Mindstorm_NXT
 module NXT : module type of Mindstorm_NXT
 #endif
 
+#if OCAML_MAJOR >= 4 && OCAML_MINOR >= 2
+module NXT_lwt = Mindstorm_NXT_lwt
+#else
+module NXT_lwt : module type of Mindstorm_NXT_lwt
+#endif
+
 (** (ALPHA VERSION)
     Interface to EV3 bricks (it is an alias of {!module:Mindstorm_EV3}
     but [Mindstorm.EV3] should be used). *)
