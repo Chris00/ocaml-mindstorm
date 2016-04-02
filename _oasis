@@ -73,6 +73,15 @@ Executable file_list
   CompiledObject: best
   Install:      false
 
+Executable file_list_lwt
+  Build$:	flag(tests) && flag(lwt)
+  Path:         tests/
+  MainIs:       file_list_lwt.ml
+  BuildTools:   ocamlbuild
+  BuildDepends: mindstorm
+  CompiledObject: best
+  Install:      false
+
 Executable info
   Build$:	flag(tests)
   Path:         tests/
