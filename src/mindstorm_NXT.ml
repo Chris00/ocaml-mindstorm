@@ -412,7 +412,7 @@ let close_in ch =
 
 let input ch buf ofs len =
   if ofs < 0 || len < 0 || ofs + len > Bytes.length buf || len > 0xFFFF then
-    invalid_arg MODULE(input)
+    FAIL(Invalid_argument (MODULE(input)))
   else if ch.in_left < 0 then FAIL(Sys_error MODULE_ERR(Closed NXT in_channel))
   else if ch.in_left = 0 then FAIL(End_of_file)
   else if len = 0 then RETURN(0)
@@ -459,23 +459,25 @@ type out_flag =
 
 (* FIXME: On 64 bits, one must check [length < 2^32] => AMD64 macro*)
 let open_out_gen conn flag_byte length fname =
-  if length < 0 then invalid_arg MODULE(open_out);
-  let pkg = Bytes.create 28 in
-  Bytes.set pkg 0 '\026'; (* size, LSB *)
-  Bytes.set pkg 1 '\000'; (* size, MSB *)
-  Bytes.set pkg 2 '\x01';
-  Bytes.set pkg 3 flag_byte; (* type of open *)
-  blit_filename MODULE(open_out) fname pkg 4;
-  copy_uint32 length pkg 24; (* length <= 64Kb of RAM *)
-  EXEC(conn.send conn.fd pkg)
-  LET(ans, recv conn 4)
-  RETURN({ out_fd = conn.fd;
-           out_send = conn.send;
-           out_recv = conn.recv;
-           out_handle = Bytes.get ans 3;
-           out_length = length;
-           out_closed = false;
-         })
+  if length < 0 then FAIL(Invalid_argument MODULE(open_out))
+  else (
+    let pkg = Bytes.create 28 in
+    Bytes.set pkg 0 '\026'; (* size, LSB *)
+    Bytes.set pkg 1 '\000'; (* size, MSB *)
+    Bytes.set pkg 2 '\x01';
+    Bytes.set pkg 3 flag_byte; (* type of open *)
+    blit_filename MODULE(open_out) fname pkg 4;
+    copy_uint32 length pkg 24; (* length <= 64Kb of RAM *)
+    EXEC(conn.send conn.fd pkg)
+    LET(ans, recv conn 4)
+    RETURN({ out_fd = conn.fd;
+             out_send = conn.send;
+             out_recv = conn.recv;
+             out_handle = Bytes.get ans 3;
+             out_length = length;
+             out_closed = false;
+    })
+  )
 
 let open_out_append conn fname =
   let pkg = Bytes.create 24 in
@@ -522,19 +524,20 @@ let close_out ch =
 
 let output ch buf ofs len =
   if ofs < 0 || len < 0 || ofs + len > String.length buf || len > 0xFFFC then
-    invalid_arg MODULE(output);
-  if ch.out_closed then raise(Sys_error "Closed NXT out_channel");
-  let pkg = Bytes.create (5 + len) in
-  copy_uint16 (len + 3) pkg 0; (* 2 BT length bytes; len+3 <= 0xFFFF *)
-  Bytes.set pkg 2 '\x01';
-  Bytes.set pkg 3 '\x83'; (* WRITE *)
-  Bytes.set pkg 4 ch.out_handle;
-  String.blit buf ofs pkg 5 len;
-  EXEC(ch.out_send ch.out_fd pkg)
-  LET(ans, ch.out_recv ch.out_fd 6)
-  EXEC(check_status_as_exn (Bytes.get ans 2))
-  RETURN(uint16 ans 4)
-
+    FAIL(Invalid_argument MODULE(output))
+  else if ch.out_closed then FAIL(Sys_error "Closed NXT out_channel")
+  else (
+    let pkg = Bytes.create (5 + len) in
+    copy_uint16 (len + 3) pkg 0; (* 2 BT length bytes; len+3 <= 0xFFFF *)
+    Bytes.set pkg 2 '\x01';
+    Bytes.set pkg 3 '\x83'; (* WRITE *)
+    Bytes.set pkg 4 ch.out_handle;
+    String.blit buf ofs pkg 5 len;
+    EXEC(ch.out_send ch.out_fd pkg)
+    LET(ans, ch.out_recv ch.out_fd 6)
+    EXEC(check_status_as_exn (Bytes.get ans 2))
+    RETURN(uint16 ans 4)
+  )
 
 let remove conn fname =
   let pkg = Bytes.create 24 in
@@ -686,25 +689,32 @@ let boot conn =
   LET(_, recv conn 7)
   RETURN()
 
+let rec check_brick_name name i len =
+  if i < len then
+    if name.[i] < ' ' || name.[i] >= '\127' then
+      FAIL(Invalid_argument
+             (MODULE(set_brick_name: name contains invalid chars)))
+    else check_brick_name name (i + 1) len
+  else RETURN()
+
 let set_brick_name ?check_status conn name =
   let check_status = default_check_status conn check_status in
   let len = String.length name in
   if len > 15 then
-    invalid_arg MODULE(set_brick_name: name too long (max 15 chars));
-  for i = 0 to len - 1 do
-    if name.[i] < ' ' || name.[i] >= '\127' then
-      invalid_arg MODULE(set_brick_name: name contains invalid chars);
-  done;
-  let pkg = Bytes.create 20 in
-  Bytes.set pkg 0 '\018'; (* size, LSB *)
-  Bytes.set pkg 1 '\000'; (* size, MSB *)
-  Bytes.set pkg 2 (if check_status then '\x01' else '\x81');
-  Bytes.set pkg 3 '\x98'; (* SET BRICK NAME *)
-  String.blit name 0 pkg 4 len;
-  Bytes.fill pkg (4 + len) (16 - len) '\000'; (* pad if needed *)
-  EXEC(conn.send conn.fd pkg)
-  if check_status then (LET(_, recv conn 3) RETURN())
-  else RETURN()
+    FAIL(Invalid_argument MODULE(set_brick_name: name too long (max 15 chars)))
+  else (
+    EXEC(check_brick_name name 0 (String.length name))
+    let pkg = Bytes.create 20 in
+    Bytes.set pkg 0 '\018'; (* size, LSB *)
+    Bytes.set pkg 1 '\000'; (* size, MSB *)
+    Bytes.set pkg 2 (if check_status then '\x01' else '\x81');
+    Bytes.set pkg 3 '\x98'; (* SET BRICK NAME *)
+    String.blit name 0 pkg 4 len;
+    Bytes.fill pkg (4 + len) (16 - len) '\000'; (* pad if needed *)
+    EXEC(conn.send conn.fd pkg)
+    if check_status then (LET(_, recv conn 3) RETURN())
+    else RETURN()
+  )
 
 type brick_info ONLY_LWT(= Mindstorm_NXT.brick_info) = {
   brick_name : string;
@@ -879,30 +889,32 @@ struct
   let set ?check_status conn port st =
     let check_status = default_check_status conn check_status in
     if st.tach_limit < 0 then
-      invalid_arg MODULE(Motor.set: state.tach_limit must be >= 0);
-    (* SETOUTPUTSTATE *)
-    cmd conn ~check_status ~byte1:'\x04' ~n:13   begin fun pkg ->
-      Bytes.set pkg 4 port;
-      Bytes.set pkg 5 (signed_chr st.speed);
-      let mode = 0x00 (* COAST mode *) in
-      let mode = if st.motor_on then mode lor 0x01 else mode in
-      let mode = if st.brake then mode lor 0x02 else mode in
-      (* [Regulate]: Enables active power regulation according to
-         value of REG_MODE (interactive motors only).  You must use
-         the REGULATED bit in conjunction with the REG_MODE property =>
-         [regulate] influences 2 bytes send to the brick *)
-      let mode, regulation = (match st.regulation with
-                              | `Idle -> mode, '\x00'
-                              | `Motor_speed -> mode lor 0x04, '\x01'
-                              | `Motor_sync  -> mode lor 0x04, '\x02') in
-      Bytes.set pkg 6 (Char.unsafe_chr mode);
-      Bytes.set pkg 7 regulation;
-      Bytes.set pkg 8 (signed_chr st.turn_ratio);
-      Bytes.set pkg 9 (match st.run_state with
-                       | `Idle -> '\x00' | `Ramp_up -> '\x10'
-                       | `Running -> '\x20' | `Ramp_down -> '\x40');
-      copy_uint32 st.tach_limit pkg 10; (* bytes 8-11 (bug in the spec) *)
-    end
+      FAIL(Invalid_argument MODULE(Motor.set: state.tach_limit must be >= 0))
+    else (
+      (* SETOUTPUTSTATE *)
+      cmd conn ~check_status ~byte1:'\x04' ~n:13   begin fun pkg ->
+        Bytes.set pkg 4 port;
+        Bytes.set pkg 5 (signed_chr st.speed);
+        let mode = 0x00 (* COAST mode *) in
+        let mode = if st.motor_on then mode lor 0x01 else mode in
+        let mode = if st.brake then mode lor 0x02 else mode in
+        (* [Regulate]: Enables active power regulation according to
+           value of REG_MODE (interactive motors only).  You must use
+           the REGULATED bit in conjunction with the REG_MODE property =>
+           [regulate] influences 2 bytes send to the brick *)
+        let mode, regulation = (match st.regulation with
+                                | `Idle -> mode, '\x00'
+                                | `Motor_speed -> mode lor 0x04, '\x01'
+                                | `Motor_sync  -> mode lor 0x04, '\x02') in
+        Bytes.set pkg 6 (Char.unsafe_chr mode);
+        Bytes.set pkg 7 regulation;
+        Bytes.set pkg 8 (signed_chr st.turn_ratio);
+        Bytes.set pkg 9 (match st.run_state with
+                         | `Idle -> '\x00' | `Ramp_up -> '\x10'
+                         | `Running -> '\x20' | `Ramp_down -> '\x40');
+        copy_uint32 st.tach_limit pkg 10; (* bytes 8-11 (bug in the spec) *)
+      end
+    )
 
   let get conn motor =
     let pkg = Bytes.create 5 in
@@ -1123,20 +1135,24 @@ struct
   let write ?check_status conn port ?(rx_length=0) tx_data =
     let check_status = default_check_status conn check_status in
     let n = String.length tx_data in
-    if n > 255 then invalid_arg MODULE(Sensor.write: length tx_data > 255);
-    if rx_length < 0 || rx_length > 255 then
-      invalid_arg MODULE(Sensor.write: length rx_length not in 0 .. 255);
-    let pkg = Bytes.create (7 + n) in
-    copy_uint16 (n + 5) pkg 0; (* 2 bluetooth bytes *)
-    Bytes.set pkg 2 (if check_status then '\x00' else '\x80');
-    Bytes.set pkg 3 '\x0F'; (* LSWRITE *)
-    Bytes.set pkg 4 (char_of_port port);
-    Bytes.set pkg 5 (Char.unsafe_chr n); (* tx bytes (# bytes sent) *)
-    Bytes.set pkg 6 (Char.unsafe_chr rx_length);
-    String.blit tx_data 0 pkg 7 n;
-    EXEC(conn.send conn.fd pkg)
-    if check_status then (LET(_, recv conn 3) RETURN())
-    else RETURN()
+    if n > 255 then
+      FAIL(Invalid_argument MODULE(Sensor.write: length tx_data > 255))
+    else if rx_length < 0 || rx_length > 255 then
+      FAIL(Invalid_argument
+             (MODULE(Sensor.write: length rx_length not in 0 .. 255)))
+    else (
+      let pkg = Bytes.create (7 + n) in
+      copy_uint16 (n + 5) pkg 0; (* 2 bluetooth bytes *)
+      Bytes.set pkg 2 (if check_status then '\x00' else '\x80');
+      Bytes.set pkg 3 '\x0F'; (* LSWRITE *)
+      Bytes.set pkg 4 (char_of_port port);
+      Bytes.set pkg 5 (Char.unsafe_chr n); (* tx bytes (# bytes sent) *)
+      Bytes.set pkg 6 (Char.unsafe_chr rx_length);
+      String.blit tx_data 0 pkg 7 n;
+      EXEC(conn.send conn.fd pkg)
+      if check_status then (LET(_, recv conn 3) RETURN())
+      else RETURN()
+    )
 
   let read conn port =
     let pkg = Bytes.create 5 in
@@ -1203,9 +1219,10 @@ struct
 
     let write_val ~check_status us cmd byte2 v =
       if v < 0 || v > 255 then
-        invalid_arg(Printf.sprintf MODULE(Sensor.Ultrasonic.set:
-                                          %s arg not in 0 .. 255) cmd);
-      write_cmd ~check_status us byte2 (Char.unsafe_chr v)
+        FAIL(Invalid_argument (Printf.sprintf MODULE(Sensor.Ultrasonic.set:
+                                              %s arg not in 0 .. 255) cmd))
+      else
+        write_cmd ~check_status us byte2 (Char.unsafe_chr v)
 
     let set ?(check_status=true) us cmd =
       match cmd with
@@ -1310,11 +1327,13 @@ struct
   let play_tone ?check_status conn freq duration =
     let check_status = default_check_status conn check_status in
     if freq < 200 || freq > 14000 then
-      invalid_arg MODULE(Sound.play_tone: frequency not in 200 .. 14000);
-    cmd conn ~check_status ~byte1:'\x03' ~n:6 (fun pkg ->
-      copy_uint16 freq pkg 4;
-      copy_uint16 duration pkg 6
-    )
+      FAIL(Invalid_argument
+             (MODULE(Sound.play_tone: frequency not in 200 .. 14000)))
+    else
+      cmd conn ~check_status ~byte1:'\x03' ~n:6 (fun pkg ->
+          copy_uint16 freq pkg 4;
+          copy_uint16 duration pkg 6
+        )
 end
 
 module Message =
@@ -1335,18 +1354,20 @@ struct
   let write ?(check_status=true) conn mailbox msg =
     let len = String.length msg in
     if len > 58 then
-      invalid_arg MODULE(Message.write: message length > 58);
-    let pkg = Bytes.create (len + 7) in
-    copy_uint16 (len + 5) pkg 0; (* cmd length = 4 + msg length + one '\000' *)
-    Bytes.set pkg 2 (if check_status then '\x00' else '\x80');
-    Bytes.set pkg 3 '\x09';
-    Bytes.set pkg 4 (char_of_mailbox mailbox);
-    Bytes.set pkg 5 (Char.unsafe_chr len);
-    String.blit msg 0 pkg 6 len;
-    Bytes.set pkg (len+6) '\000';
-    EXEC(conn.send conn.fd pkg)
-    if check_status then (LET(_, recv conn 3) RETURN())
-    else RETURN()
+      FAIL(Invalid_argument MODULE(Message.write: message length > 58))
+    else (
+      let pkg = Bytes.create (len + 7) in
+      copy_uint16 (len + 5) pkg 0; (* cmd length = 4+msg length + one '\000' *)
+      Bytes.set pkg 2 (if check_status then '\x00' else '\x80');
+      Bytes.set pkg 3 '\x09';
+      Bytes.set pkg 4 (char_of_mailbox mailbox);
+      Bytes.set pkg 5 (Char.unsafe_chr len);
+      String.blit msg 0 pkg 6 len;
+      Bytes.set pkg (len+6) '\000';
+      EXEC(conn.send conn.fd pkg)
+      if check_status then (LET(_, recv conn 3) RETURN())
+      else RETURN()
+    )
 
   let read conn ?(remove=false) mailbox =
     let pkg = Bytes.create 7 in
