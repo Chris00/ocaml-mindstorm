@@ -16,7 +16,7 @@ let default_args = [
 
 let and_do d =
   let args = Arg.align(default_args @ d.args) in
-  let usage_msg = sprintf "%s (--by addr|--usb)" Sys.argv.(0) in
+  let usage_msg = sprintf "%s (--bt addr|--usb)" Sys.argv.(0) in
   Arg.parse args (fun a -> raise(Arg.Bad "no anonymous argument")) usage_msg;
   match !dev with
   | Some(Bluetooth addr) ->

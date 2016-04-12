@@ -91,6 +91,15 @@ Executable info
   CompiledObject: best
   Install:      false
 
+Executable info_lwt
+  Build$:	flag(tests)
+  Path:         tests/
+  MainIs:       info_lwt.ml
+  BuildTools:   ocamlbuild
+  BuildDepends: mindstorm
+  CompiledObject: best
+  Install:      false
+
 Executable keep_alive
   Build$:	flag(tests)
   Path:         tests/
