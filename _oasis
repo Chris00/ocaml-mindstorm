@@ -109,6 +109,15 @@ Executable keep_alive
   CompiledObject: best
   Install:      false
 
+Executable keep_alive_lwt
+  Build$:	flag(tests)
+  Path:         tests/
+  MainIs:       keep_alive_lwt.ml
+  BuildTools:   ocamlbuild
+  BuildDepends: mindstorm
+  CompiledObject: best
+  Install:      false
+
 Executable motor
   Build$:	flag(tests)
   Path:         tests/
