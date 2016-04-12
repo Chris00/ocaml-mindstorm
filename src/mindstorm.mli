@@ -61,7 +61,7 @@ create a handle for the brick.
 {3 Linux}
 
 First make sure your kernel has bluetooth support (this is likely) and
-that the bluez and bluez-gnome (or kdebluetooth) pakages are
+that the bluez and gnome-bluetooth (or kdebluetooth) pakages are
 installed.  You should see a bluetooth applet icon.  Then do (the
 text after the $ sign is what you type, underneath is the answer):
 
