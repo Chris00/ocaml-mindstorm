@@ -26,8 +26,44 @@ Library mindstorm
   Path:       src
   BuildTools: ocamlbuild
   Modules:    Mindstorm, Mindstorm_NXT, Mindstorm_NXT_lwt, Mindstorm_EV3
+  BuildDepends: bytes, mindstorm.connect, mindstorm.connect_lwt
+  BuildTools+: cppo
+
+Library mindstorm_connect
+  Path:       src
+  BuildTools: ocamlbuild
+  Modules:    Mindstorm_connect
+  BuildDepends: unix, bytes
+  BuildTools+: cppo
+  FindlibName:   connect
+  FindlibParent: mindstorm
+  XMETADescription: Connect to Lego bricks via bluetooth or USB
+  CSources:   mindstorm_stubs.c
+  if architecture(amd64)
+    CCOpt: -DARCH64
+  if system(linux)
+    CCLib: -lbluetooth
+    if flag(has_usb)
+      CCLib+: -lusb-1.0
+      CCOpt+: -DHAS_USB
+  if system(msvc)
+    CCOpt: /nologo /DWIN32
+    CCLib: /I"C:\Program Files\Microsoft Platform SDK\Include"
+  if system(macosx)
+    CCOpt: -DMACOSX
+    CCLib: -I /System/Library/Frameworks/IOBluetooth.framework/Headers
+
+# This is always compiled even if Lwt is not present but, in this
+# case, will have an empty interface.
+Library mindstorm_connect_lwt
+  Path:       src
+  BuildTools: ocamlbuild
+  Modules:    Mindstorm_connect_lwt
   BuildDepends: unix, bytes, threads, lwt, lwt.unix, lwt.preemptive
   BuildTools+: cppo
+  FindlibName:   connect_lwt
+  FindlibParent: mindstorm
+  XMETADescription: Connect to Lego bricks via bluetooth or USB (Lwt version)
   CSources:   mindstorm_stubs.c
   if architecture(amd64)
     CCOpt: -DARCH64

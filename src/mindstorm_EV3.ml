@@ -23,13 +23,13 @@
 #define MODULE(fn) STRINGIFY(Mindstorm.EV3.fn)
 #endif
 
-#define ONLY_LWT(e)
-#define LET(v, expr) let v = expr in
-#define EXEC(expr) (expr);
-#define RETURN(x) (x)
-#define FAIL(exn) raise(exn)
-#define UNIX(fn) Unix.fn
+#ifdef LWT
+module Conn = Mindstorm_connect_lwt
+#else
+module Conn = Mindstorm_connect
+#endif
 
+#include "mindstorm_macros.ml"
 #include "mindstorm_common.ml"
 
 (** Handling errors
@@ -71,89 +71,24 @@ let error =
 let check_status_as_exn status =
   if status <> '\x00' then raise(error.(Char.code status))
 
-(** Abstract connection value
- ***********************************************************************)
+type bluetooth = Conn.bluetooth
+type usb = Conn.usb
 
-type usb
-type bluetooth = Unix.file_descr
-
-(* The type parameter is because we want to distinguish usb and
-   bluetooth connections as some commands are only available through USB. *)
 type 'a conn = {
-  fd : 'a;
-  (* We need specialized function depending on the fact that the
-     connection is USB or bluetooth because bluetooth requires a
-     prefix of 2 bytes indicating the length of the packet. *)
-  send : 'a -> Bytes.t -> unit;
-  (* [send fd pkg] sends the package [pkg] over [fd].  [pkg] is
-     supposed to come prefixed with 2 bytes indicating its length
-     (since this is necessary for bluetooth) -- they will be stripped
-     for USB. *)
-  recv : 'a -> Bytes.t;
-  (* [recv fd n] reads a package a length [n] and return it as a
-     string.  For bluetooth, the prefix of 2 bytes indicating the
-     length are also read but not returned (and not counted in [n]).
-     [recv] checks the status byte and raise an exception accordingly
-     (if needed). *)
-  close : 'a -> unit;
-  (* Close the connection. *)
-  mutable msg_counter: int;
-  (* Message counter. *)
-}
+    c: 'a Conn.t;
+    mutable msg_counter: int;
+  }
 
-let close conn = conn.close conn.fd
+let close conn = Conn.close conn.c
 
-(** Connection
- ***********************************************************************)
-
-let bt_send fd pkg = ignore(Unix.write fd pkg 0 (Bytes.length pkg))
-
-let bt_recv fd =
-  let size = uint16 (really_read fd 2) 0 in
-  let pkg = really_read fd size in
-  pkg
-
-#ifdef MACOSX
-(* Mac OS X *)
-let connect_bluetooth tty =
-  let fd = Unix.openfile tty [Unix.O_RDWR] 0o660 in
-  { fd = fd;
-    send = bt_send;
-    recv = bt_recv;
-    close = Unix.close;
-    msg_counter = 0 }
-
-#elif defined WIN32 || defined WIN64 || defined CYGWIN
-(* Windows *)
-external socket_bluetooth : string -> Unix.file_descr
-  = "ocaml_mindstorm_connect"
+let check_status_EV3 pkg =
+  check_status_as_exn (Bytes.get pkg 4)
 
 let connect_bluetooth addr =
-  let fd = socket_bluetooth ("\\\\.\\" ^ addr) in
-  { fd = fd;
-    send = bt_send;
-    recv = bt_recv;
-    close = Unix.close;
-    msg_counter = 0 }
+  let c = Conn.connect_bluetooth
+            ~check_status:false ~check_status_fn:check_status_EV3 addr in
+  { c = c;  msg_counter = 0 }
 
-#else
-(* Unix *)
-external socket_bluetooth : string -> Unix.file_descr
-  = "ocaml_mindstorm_connect"
-
-let connect_bluetooth addr =
-  let fd = socket_bluetooth addr in
-  { fd = fd;  send = bt_send;
-    recv = bt_recv;
-    close = Unix.close;
-    msg_counter = 0; }
-
-#endif
-
-let recv conn =
-  let pkg = conn.recv conn.fd in
-  check_status_as_exn (Bytes.get pkg 4);
-  pkg
 
 (** Sending commands
  ***********************************************************************)
@@ -174,7 +109,7 @@ module Cmd = struct
       Bytes.set msg 4 cmd_type;
       Bytes.set msg 5 '\x00';
       Bytes.set msg 6 '\x00';
-      conn.send conn.fd msg
+      Conn.send conn.c msg
   end
 
 let primpar_short = 0x00

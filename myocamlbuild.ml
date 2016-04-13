@@ -10,6 +10,7 @@ let env = BaseEnvLight.load() (* setup.data *)
 let arch = String.uppercase(BaseEnvLight.var_get "architecture" env)
 let system = String.uppercase(BaseEnvLight.var_get "system" env)
 let has_usb = bool_of_string(BaseEnvLight.var_get "has_usb" env)
+let lwt = bool_of_string(BaseEnvLight.var_get "lwt" env)
 let ocaml_version = BaseEnvLight.var_get "ocaml_version" env
 
 let my_dispatch = function
@@ -21,14 +22,17 @@ let my_dispatch = function
                            "src" / "mindstorm_win.c";
                            "src" / "unixsupport_win.h"];
      (* _tags cannot used in FilesAB (sic), configure preprocessing here. *)
-     let pp = sprintf "cppo -D %s -D %s%s -V OCAML:%s"
+     let pp = sprintf "cppo -D %s -D %s%s%s -V OCAML:%s"
                       system arch (if has_usb then " -D HAS_USB" else "")
+                      (if lwt then " -D HAS_LWT" else "")
                       ocaml_version in
      let pp = S[A "-pp"; A  pp] in
      flag ["pp_mindstorm"; "ocamldep"] pp;
      flag ["pp_mindstorm"; "ocaml"; "compile"] pp;
-     dep ["ocamldep"] & ["src/mindstorm_common.ml"];
-     dep ["ocaml"; "compile"] & ["src/mindstorm_common.ml"];
+     dep ["ocamldep"] & ["src/mindstorm_common.ml";
+                         "src/mindstorm_macros.ml"];
+     dep ["ocaml"; "compile"] & ["src/mindstorm_common.ml";
+                                 "src/mindstorm_macros.ml"];
 
      dep ["doc"; "docdir"; "extension:html"; "ocaml"] &
        ["doc/intro.txt"];

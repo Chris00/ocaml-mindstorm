@@ -10,3 +10,4 @@ true: safe_string
 # pp_mindstorm defined in myocamlbuild.ml
 <src/mindstorm_*.ml>: pp_mindstorm
 <src/mindstorm.mli>: pp_mindstorm
+<src/mindstorm_connect*.mli>: pp_mindstorm
