@@ -1,5 +1,6 @@
 open Lwt
 open Lwt_io
+module NXT = Mindstorm_NXT_lwt
 
 let bt =
   if Array.length Sys.argv < 2 then (
@@ -9,9 +10,9 @@ let bt =
   else Sys.argv.(1)
 
 let main () =
-  Mindstorm.NXT_lwt.connect_bluetooth bt >>= fun conn ->
+  NXT.connect_bluetooth bt >>= fun conn ->
   printf "Files on the brick:\n%!" >>= fun () ->
-  Mindstorm.NXT_lwt.Find.iter conn "*.*" ~f:(fun fname fsize ->
+  NXT.Find.iter conn "*.*" ~f:(fun fname fsize ->
     printf " - %-20S  %-5i bytes\n%!" fname fsize
   )
 

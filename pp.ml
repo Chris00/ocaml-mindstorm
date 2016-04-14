@@ -24,14 +24,26 @@ let substitute fname_in fname_out tr =
                 Str.global_replace (Str.regexp re) s t) txt tr in
   write fname_out txt
 
+let lwt =
+  let data = read_all "setup.data" in
+  let data = Str.split (Str.regexp "[\r\n]") data in
+  List.exists (fun l -> String.compare l "lwt=\"true\"" = 0) data
+
 let () =
   let pp = Filename.concat "src" "mindstorm_NXT.pp.mli" in
   substitute pp (Filename.concat "src" "mindstorm_NXT.mli")
     [" +LWT", "";
      " +IF_LWT(\\([^(),]*\\),\\([^(),]*\\))", "\\2";
     ];
-  substitute pp (Filename.concat "src" "mindstorm_NXT_lwt.mli")
-    [" +LWT", " Lwt.t";
-     " +IF_LWT(\\([^(),]*\\),\\([^(),]*\\))", " \\1";
-     "Mindstorm\\.NXT", "Mindstorm.NXT_lwt";
-    ]
+  let lwt_intf = (Filename.concat "src" "mindstorm_NXT_lwt.mli") in
+  if lwt then
+    substitute pp lwt_intf
+      [" +LWT", " Lwt.t";
+       " +IF_LWT(\\([^(),]*\\),\\([^(),]*\\))", " \\1";
+       "Mindstorm\\.NXT", "Mindstorm.NXT_lwt";
+      ]
+  else
+    (* Make an empty .mli *)
+    write lwt_intf
+      "(* The package Lwt was not detected so the module\n   \
+       Mindstorm.NXT_lwt was not compiled. *)"

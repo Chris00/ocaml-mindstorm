@@ -12,7 +12,7 @@ License:     LGPL-2.1 with OCaml linking exception
 Homepage:    http://forge.ocamlcore.org/projects/ocaml-mindstorm/
 Plugins:     META (0.4)
 OCamlVersion: >= 3.12
-PreConfCommand: ocaml pp.ml
+PostConfCommand: ocaml pp.ml
 
 Flag has_usb
   Description: Whether libusb development files are installed
@@ -25,9 +25,19 @@ Flag lwt
 Library mindstorm
   Path:       src
   BuildTools: ocamlbuild
-  Modules:    Mindstorm, Mindstorm_NXT, Mindstorm_NXT_lwt, Mindstorm_EV3
-  BuildDepends: bytes, mindstorm.connect, mindstorm.connect_lwt
+  Modules:    Mindstorm, Mindstorm_NXT, Mindstorm_EV3 #Mindstorm_NXT_lwt
+  BuildDepends: bytes, mindstorm.connect#, mindstorm.connect_lwt
   BuildTools+: cppo
+
+Library mindstorm_lwt
+  Build$:     flag(lwt)
+  Path:       src
+  BuildTools: ocamlbuild
+  Modules:    Mindstorm_NXT_lwt
+  BuildDepends: bytes, mindstorm.connect_lwt
+  BuildTools+: cppo
+  FindlibName:   lwt
+  FindlibParent: mindstorm
 
 Library mindstorm_connect
   Path:       src
@@ -56,6 +66,7 @@ Library mindstorm_connect
 # This is always compiled even if Lwt is not present but, in this
 # case, will have an empty interface.
 Library mindstorm_connect_lwt
+  Build$:     flag(lwt)
   Path:       src
   BuildTools: ocamlbuild
   Modules:    Mindstorm_connect_lwt
@@ -78,7 +89,7 @@ Library mindstorm_connect_lwt
   if system(macosx)
     CCOpt: -DMACOSX
     CCLib: -I /System/Library/Frameworks/IOBluetooth.framework/Headers
-  
+
 Document API
   Title:           API reference for Mindstorm
   Type:            OCamlbuild (0.4)
@@ -114,7 +125,7 @@ Executable file_list_lwt
   Path:         tests/
   MainIs:       file_list_lwt.ml
   BuildTools:   ocamlbuild
-  BuildDepends: mindstorm
+  BuildDepends: mindstorm.lwt
   CompiledObject: best
   Install:      false
 
@@ -128,11 +139,11 @@ Executable info
   Install:      false
 
 Executable info_lwt
-  Build$:	flag(tests)
+  Build$:	flag(tests) && flag(lwt)
   Path:         tests/
   MainIs:       info_lwt.ml
   BuildTools:   ocamlbuild
-  BuildDepends: mindstorm
+  BuildDepends: mindstorm.lwt
   CompiledObject: best
   Install:      false
 
@@ -146,11 +157,11 @@ Executable keep_alive
   Install:      false
 
 Executable keep_alive_lwt
-  Build$:	flag(tests)
+  Build$:	flag(tests) && flag(lwt)
   Path:         tests/
   MainIs:       keep_alive_lwt.ml
   BuildTools:   ocamlbuild
-  BuildDepends: mindstorm
+  BuildDepends: mindstorm.lwt
   CompiledObject: best
   Install:      false
 

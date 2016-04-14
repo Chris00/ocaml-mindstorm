@@ -33,6 +33,7 @@ open OASISDynRun;;
 
 (* OASIS_STOP *)
 
+open OASISTypes
 
 (* Naive libusb location detection *)
 let usb_include =
@@ -40,8 +41,31 @@ let usb_include =
     "/usr/include/libusb-1.0/"
   else ""
 
-
 let _ = BaseEnv.var_define "usb_include" (fun () -> usb_include)
 
+(* Cannot use the value of the flag lwt because it has not been
+   evaluated yet.  Directly check whether the library exists. *)
+let has_lwt =
+  try ignore(BaseCheck.package_version "lwt"); true
+  with Failure _ -> false
 
-let () = setup ();;
+let setup_t =
+  if has_lwt then
+    let add_deps = function
+      | Flag(cs, flag) when cs.cs_name = "lwt" ->
+         (* Automatically turn on the flag.  This is convenient for
+            people compiling using "ocaml setup.ml -build". *)
+         let flag = { flag with
+                      flag_default = [(OASISExpr.EBool true, true)] } in
+         Flag(cs, flag)
+      | section -> section in
+    let package =
+      { setup_t.BaseSetup.package with
+        sections = List.map add_deps setup_t.BaseSetup.package.sections } in
+    { setup_t with BaseSetup.package = package }
+  else
+    setup_t
+
+let () =
+  BaseSetup.setup setup_t
+
