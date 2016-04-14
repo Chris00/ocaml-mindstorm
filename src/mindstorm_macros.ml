@@ -30,6 +30,8 @@ open Lwt
 #define TRY_BIND(expr0, v, expr_v, exn_patt) \
   Lwt.try_bind (fun () -> expr0) (fun v -> expr_v) (function exn_patt)
 #define EXCEPTION(e) e
+#define LOCK(conn) Conn.lock conn >>= fun () ->
+#define UNLOCK(conn) Conn.unlock conn;
 
 #else
 #define LWT_t
@@ -39,6 +41,8 @@ open Lwt
 #define RETURN(x) (x)
 #define FAIL(exn) raise(exn)
 #define UNIX(fn) Unix.fn
+#define LOCK(conn)
+#define UNLOCK(conn)
 
 #if OCAML_MAJOR >= 4 && OCAML_MINOR >= 2
 (* More efficient *)

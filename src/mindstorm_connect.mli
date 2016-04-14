@@ -54,4 +54,12 @@ val want_check_status_by_default : 'a t -> bool
 (** Says whether [~check_status:true] was passed to the connection
     function. *)
 
+
+#ifdef LWT
+(** With Lwt, connections come with a Lwt mutex that may be used to
+    ensure that a sequence of send + recv is atomic. *)
+val lock : 'a t -> unit Lwt.t
+val unlock : 'a t -> unit
+#endif
+
 ;;

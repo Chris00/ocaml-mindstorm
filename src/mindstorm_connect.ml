@@ -36,6 +36,9 @@ type 'a t = {
   close : 'a -> unit LWT_t;
   check_status_fn : Bytes.t -> unit LWT_t; (* [check_status] function. *)
   check_status: bool; (* whether one wants a status check by default *)
+#ifdef LWT
+  mutex: Lwt_mutex.t;
+#endif
 }
 
 let close conn = conn.close conn.fd
@@ -52,6 +55,12 @@ let really_input conn buf ofs len =
   conn.really_input conn.fd buf ofs len
 
 let want_check_status_by_default conn = conn.check_status
+
+#ifdef LWT
+let lock conn = Lwt_mutex.lock conn.mutex
+let unlock conn = Lwt_mutex.unlock conn.mutex
+#endif
+
 
 (** Utils -------------------- *)
 
@@ -159,7 +168,11 @@ struct
              recv = recv;  really_input = really_input;
              close = close;
              check_status_fn = check_status_fn;
-             check_status = check_status })
+             check_status = check_status;
+#ifdef LWT
+             mutex = Lwt_mutex.create();
+#endif
+    })
 
 #endif
 #else
@@ -194,7 +207,11 @@ let connect_bluetooth ~check_status ~check_status_fn tty =
            recv = bt_recv;  really_input = really_input_fd;
            close = UNIX(close);
            check_status_fn = check_status_fn;
-           check_status = check_status })
+           check_status = check_status;
+#ifdef LWT
+           mutex = Lwt_mutex.create();
+#endif
+  })
 
 #elif defined WIN32 || defined WIN64 || defined CYGWIN
 (* Windows *)
@@ -213,7 +230,11 @@ let connect_bluetooth ~check_status ~check_status_fn addr =
            recv = bt_recv;  really_input = really_input_fd;
            close = Unix.close;
            check_status_fn = check_status_fn;
-           check_status = check_status })
+           check_status = check_status;
+#ifdef LWT
+           mutex = Lwt_mutex.create();
+#endif
+  })
 
 #else
 (* Unix *)
@@ -232,6 +253,10 @@ let connect_bluetooth ~check_status ~check_status_fn addr =
            recv = bt_recv;  really_input = really_input_fd;
            close = UNIX(close);
            check_status_fn = check_status_fn;
-           check_status = check_status })
+           check_status = check_status;
+#ifdef LWT
+           mutex = Lwt_mutex.create();
+#endif
+  })
 
 #endif
