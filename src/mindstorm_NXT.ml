@@ -37,7 +37,7 @@
 #endif
 
 #ifdef LWT
-module Conn = Mindstorm_connect_lwt
+module Conn = Mindstorm_lwt_connect
 #else
 module Conn = Mindstorm_connect
 #endif

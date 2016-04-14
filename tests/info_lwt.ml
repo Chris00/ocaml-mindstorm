@@ -1,6 +1,6 @@
 open Lwt
 open Lwt_io
-module NXT = Mindstorm_NXT_lwt
+module NXT = Mindstorm_lwt.NXT
 
 let new_brick_name = ref None
 

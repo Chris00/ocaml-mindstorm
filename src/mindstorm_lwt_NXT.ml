@@ -1,4 +1,4 @@
-(* File: mindstorm_NXT_lwt.ml
+(* File: mindstorm_lwt_NXT.ml
 
    Copyright (C) 2016-
 
@@ -17,9 +17,7 @@
 
 
 #define LWT
-#define MODULE_ERR(err) STRINGIFY(Mindstorm.NXT_lwt: err)
-#define MODULE(fn) STRINGIFY(Mindstorm.NXT_lwt.fn)
+#define MODULE_ERR(err) STRINGIFY(Mindstorm_lwt.NXT: err)
+#define MODULE(fn) STRINGIFY(Mindstorm_lwt.NXT.fn)
 
-#ifdef HAS_LWT
 #include "mindstorm_NXT.ml"
-#endif

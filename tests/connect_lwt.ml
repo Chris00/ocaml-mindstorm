@@ -1,6 +1,6 @@
 open Lwt
 open Lwt_io
-module NXT = Mindstorm_NXT_lwt
+module NXT = Mindstorm_lwt.NXT
 
 type connection = Bluetooth of string | USB
 let dev = ref None

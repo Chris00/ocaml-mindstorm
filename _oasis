@@ -12,6 +12,7 @@ License:     LGPL-2.1 with OCaml linking exception
 Homepage:    http://forge.ocamlcore.org/projects/ocaml-mindstorm/
 Plugins:     META (0.4)
 OCamlVersion: >= 3.12
+# Generate interfaces files for the user so that they do not contain macros:
 PostConfCommand: ocaml pp.ml
 
 Flag has_usb
@@ -25,16 +26,16 @@ Flag lwt
 Library mindstorm
   Path:       src
   BuildTools: ocamlbuild
-  Modules:    Mindstorm, Mindstorm_NXT, Mindstorm_EV3 #Mindstorm_NXT_lwt
-  BuildDepends: bytes, mindstorm.connect#, mindstorm.connect_lwt
+  Modules:    Mindstorm, Mindstorm_NXT, Mindstorm_EV3
+  BuildDepends: bytes, mindstorm.connect
   BuildTools+: cppo
 
 Library mindstorm_lwt
   Build$:     flag(lwt)
   Path:       src
   BuildTools: ocamlbuild
-  Modules:    Mindstorm_NXT_lwt
-  BuildDepends: bytes, mindstorm.connect_lwt
+  Modules:    Mindstorm_lwt, Mindstorm_lwt_NXT
+  BuildDepends: bytes, mindstorm.lwt_connect
   BuildTools+: cppo
   FindlibName:   lwt
   FindlibParent: mindstorm
@@ -63,16 +64,14 @@ Library mindstorm_connect
     CCOpt: -DMACOSX
     CCLib: -I /System/Library/Frameworks/IOBluetooth.framework/Headers
 
-# This is always compiled even if Lwt is not present but, in this
-# case, will have an empty interface.
-Library mindstorm_connect_lwt
+Library mindstorm_lwt_connect
   Build$:     flag(lwt)
   Path:       src
   BuildTools: ocamlbuild
-  Modules:    Mindstorm_connect_lwt
+  Modules:    Mindstorm_lwt_connect
   BuildDepends: unix, bytes, threads, lwt, lwt.unix, lwt.preemptive
   BuildTools+: cppo
-  FindlibName:   connect_lwt
+  FindlibName:   lwt_connect
   FindlibParent: mindstorm
   XMETADescription: Connect to Lego bricks via bluetooth or USB (Lwt version)
   CSources:   mindstorm_stubs.c

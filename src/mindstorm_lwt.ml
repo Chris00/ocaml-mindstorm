@@ -1,4 +1,4 @@
-(* File: mindstorm_connect_lwt.ml
+(* File: mindstorm_lwt.ml
 
    Copyright (C) 2016-
 
@@ -15,7 +15,4 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the file
    LICENSE for more details. *)
 
-#ifdef HAS_LWT
-#define LWT
-#include "mindstorm_connect.ml"
-#endif
+module NXT = Mindstorm_lwt_NXT
