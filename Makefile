@@ -30,6 +30,9 @@ setup.ml: _oasis
 test doc install uninstall reinstall: all
 	ocaml setup.ml -$@
 
+opam: _oasis
+	oasis2opam --local
+
 # Publish the doc to OCamlCore
 .PHONY: upload-doc web web-doc website website-img
 web: web-doc website website-img
