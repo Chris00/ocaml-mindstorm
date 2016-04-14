@@ -3,7 +3,6 @@
 platform:
   - x64
 
-# Use 'unstable' build worker image as it contains Cygwin
 os: Unstable
 
 branches:
@@ -32,7 +31,7 @@ clone_depth: 1
 install:
   - set PATH=%OPAM_DIR%\bin;%PATH%
 #  - appveyor DownloadFile "http://cygwin.com/setup-%CYG_ARCH%.exe" -FileName "%CYG_ROOT%\setup-x86.exe"
-  - '"%CYG_ROOT%\setup-x86.exe" -qnNdO -R "%CYG_ROOT%" -s "%CYG_MIRROR%" -l "%CYG_CACHE%" -P make -P gcc-core -P ocaml -P ocaml-compiler-libs -P m4 -P tar -P patch -P flexdll >NUL'
+  - '"%CYG_ROOT%\setup-x86.exe" -qnNdO -R "%CYG_ROOT%" -s "%CYG_MIRROR%" -l "%CYG_CACHE%" -P make -P gcc-core -P ncurses -P ocaml -P ocaml-compiler-libs -P m4 -P tar -P patch -P flexdll >NUL'
   - '%CYG_ROOT%\bin\bash -lc "cygcheck -dc cygwin"'
   - '%CYG_ROOT%\bin\bash -lc "echo \"OCaml version `ocamlc -version`\""'
   - appveyor_install.cmd
