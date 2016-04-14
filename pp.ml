@@ -27,11 +27,11 @@ let substitute fname_in fname_out tr =
 let () =
   let pp = Filename.concat "src" "mindstorm_NXT.pp.mli" in
   substitute pp (Filename.concat "src" "mindstorm_NXT.mli")
-    [" +LWT", "";
+    [" +LWT_t", "";
      " +IF_LWT(\\([^(),]*\\),\\([^(),]*\\))", "\\2";
     ];
   substitute pp (Filename.concat "src" "mindstorm_lwt_NXT.mli")
-    [" +LWT", " Lwt.t";
+    [" +LWT_t", " Lwt.t";
      " +IF_LWT(\\([^(),]*\\),\\([^(),]*\\))", " \\1";
      "Mindstorm\\.NXT", "Mindstorm_lwt.NXT";
     ]
