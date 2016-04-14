@@ -3,6 +3,33 @@
 Mindstorm
 =========
 
+Installation
+------------
+
+The easier way to install this library is by using
+[opam][http://opam.ocaml.org/]:
+
+    opam install mindstorm
+
+If you clone this repository, you must install `oasis` and then you can
+compile the code with
+
+	ocaml setup.ml -configure
+	ocaml setup.ml -build
+
+or with `make` (this latter possibility requires the library `Lwt` to
+be present as it is meant for developers) and install with
+
+	ocaml setup.ml -install
+
+Usage
+-----
+
+Two modules are available: `Mindstorm` and `Mindstorm_lwt` with
+essentially the same signatures, except that the second one—as its
+name indicates—is to be used with `Lwt`.
+
+
 Prerequisite under Unix
 -----------------------
 
