@@ -20,4 +20,5 @@ if not exist %OPAMROOT%\config (
 REM Repeat the setup because it modifies some files that are not cached.
 %CYG_ROOT%\bin\bash -lc "opam config setup --all"
 %CYG_ROOT%\bin\bash -lc "opam update -u"
+REM %CYG_ROOT%\bin\bash -lc "opam install -y ocamlfind oasis cppo lwt"
 %CYG_ROOT%\bin\bash -lc "opam install -y ocamlfind oasis cppo"
