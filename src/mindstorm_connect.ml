@@ -18,6 +18,10 @@
 
 #include "mindstorm_macros.ml"
 
+#ifndef MODULE
+#define MODULE(fn) STRINGIFY(Mindstorm_connect.fn)
+#endif
+
 (** Connection *)
 
 type usb
