@@ -85,7 +85,8 @@ let really_input_fd =
       (* Unix.select implemented on windows: [fd] is a file handle, not
          a socket. *)
       loop (ntries+1) fd buf (i + r) (n - r)
-    ) in
+    )
+    else RETURN() in
   fun fd buf ofs n -> loop 1 fd buf ofs n
 
 #else
@@ -232,7 +233,7 @@ let connect_bluetooth ~check_status ~check_status_fn addr =
   LET(fd, socket_bluetooth ("\\\\.\\" ^ addr))
   RETURN({ fd = fd;  send = bt_send;
            recv = bt_recv;  really_input = really_input_fd;
-           close = Unix.close;
+           close = UNIX(close);
            check_status_fn = check_status_fn;
            check_status = check_status;
 #ifdef LWT
