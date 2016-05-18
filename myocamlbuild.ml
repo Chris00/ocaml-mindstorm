@@ -17,9 +17,7 @@ let my_dispatch = function
      (* C files whose dep ocamlbuild cannot infer (we cannot declare
         them in _oasis, otherwise ocamlbuild tries to compile them). *)
      dep ["c"; "compile"] ["src" / "mindstorm_unix.c";
-                           "src" / "unixsupport_unix.h";
-                           "src" / "mindstorm_win.c";
-                           "src" / "unixsupport_win.h"];
+                           "src" / "mindstorm_win.c" ];
      (* _tags cannot used in FilesAB (sic), configure preprocessing here. *)
      let pp = sprintf "cppo -D %s -D %s%s -V OCAML:%s"
                       system arch (if has_usb then " -D HAS_USB" else "")

@@ -33,8 +33,7 @@
 #include <caml/callback.h>
 #include <caml/custom.h>
 #include <caml/intext.h>
-
-#include "unixsupport_unix.h" /* linked from OCaml CVS */
+#include <caml/unixsupport.h>
 
 CAMLexport
 value ocaml_mindstorm_connect(value vdest)

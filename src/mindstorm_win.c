@@ -24,8 +24,10 @@
 #include <caml/callback.h>
 #include <caml/custom.h>
 #include <caml/intext.h>
+#include <caml/unixsupport.h>
 
-#include "unixsupport_win.h" /* linked from OCaml CVS */
+#include <windows.h>
+#include <stdio.h>
 
 CAMLexport
 value ocaml_mindstorm_connect(value vdest)
