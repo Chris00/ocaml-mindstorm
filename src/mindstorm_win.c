@@ -29,6 +29,11 @@
 #include <windows.h>
 #include <stdio.h>
 
+#ifdef __CYGWIN__
+extern void win32_maperr(DWORD errcode);
+extern value win_alloc_handle(HANDLE);
+#endif
+
 CAMLexport
 value ocaml_mindstorm_connect(value vdest)
 {

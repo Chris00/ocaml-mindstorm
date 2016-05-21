@@ -3,40 +3,19 @@
 platform:
   - x64
 
-os: Unstable
-
-branches:
-  only:
-    - master
-  except:
-    - gh-pages
-
 environment:
   global:
-    CYG_ROOT: C:/cygwin
-    CYG_MIRROR: http://mirrors.kernel.org/sourceware/cygwin/
-    CYG_CACHE: C:/cygwin/var/cache/setup
-    OPAM_DIR: C:/opam
-    OPAMROOT: /cygdrive/c/opam/opamroot
-    OCAMLRUNPARAM: b
-    APPVEYOR: yes
+    PACKAGE: mindstorm
+    CYG_ROOT: "C:\\cygwin"
+    CYG_BASH: "%CYG_ROOT%\\bin\\bash -lc"
+    FORK_USER: Chris00
 
-cache:
-  - C:\opam
-  - C:\cygwin\var\cache\setup
-
-# Do a shallow clone of the repo to speed up the build
-clone_depth: 1
+init:
+  - 'echo System architecture: %PLATFORM%'
 
 install:
-  - set PATH=%OPAM_DIR%\bin;%PATH%
-#  - appveyor DownloadFile "http://cygwin.com/setup-%CYG_ARCH%.exe" -FileName "%CYG_ROOT%\setup-x86.exe"
-  - '"%CYG_ROOT%\setup-x86.exe" -qnNdO -R "%CYG_ROOT%" -s "%CYG_MIRROR%" -l "%CYG_CACHE%" -P make -P gcc-core -P pkg-config -P libncurses-devel -P ocaml -P ocaml-compiler-libs -P m4 -P tar -P patch -P flexdll >NUL'
-  - '%CYG_ROOT%\bin\bash -lc "cygcheck -dc cygwin"'
-  - '%CYG_ROOT%\bin\bash -lc "echo \"OCaml version `ocamlc -version`\""'
-  - appveyor_install.cmd
+  - appveyor DownloadFile https://raw.githubusercontent.com/%FORK_USER%/ocaml-ci-scripts/master/appveyor-opam.sh
+  - "%CYG_ROOT%\\setup-x86.exe -qnNdO -R %CYG_ROOT% -s http://cygwin.mirror.constant.com -l C:/cygwin/var/cache/setup -P rsync -P patch -P make -P unzip -P git -P perl -P mingw64-x86_64-gcc-core -P jq"
 
 build_script:
-  - '%CYG_ROOT%\bin\bash -lc "opam config env"'
-  - '%CYG_ROOT%\bin\bash -lc "opam config var toplevel"'
-  - '%CYG_ROOT%\bin\bash -lc "cd $APPVEYOR_BUILD_FOLDER; eval $(opam config env); export OCAML_TOPLEVEL_PATH=$(opam config var toplevel); oasis setup; ocaml setup.ml -configure --enable-tests && cat setup.data && ocaml setup.ml -build -classic-display"'
+  - "%CYG_BASH% '${APPVEYOR_BUILD_FOLDER}/appveyor-opam.sh'"
