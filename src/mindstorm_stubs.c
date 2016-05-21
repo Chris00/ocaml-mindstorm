@@ -15,9 +15,9 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the file
    LICENSE for more details. */
 
-#if defined _WIN32 || defined WIN32 || defined(__CYGWIN__)
-#include "mindstorm_win.c"
-#elif defined __unix__
+#if defined __unix__ || defined(__CYGWIN__)
 #include "mindstorm_unix.c"
+#elif defined _WIN32 || defined WIN32
+#include "mindstorm_win.c"
 #endif
 

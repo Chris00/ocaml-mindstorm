@@ -70,7 +70,7 @@ let unlock conn = Lwt_mutex.unlock conn.mutex
 
 (* [really_input fd buf ofs len] reads [len] bytes from [fd] and store
    them into [buf] starting at position [ofs]. *)
-#if defined WIN32 || defined WIN64 || defined CYGWIN
+#if (defined WIN32 || defined WIN64) && not defined CYGWIN
 let really_input_fd =
   let rec loop ntries fd buf i n =
     EXEC(if ntries > 50 && i = 0 then
@@ -90,7 +90,7 @@ let really_input_fd =
   fun fd buf ofs n -> loop 1 fd buf ofs n
 
 #else
-(* Unix & Mac OS X *)
+(* Unix, Mac OS X, Cygwin *)
 let really_input_fd =
   let rec loop fd buf i n =
     LET(r, UNIX(read) fd buf i n)
@@ -128,7 +128,7 @@ struct
     FAIL(Failure "Not yet implemented")
     (* libusb should work *)
 
-#elif defined WIN32 || defined WIN64 || defined CYGWIN
+#elif (defined WIN32 || defined WIN64) && not defined CYGWIN
   (* Windows *)
   let bricks () = RETURN([])
   let connect ~check_status ~check_status_fn socket =
@@ -136,7 +136,7 @@ struct
     (* See http://www.microsoft.com/whdc/connect/usb/winusb_howto.mspx *)
 
 #else
-  (* Unix *)
+  (* Unix & Cygwin *)
   external bricks : unit -> device list = "ocaml_mindstorm_bricks"
   external exit_libusb : unit -> unit = "ocaml_mindstorm_exit"
   external connect_device : device -> usb = "ocaml_mindstorm_connect_usb"
@@ -218,7 +218,7 @@ let connect_bluetooth ~check_status ~check_status_fn tty =
 #endif
   })
 
-#elif defined WIN32 || defined WIN64 || defined CYGWIN
+#elif (defined WIN32 || defined WIN64) && not defined CYGWIN
 (* Windows *)
 external socket_bluetooth : string -> Unix.file_descr
   = "ocaml_mindstorm_connect"
@@ -242,7 +242,7 @@ let connect_bluetooth ~check_status ~check_status_fn addr =
   })
 
 #else
-(* Unix *)
+(* Unix & Cygwin *)
 external socket_bluetooth : string -> Unix.file_descr
   = "ocaml_mindstorm_connect"
 
