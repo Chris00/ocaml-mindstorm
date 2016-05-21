@@ -34,6 +34,7 @@ install:
   - '"%CYG_ROOT%\setup-x86.exe" -qnNdO -R "%CYG_ROOT%" -s "%CYG_MIRROR%" -l "%CYG_CACHE%" -P make -P gcc-core -P pkg-config -P libncurses-devel -P ocaml -P ocaml-compiler-libs -P m4 -P tar -P patch -P flexdll >NUL'
   - '%CYG_ROOT%\bin\bash -lc "cygcheck -dc cygwin"'
   - '%CYG_ROOT%\bin\bash -lc "echo \"OCaml version `ocamlc -version`\""'
+  - '%CYG_ROOT%\bin\bash -lc "cat /usr/include/w32api/bluetoothapis.h"'
   - appveyor_install.cmd
 
 build_script:
