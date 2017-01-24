@@ -8,7 +8,7 @@ Installation
 ------------
 
 The easier way to install this library is by using
-[opam][http://opam.ocaml.org/]:
+[opam](http://opam.ocaml.org/):
 
     opam install mindstorm
 
