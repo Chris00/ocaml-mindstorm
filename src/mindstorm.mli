@@ -26,21 +26,21 @@
     @author Christophe Troestler <Christophe.Troestler\@umons.ac.be>
 *)
 
-(** Interface to NXT bricks (it is an alias of {!module:Mindstorm_NXT}
+(** Interface to NXT bricks (it is an alias of {!module:Mindstorm__NXT}
     but [Mindstorm.NXT] should be used). *)
 #if OCAML_MAJOR >= 4 && OCAML_MINOR >= 2
-module NXT = Mindstorm_NXT
+module NXT = Mindstorm__NXT
 #else
-module NXT : module type of Mindstorm_NXT
+module NXT : module type of Mindstorm__NXT
 #endif
 
 (** (ALPHA VERSION)
-    Interface to EV3 bricks (it is an alias of {!module:Mindstorm_EV3}
+    Interface to EV3 bricks (it is an alias of {!module:Mindstorm__EV3}
     but [Mindstorm.EV3] should be used). *)
 #if OCAML_MAJOR >= 4 && OCAML_MINOR >= 2
-module EV3 = Mindstorm_EV3
+module EV3 = Mindstorm__EV3
 #else
-module EV3 : module type of Mindstorm_EV3
+module EV3 : module type of Mindstorm__EV3
 #endif
 
 

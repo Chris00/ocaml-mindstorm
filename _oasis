@@ -26,7 +26,7 @@ Flag lwt
 Library mindstorm
   Path:       src
   BuildTools: ocamlbuild
-  Modules:    Mindstorm, Mindstorm_NXT, Mindstorm_EV3
+  Modules:    Mindstorm, Mindstorm__NXT, Mindstorm__EV3
   BuildDepends: bytes, mindstorm.connect
   BuildTools+: cppo
 
@@ -34,7 +34,7 @@ Library mindstorm_lwt
   Build$:     flag(lwt)
   Path:       src
   BuildTools: ocamlbuild
-  Modules:    Mindstorm_lwt, Mindstorm_lwt_NXT
+  Modules:    Mindstorm_lwt, Mindstorm_lwt__NXT
   BuildDepends: bytes, mindstorm.lwt_connect
   BuildTools+: cppo
   FindlibName:   lwt

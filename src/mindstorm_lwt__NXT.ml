@@ -1,4 +1,4 @@
-(* File: mindstorm_lwt_NXT.ml
+(* File: mindstorm_lwt__NXT.ml
 
    Copyright (C) 2016-
 
@@ -20,4 +20,4 @@
 #define MODULE_ERR(err) STRINGIFY(Mindstorm_lwt.NXT: err)
 #define MODULE(fn) STRINGIFY(Mindstorm_lwt.NXT.fn)
 
-#include "mindstorm_NXT.ml"
+#include "mindstorm__NXT.ml"

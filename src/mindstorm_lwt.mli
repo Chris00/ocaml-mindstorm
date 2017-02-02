@@ -18,8 +18,8 @@
 (** Drive Lego Minsdstorm bricks with OCaml! [Lwt] interface. *)
 
 #if OCAML_MAJOR >= 4 && OCAML_MINOR >= 2
-module NXT = Mindstorm_lwt_NXT
+module NXT = Mindstorm_lwt__NXT
 #else
-module NXT : module type of Mindstorm_lwt_NXT
+module NXT : module type of Mindstorm_lwt__NXT
 #endif
 

@@ -15,5 +15,5 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the file
    LICENSE for more details. *)
 
-module NXT = Mindstorm_NXT
-module EV3 = Mindstorm_EV3
+module NXT = Mindstorm__NXT
+module EV3 = Mindstorm__EV3

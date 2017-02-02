@@ -14,14 +14,14 @@ PKG_TARBALL=$(PKGNAME)-$(VERSION).tar.gz
 
 # For the documentation, it is easier if the .mli file doesn't contain
 # macros.  So generate the files (see pp.ml) and include them in the tarball.
-GENERATED_FILES=$(addprefix src/, mindstorm_NXT.mli mindstorm_NXT_lwt.mli)
+GENERATED_FILES=$(addprefix src/, mindstorm__NXT.mli mindstorm_NXT__lwt.mli)
 
 .PHONY: all byte native configure doc test install uninstall reinstall
 
 all byte native: configure
 	ocaml setup.ml -build
 
-configure $(GENERATED_FILES): setup.ml src/mindstorm_NXT.pp.mli pp.ml
+configure $(GENERATED_FILES): setup.ml src/mindstorm__NXT.pp.mli pp.ml
 	ocaml $< -configure --enable-tests --enable-lwt
 
 setup.ml: _oasis

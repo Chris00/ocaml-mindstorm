@@ -1,4 +1,4 @@
-(* File: mindstorm_NXT.pp.mli
+(* File: mindstorm__NXT.pp.mli
 
    Copyright (C) 2007-
 
@@ -72,7 +72,7 @@ val close : 'a conn -> unit LWT_t
 (** {2 Exception for errors} *)
 
 (** Error codes *)
-type error IF_LWT(= Mindstorm_NXT.error,) =
+type error IF_LWT(= Mindstorm__NXT.error,) =
   | No_more_handles                   (** All 16 handles are in use. *)
   | No_space
   | No_more_files
@@ -192,7 +192,7 @@ sig
           set-point over the number of degrees specified by
           [tach_limit].  *)
 
-  type state IF_LWT(= Mindstorm_NXT.Motor.state,) = {
+  type state IF_LWT(= Mindstorm__NXT.Motor.state,) = {
     speed : int; (** Power set-point.  Range: -100 .. 100.  Values
                      larger than 100 will be taken as 100 and values
                      less than -100 will be takes as -100.  *)
@@ -392,7 +392,7 @@ sig
 
 
   (** Data read from sensors. *)
-  type data IF_LWT(= Mindstorm_NXT.Sensor.data,) = {
+  type data IF_LWT(= Mindstorm__NXT.Sensor.data,) = {
     sensor_type : sensor_type;
     mode : mode;
     valid : bool; (** [true] if new data value should be seen as valid *)
@@ -733,7 +733,7 @@ val set_brick_name : ?check_status:bool -> 'a conn -> string -> unit LWT_t
       brick (and raise [Error] accordingly).  Default: see
       {!Mindstorm.NXT.connect_bluetooth}.  *)
 
-type brick_info IF_LWT(= Mindstorm_NXT.brick_info,) = {
+type brick_info IF_LWT(= Mindstorm__NXT.brick_info,) = {
   brick_name : string;
     (** NXT name (set with {!Mindstorm.NXT.set_brick_name}) *)
   bluetooth_addr : string; (** Bluetooth address *)
