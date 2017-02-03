@@ -17,5 +17,7 @@ if [ "$TRAVIS_OS_NAME" = "linux" ]; then
 fi
 opam install ocamlfind oasis cppo lwt
 
+# See https://github.com/ocaml/oasis/issues/94
+oasis setup
 make
 
