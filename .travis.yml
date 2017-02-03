@@ -1,6 +1,5 @@
 language: c
 sudo: required
-script: bash -ex .travis-ci.sh
 os:
   - linux
   - osx
@@ -8,6 +7,8 @@ env:
   matrix:
     - OCAML_VERSION=4.02 EXTRA_DEPS="oasis"
     - OCAML_VERSION=4.01 EXTRA_DEPS="oasis"
+
+script: bash -ex .travis-ci.sh
 
 notifications:
   email:
