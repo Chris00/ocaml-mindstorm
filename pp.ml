@@ -16,7 +16,9 @@ let write fname txt =
   let fh = open_out fname in
   output_string fh txt;
   close_out fh;
-  Unix.chmod fname 0o444
+  (try Unix.chmod fname 0o444
+   with Unix.Unix_error(e, _, _) ->
+     prerr_endline("Warning: chmod " ^ fname ^ ": " ^ Unix.error_message e))
 
 let substitute fname_in fname_out tr =
   let txt = read_all fname_in in
