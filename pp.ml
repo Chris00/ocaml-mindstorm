@@ -12,7 +12,7 @@ let read_all fname =
   Buffer.contents b
 
 let write fname txt =
-  (try Unix.unlink fname with _ -> ());
+  (try Unix.chmod fname 0o777; Unix.unlink fname with _ -> ());
   let fh = open_out fname in
   output_string fh txt;
   close_out fh;
