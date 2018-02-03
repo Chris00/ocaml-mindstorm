@@ -45,7 +45,7 @@ module Conn = Mindstorm_connect
 #include "mindstorm_macros.ml"
 #include "mindstorm_common.ml"
 
-type error ONLY_LWT(= Mindstorm__NXT.error) =
+type error ONLY_LWT(= Mindstorm.NXT.error) =
   | No_more_handles
   | No_space
   | No_more_files
@@ -86,8 +86,8 @@ type error ONLY_LWT(= Mindstorm__NXT.error) =
   | Bad_arg (** Bad arguments *)
 
 #ifdef LWT
-exception Error = Mindstorm__NXT.Error
-exception File_not_found = Mindstorm__NXT.File_not_found
+exception Error = Mindstorm.NXT.Error
+exception File_not_found = Mindstorm.NXT.File_not_found
 #else
 exception Error of error
 exception File_not_found
@@ -541,7 +541,7 @@ let set_brick_name ?check_status conn name =
     else Conn.send conn pkg
   )
 
-type brick_info ONLY_LWT(= Mindstorm__NXT.brick_info) = {
+type brick_info ONLY_LWT(= Mindstorm.NXT.brick_info) = {
   brick_name : string;
   bluetooth_addr : string;
   signal_strength : int;
@@ -710,7 +710,7 @@ struct
   type run_state = [ `Idle | `Ramp_up | `Running | `Ramp_down ]
 
 
-  type state ONLY_LWT(= Mindstorm__NXT.Motor.state) = {
+  type state ONLY_LWT(= Mindstorm.NXT.Motor.state) = {
     speed : int;
     motor_on : bool; (* FIXME: do we remove this and set
                         motor_on = (speed <> 0) ? *)
@@ -889,7 +889,7 @@ struct
                       );
     end
 
-  type data ONLY_LWT(= Mindstorm__NXT.Sensor.data) = {
+  type data ONLY_LWT(= Mindstorm.NXT.Sensor.data) = {
     sensor_type : sensor_type;
     mode : mode;
     valid : bool;

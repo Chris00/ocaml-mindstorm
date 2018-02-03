@@ -124,15 +124,15 @@ struct
 #ifdef MACOSX
   (* Mac OS X *)
   let bricks () = RETURN([])
-  let connect ~check_status ~check_status_fn socket =
+  let connect ~check_status:_ ~check_status_fn:_ _socket =
     FAIL(Failure "Not yet implemented")
     (* libusb should work *)
 
 #elif (defined WIN32 || defined WIN64) && not defined CYGWIN
   (* Windows *)
   let bricks () = RETURN([])
-  let connect ~check_status ~check_status_fn socket =
-    FAIL(Failure "Not yet implemented")
+  let connect ~check_status:_ ~check_status_fn:_ _socket =
+    FAIL(Failure "Not yet implemented");
     (* See http://www.microsoft.com/whdc/connect/usb/winusb_howto.mspx *)
 
 #else
@@ -183,7 +183,7 @@ struct
 #else
   (* No USB libary *)
   let bricks () = RETURN([])
-  let connect ~check_status ~check_status_fn socket =
+  let connect ~check_status:_ ~check_status_fn:_ _socket =
     FAIL(Failure "The Mindstorm module was compiled without USB support")
 #endif
 end

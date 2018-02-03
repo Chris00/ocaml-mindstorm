@@ -129,11 +129,11 @@ let get_filename s ofs =
   with Not_found ->
     failwith MODULE_ERR(invalid filename send by the brick!)
 
+(** [blit_filename funname fname pkg ofs] raises
+    [Invalid_argument] if the filename [fname] is not valid
+    according to the brick limitations; otherwise copy it to [pkg]
+    starting at [ofs].  *)
 let blit_filename : string -> string -> Bytes.t -> int -> unit =
-  (** [blit_filename funname fname pkg ofs] raises
-      [Invalid_argument] if the filename [fname] is not valid
-      according to the brick limitations; otherwise copy it to [pkg]
-      starting at [ofs].  *)
   fun funname fname pkg ofs ->
     let len = String.length fname in
     if len > 19 then invalid_arg funname;

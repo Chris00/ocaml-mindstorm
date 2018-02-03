@@ -1,46 +1,36 @@
-# Generic Makefile
-PKGNAME = $(shell oasis query name)
-VERSION = $(shell oasis query version)
-DOC_DIR = _build/API.docdir
-WEB_DIR = web
-WEB 	= forge.ocamlcore.org:/home/groups/ocaml-mindstorm/htdocs
-SCP	= scp -C -p -r
-DISTFILES = Makefile myocamlbuild.ml _oasis _opam setup.ml _tags \
-  $(wildcard $(addprefix src/, *.ml *.mli *.h *.c)) \
-  tests/ examples/
+PKGVERSION = $(shell git describe --always --dirty)
 
-ROOT_TARBALL=$(PKGNAME)-$(VERSION)
-PKG_TARBALL=$(PKGNAME)-$(VERSION).tar.gz
+build:
+	jbuilder build @install @tests @examples -j 4 #--dev
 
-# For the documentation, it is easier if the .mli file doesn't contain
-# macros.  So generate the files (see pp.ml) and include them in the tarball.
-GENERATED_FILES=$(addprefix src/, mindstorm__NXT.mli mindstorm_NXT__lwt.mli)
+tests: build
+	jbuilder runtest
 
-.PHONY: all byte native configure doc test install uninstall reinstall
+install uninstall clean:
+	jbuilder $@
 
-all byte native: configure
-	ocaml setup.ml -build
+doc: build
+	sed -e 's/%%VERSION%%/$(PKGVERSION)/' src/mindstorm.mli \
+	  > _build/default/src/mindstorm.mli
+	jbuilder build @doc
+	echo '.def { background: #f0f0f0; }' >> _build/default/_doc/odoc.css
 
-configure $(GENERATED_FILES): setup.ml src/mindstorm__NXT.pp.mli pp.ml
-	ocaml $< -configure --enable-tests --enable-lwt
-
-setup.ml: _oasis
-	oasis setup -setup-update dynamic
-
-test doc install uninstall reinstall: all
-	ocaml setup.ml -$@
-
-opam: _oasis
-	oasis2opam --local
-
-# Publish the doc to OCamlCore
-.PHONY: upload-doc web web-doc website website-img
-web: web-doc website website-img
-upload-doc web-doc: doc
-	if [ -d $(DOC_DIR)/ ] ; then \
-	  $(SCP) $(DOC_DIR)/*.html $(DOC_DIR)/*.css $(WEB)/doc/ \
-	  && echo "--- Published documentation on OCamlForge."; \
-	fi
+submit:
+	topkg distrib
+	topkg publish distrib
+	topkg opam pkg -n mindstorm
+	topkg opam pkg -n mindstorm-lwt
+# 	Perform the subtitution that topkkg does not
+#	(until opam2, https://discuss.ocaml.org/t/sync-versions-of-several-packages-coming-from-a-single-repo/808/5)
+	sed -e 's/\(^ *"mindstorm"\) */\1 {= "$(PKGVERSION)"}/' --in-place \
+	  _build/mindstorm-lwt.$(PKGVERSION)/opam
+# until we have https://github.com/ocaml/opam-publish/issues/38
+	[ -d packages ] ||(echo "ERROR: Make a symbolic link packages → \
+		opam-repo/packages"; exit 1)
+	cp -r _build/mindstorm.* packages/mindstorm
+	cp -r _build/mindstorm-lwt.* packages/mindstorm-lwt/
+	cd packages && git add mindstorm mindstorm-lwt
+#	topkg opam submit -n mindstorm-lwt -n mindstorm-lwt-lwt
 
 website:
 	@ if [ -d $(WEB_DIR)/ ] ; then \
@@ -54,20 +44,5 @@ website-img:
 	  && echo "--- Published images (in $(WEB_DIR)/) on OCamlForge." ; \
 	fi
 
-.PHONY: dist tar
-dist tar: $(GENERATED_FILES)
-	mkdir -p $(ROOT_TARBALL)
-	for f in $(DISTFILES); do \
-	  cp -r --parents $$f $(ROOT_TARBALL); \
-	done
-# Make a setup.ml independent of oasis:
-	cd $(ROOT_TARBALL) && oasis setup
-	tar -zcvf $(PKG_TARBALL) $(ROOT_TARBALL)
-	$(RM) -r $(ROOT_TARBALL)
-	@echo "Created tarball '$(PKG_TARBALL)'."
-
-
-.PHONY: clean
-clean::
-	-ocaml setup.ml -clean
-	$(RM) $(PKG_TARBALL) setup.data setup.log
+.PHONY: build tests install uninstall clean doc submit \
+  website website-img clean

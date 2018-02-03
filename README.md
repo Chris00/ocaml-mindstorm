@@ -7,21 +7,25 @@ Mindstorm
 Installation
 ------------
 
-The easier way to install this library is by using
-[opam](http://opam.ocaml.org/):
+The easier way to install this library is by using [OPAM][]:
 
     opam install mindstorm
 
-If you clone this repository, you must install `oasis` and then you can
-compile the code with
+for the standard version and
 
-	ocaml setup.ml -configure
-	ocaml setup.ml -build
+    opam install mindstorm-lwt
 
-or with `make` (this latter possibility requires the library `Lwt` to
-be present as it is meant for developers) and install with
+for the LWT one.  If you prefer to compile and install by hand, make
+sure you have [dune][] and the dependencies listed in
+[src/jbuild](src/jbuild) and [lwt/jbuild](lwt/jbuild), then run
 
-	ocaml setup.ml -install
+    jbuilder build @install
+    jbuilder install mindstorm
+    jbuilder install mindstorm-lwt
+
+[OPAM]: https://opam.ocaml.org/
+[dune]: https://github.com/janestreet/jbuilder
+
 
 Usage
 -----
@@ -49,25 +53,6 @@ Prerequisite under Mac OS X
 
 Xcode.
 
-Compilation & Installation
---------------------------
-
-The easier way to install this package it to use
-[opam](http://opam.ocaml.org/):
-
-    opam install mindstorm
-
-If you downloaded the tarball, type:
-
-    make
-    make install
-
-The installation requires `ocamlfind` and
-[`cppo`](http://mjambon.com/cppo.html) (both installable via opam).
-
-If you cloned the repository, you will additionally need
-[oasis](http://oasis.forge.ocamlcore.org/) (also installable via opam).
-
 
 Documentation
 -------------
@@ -76,6 +61,6 @@ You can compile the HTML doc with
 
     make doc
 
-and then point your browser to `API.docdir/index.html`.
+and then point your browser to `_build/default/_doc/index.html`.
 Alternatively, you can
-[read it online](http://ocaml-mindstorm.forge.ocamlcore.org/).
+[read it online](https://Chris00.github.io/ocaml-mindstorm/doc/).

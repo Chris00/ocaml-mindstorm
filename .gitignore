@@ -1,19 +1,6 @@
 # .gitignore						-*-conf-unix-*-
-*.exe
-*.com
-*.native
-*.byte
-API.docdir
 doc/
 _build/
-setup.data
-setup.log
-*.tar.gz
-# Generated
-src/mindstorm__NXT.mli
-src/mindstorm_lwt__NXT.mli
-*.clib
-*.mllib
-*.mldylib
-*.odocl
-META
+*.install
+.merlin
+packages

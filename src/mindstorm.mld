@@ -1,7 +1,7 @@
 {1 OCaml-mindstorm}
 
 {{:https://github.com/Chris00/ocaml-mindstorm}OCaml Mindstorm} is a
-library that enables to drive LEGO® mindstorm robots from OCaml
+library that enables to drive LEGOÂ® mindstorm robots from OCaml
 through a Bluetooth or USB connection.
 
 {!modules:

@@ -1,4 +1,4 @@
-(* File: mindstorm__NXT.pp.mli
+(* File: mindstorm__NXT.mli.pp 				-*-tuareg-*-
 
    Copyright (C) 2007-
 
@@ -55,12 +55,12 @@ sig
 
   val connect : ?check_status:bool -> device -> usb conn LWT_t
     (** [connect dev] connect through USB to the brick device [dev]
-        (given by {!Mindstorm.NXT.USB.bricks}).  See the section
+        (given by {!MINDSTORM.NXT.USB.bricks}).  See the section
         "{!section:Mindstorm.connectUSB}" for more information.
 
         @param check_status set the default value for the [check_status]
         optional argument.  For more information, see
-        {!Mindstorm.NXT.connect_bluetooth}.
+        {!MINDSTORM.NXT.connect_bluetooth}.
 
         @raise Failure in case of a connection problem.   *)
 end
@@ -71,8 +71,8 @@ val close : 'a conn -> unit LWT_t
 
 (** {2 Exception for errors} *)
 
-(** Error codes *)
-type error IF_LWT(= Mindstorm__NXT.error,) =
+(** Error codes.  The codes starting with [Pending] are command error. *)
+type error IF_LWT(= Mindstorm.NXT.error,) =
   | No_more_handles                   (** All 16 handles are in use. *)
   | No_space
   | No_more_files
@@ -89,7 +89,6 @@ type error IF_LWT(= Mindstorm__NXT.error,) =
   | Out_of_boundary
   | Illegal_file_name
 
-  (** Command error *)
   | Pending (** Pending communication transaction in progress *)
   | Empty_mailbox (** Specified mailbox queue is empty *)
   | Failed (** Request failed (i.e. specified file not found) *)
@@ -129,17 +128,19 @@ sig
     (** [start_program conn pgm] starts the program named [pgm].
 
         @param check_status whether to check the status returned by
-        the brick.  Default: see {!Mindstorm.NXT.connect_bluetooth}. *)
+        the brick.  Default: see {!MINDSTORM.NXT.connect_bluetooth}. *)
+
   val stop : ?check_status:bool -> 'a conn -> unit LWT_t
     (** [stop_program conn] stops the currently running program if any.
         If no program is running and [check_status=true], the exception
-        {!Mindstorm.NXT.Error}[(No_program)] is raised.
+        {!MINDSTORM.NXT.Error}[(No_program)] is raised.
 
         @param check_status whether to check the status returned by
-        the brick.  Default: see {!Mindstorm.NXT.connect_bluetooth}. *)
+        the brick.  Default: see {!MINDSTORM.NXT.connect_bluetooth}. *)
+
   val name : 'a conn -> string LWT_t
     (** Return the name of the current program or raise
-        {!Mindstorm.NXT.Error}[(No_program)] if no program is running. *)
+        {!MINDSTORM.NXT.Error}[(No_program)] if no program is running. *)
 end
 
 
@@ -150,10 +151,14 @@ sig
       (** The three motor ports (immutable).  For more readability of
           your program, it is recommended you give appropriate aliases
           to the ports of interest at the beginning of your program,
-          e.g. [let motor_right = Mindstorm.NXT.Motor.a]. *)
+          e.g. [let motor_right = MINDSTORM.NXT.Motor.a]. *)
+
   val a : port (** The motor port A. *)
+
   val b : port (** The motor port B. *)
+
   val c : port (** The motor port C. *)
+
   val all : port (** Special value representing all 3 ports. *)
 
   type regulation = [ `Idle | `Motor_speed | `Motor_sync ]
@@ -165,14 +170,15 @@ sig
           rotation in sync with another motor.  You typically use this
           mode is to maintain a straight path for a vehicle robot
           automatically.  You also can use this mode with the
-          {!Mindstorm.NXT.Motor.state} [turn_ratio] property to provide
+          {!MINDSTORM.NXT.Motor.state} [turn_ratio] property to provide
           proportional turning.  You must set [`Motor_sync] on at
           least two motor ports to have the desired affect.  If it is
           set on all three motor ports, only the first two (A and B)
           are synchronized.  . *)
+
   type run_state = [ `Idle | `Ramp_up | `Running | `Ramp_down ]
       (** Specifies how to perform the transition to the new [speed]
-          given in {!Mindstorm.NXT.Motor.state}.
+          given in {!MINDSTORM.NXT.Motor.state}.
 
           - [`Idle]: The motor is not run.
           - [`Running] enables power to any output device connected to
@@ -192,7 +198,7 @@ sig
           set-point over the number of degrees specified by
           [tach_limit].  *)
 
-  type state IF_LWT(= Mindstorm__NXT.Motor.state,) = {
+  type state IF_LWT(= Mindstorm.NXT.Motor.state,) = {
     speed : int; (** Power set-point.  Range: -100 .. 100.  Values
                      larger than 100 will be taken as 100 and values
                      less than -100 will be takes as -100.  *)
@@ -208,11 +214,11 @@ sig
                       power.  *)
     regulation : regulation; (** Turns on the chosen regulation. *)
     turn_ratio : int; (** Range: -100 .. 100.
-                          See {!Mindstorm.NXT.Motor.regulation}. *)
-    run_state : run_state; (** See {!Mindstorm.NXT.Motor.run_state}. *)
+                          See {!MINDSTORM.NXT.Motor.regulation}. *)
+    run_state : run_state; (** See {!MINDSTORM.NXT.Motor.run_state}. *)
     tach_limit : int; (** Number of degrees to rotate; [0]: run forever.
                           Range: 0 .. 4294967295 (unsigned 32 bits).
-                          See also {!Mindstorm.NXT.Motor.run_state}. *)
+                          See also {!MINDSTORM.NXT.Motor.run_state}. *)
   }
       (** The absolute value of [speed] is used as a percentage of the
           full power capabilities of the motor.  The sign of [speed]
@@ -243,14 +249,14 @@ sig
         port [p] to [st].
 
         @param check_status whether to check the status returned by
-        the brick.  Default: see {!Mindstorm.NXT.connect_bluetooth}. *)
+        the brick.  Default: see {!MINDSTORM.NXT.connect_bluetooth}. *)
 
   val get : 'a conn -> port -> (state * int * int * int) LWT_t
     (** [get conn p] returns [(state, tach_count, block_tach_count,
         rotation_count)] where
         - [state] is the current state of the motors;
         - [tach_count] is the number of counts since the last reset of the
-        motor counter (the reset occurs when {!Mindstorm.NXT.Motor.set} is
+        motor counter (the reset occurs when {!MINDSTORM.NXT.Motor.set} is
         issued);
         - [block_tach_count] is the current position relative to the
         last programmed movement.
@@ -260,14 +266,14 @@ sig
   val reset_pos : ?check_status:bool -> 'a conn -> ?relative:bool ->
                   port -> unit LWT_t
     (** [reset_pos conn p] resets the rotation count (given by the
-        [rotation_count] field of {!Mindstorm.NXT.Motor.get}) of the motor
+        [rotation_count] field of {!MINDSTORM.NXT.Motor.get}) of the motor
         connected to port [p].
 
         @param relative if [true], relative to the last movement,
         otherwise absolute position.  Default: [false].
 
         @param check_status whether to check the status returned by
-        the brick.  Default: see {!Mindstorm.NXT.connect_bluetooth}.  *)
+        the brick.  Default: see {!MINDSTORM.NXT.connect_bluetooth}.  *)
 end
 
 
@@ -388,18 +394,18 @@ sig
         [ty] and mode [m].
 
         @param check_status whether to check the status returned by
-        the brick.  Default: see {!Mindstorm.NXT.connect_bluetooth}.  *)
+        the brick.  Default: see {!MINDSTORM.NXT.connect_bluetooth}.  *)
 
 
   (** Data read from sensors. *)
-  type data IF_LWT(= Mindstorm__NXT.Sensor.data,) = {
+  type data IF_LWT(= Mindstorm.NXT.Sensor.data,) = {
     sensor_type : sensor_type;
     mode : mode;
     valid : bool; (** [true] if new data value should be seen as valid *)
     raw : int; (** Raw A/D value.  Device dependent.  Range: 0 .. 1023 *)
     normalized : int; (** Normalized A/D value.  Range: 0 .. 1023 *)
     scaled : int;
-    (** Scaled value.  Its range depend on the {!Mindstorm.NXT.Sensor.mode}
+    (** Scaled value.  Its range depend on the {!MINDSTORM.NXT.Sensor.mode}
         chosen:
         - [`Raw]: 0 .. 1023
         - [`Boolean]: 0 or 1
@@ -415,7 +421,7 @@ sig
   val get : 'a conn -> port -> data LWT_t
     (** [get conn p] returns the data read on port [p].  Before using
         this function, you must set the sensor type with
-        {!Mindstorm.NXT.Sensor.set}. *)
+        {!MINDSTORM.NXT.Sensor.set}. *)
 
   val color_of_data : data ->
     [`Black | `Blue | `Green | `Yellow | `Red | `White]
@@ -427,7 +433,7 @@ sig
     (** [reset_scaled conn port]
 
         @param check_status whether to check the status returned by
-        the brick.  Default: see {!Mindstorm.NXT.connect_bluetooth}. *)
+        the brick.  Default: see {!MINDSTORM.NXT.connect_bluetooth}. *)
 
 
   (** {4 Low speed} *)
@@ -450,7 +456,8 @@ sig
         Default: [0] i.e. no answer expected.
 
         @param check_status whether to check the status returned by
-        the brick.  Default: see {!Mindstorm.NXT.connect_bluetooth}.  *)
+        the brick.  Default: see {!MINDSTORM.NXT.connect_bluetooth}.  *)
+
   val read : 'a conn -> port -> string LWT_t
     (** Read data from from lowspeed I2C port (e.g. for receiving data
         from the ultrasonic sensor).  Communication errors will be
@@ -459,6 +466,7 @@ sig
 
 
   (** {4 Convenience} *)
+
   (** Ultrasonic sensor.  Convenience functions to interact with the
       ultrasonic sensor through the I2C protocol. *)
   module Ultrasonic :
@@ -503,7 +511,7 @@ sig
 
           @param check_status check the return status.  Exceptionally,
           the default is [true] because the sensor needs to time to
-          set itself up anyway and this avoids [Mindstorm.NXT.Buffer_full]
+          set itself up anyway and this avoids [MINDSTORM.NXT.Buffer_full]
           errors if we try to get values from the sensor. *)
 
     val get : 'a t ->
@@ -549,19 +557,21 @@ sig
         Default: [false].
 
         @param check_status whether to check the status returned by the brick.
-        Default: see {!Mindstorm.NXT.connect_bluetooth}.  *)
+        Default: see {!MINDSTORM.NXT.connect_bluetooth}.  *)
+
   val stop : ?check_status:bool -> 'a conn -> unit LWT_t
     (** Stop the current playback.  Does nothing if no sound file is
         playing.
 
         @param check_status whether to check the status returned by the brick.
-        Default: see {!Mindstorm.NXT.connect_bluetooth}. *)
+        Default: see {!MINDSTORM.NXT.connect_bluetooth}. *)
+
   val play_tone : ?check_status:bool -> 'a conn -> int -> int -> unit LWT_t
     (** [play_tone conn freq duration] play a tone with [freq] Hz
         lasting [duration] miliseconds.
 
         @param check_status whether to check the status returned by the brick.
-        Default: see {!Mindstorm.NXT.connect_bluetooth}. *)
+        Default: see {!MINDSTORM.NXT.connect_bluetooth}. *)
 end
 
 
@@ -576,6 +586,7 @@ module Message :
 sig
   type mailbox = [`B0 | `B1 | `B2 | `B3 | `B4 | `B5 | `B6 | `B7 | `B8 | `B9]
       (** The 10 available mailboxes on the NXT brick. *)
+
   type remote = [`R0 | `R1 | `R2 | `R3 | `R4 | `R5 | `R6 | `R7 | `R8 | `R9]
       (** Due to the master-slave relationship, slave devices may not
           initiate communication with their master, so they store
@@ -612,7 +623,7 @@ type 'a in_channel
 val open_in : 'a conn -> string -> 'a in_channel LWT_t
   (** [open_in conn fname] opens the file named [fname] on the brick
       for reading.  The channel must be closed with
-      {!Mindstorm.NXT.close_in}.  Close it as soon as possible as channels
+      {!MINDSTORM.NXT.close_in}.  Close it as soon as possible as channels
       are a scarce resource.
 
       @raise Invalid_argument if [fname] is not a ASCIIZ string with
@@ -650,7 +661,7 @@ type out_flag =
 
 val open_out : 'a conn -> out_flag -> string -> 'a out_channel LWT_t
   (** [open_out conn flag fname] opens the file [fname] for writing.
-      The channel must be closed with {!Mindstorm.NXT.close_in}.  Close it
+      The channel must be closed with {!MINDSTORM.NXT.close_in}.  Close it
       as soon as possible as channels are a scarce resource.
 
       If the the file exists, [Error File_exists] is raised.  If the
@@ -686,33 +697,39 @@ sig
         - *.*
 
         @raise File_not_found if no file was found *)
+
   val current : 'a iterator -> string LWT_t
     (** [Find.current i] returns the current filename. *)
+
   val current_size : 'a iterator -> int LWT_t
     (** [Find.current_size i] returns the current filename size
         (number of bytes). *)
+
   val next : 'a iterator -> unit LWT_t
     (** Execute a new request to the brick to retrieve the next
         filename matching the pattern.
 
         @raise File_not_found if no more file was found.  When this
         exception is raised, the iterator is closed. *)
+
   val close : 'a iterator -> unit LWT_t
     (** [close_iterator i] closes the iterator [i].  Closing an
         already closed iterator does nothing. *)
 
   val iter : 'a conn -> f:(string -> int -> unit LWT_t) -> string -> unit LWT_t
     (** [iter f fpatt] iterates [f name size] on all the filenames
-        matching the pattern [fpatt] (see {!Mindstorm.NXT.Find.patt} for
+        matching the pattern [fpatt] (see {!MINDSTORM.NXT.Find.patt} for
         the accepted patterns).  *)
+
   val map : 'a conn -> f:(string -> int -> 'b LWT_t) -> string -> 'b list LWT_t
     (** [map f fpatt] maps [f name size] on all the filenames matching
         the pattern [fpatt] and return the list formed of those.  (See
-        {!Mindstorm.NXT.Find.patt} for the accepted patterns.)  *)
+        {!MINDSTORM.NXT.Find.patt} for the accepted patterns.)  *)
+
   val fold : 'a conn -> f:(string -> int -> 'b -> 'b LWT_t) ->
              string -> 'b -> 'b LWT_t
     (** [fold f fpatt a0] folds [f] on all the filenames matching the
-        pattern [fpatt] (see {!Mindstorm.NXT.Find.patt} for the accepted
+        pattern [fpatt] (see {!MINDSTORM.NXT.Find.patt} for the accepted
         patterns).  *)
 end
 
@@ -731,11 +748,11 @@ val set_brick_name : ?check_status:bool -> 'a conn -> string -> unit LWT_t
 
       @param check_status whether to check the status returned by the
       brick (and raise [Error] accordingly).  Default: see
-      {!Mindstorm.NXT.connect_bluetooth}.  *)
+      {!MINDSTORM.NXT.connect_bluetooth}.  *)
 
-type brick_info IF_LWT(= Mindstorm__NXT.brick_info,) = {
+type brick_info IF_LWT(= Mindstorm.NXT.brick_info,) = {
   brick_name : string;
-    (** NXT name (set with {!Mindstorm.NXT.set_brick_name}) *)
+    (** NXT name (set with {!MINDSTORM.NXT.set_brick_name}) *)
   bluetooth_addr : string; (** Bluetooth address *)
   signal_strength : int; (** Bluetooth signal strength (for some reason
                              is always 0) *)
@@ -771,6 +788,7 @@ val boot : usb conn -> unit LWT_t
 val poll_length : 'a conn -> [`Poll_buffer | `High_speed_buffer] -> int LWT_t
   (** Returns the number of bytes for a command in the low-speed
       buffer or the high-speed buffer (0 = no command is ready).  *)
+
 val poll_command : 'a conn -> [`Poll_buffer | `High_speed_buffer] -> int
   -> (int * string) LWT_t
   (** Reads bytes from the low-speed or high-speed buffer. *)

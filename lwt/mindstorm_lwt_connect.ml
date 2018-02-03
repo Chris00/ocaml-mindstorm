@@ -17,4 +17,4 @@
 
 #define LWT
 #define MODULE(fn) STRINGIFY(Mindstorm_lwt_connect.fn)
-#include "mindstorm_connect.ml"
+#include "../src/mindstorm_connect.ml"

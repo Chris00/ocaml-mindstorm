@@ -14,8 +14,8 @@ val connect_bluetooth :
   check_status:bool -> check_status_fn:(Bytes.t -> unit LWT_t) ->
   string -> bluetooth t LWT_t
 
-(** Connection to USB devices.  See {!Mindstorm__NXT.USB} and
-    {!Mindstorm__NXT.USB_lwt} for more information.  *)
+(** Connection to USB devices.  See {!Mindstorm.NXT.USB} and
+    {!Mindstorm.NXT.USB_lwt} for more information.  *)
 module USB :
 sig
   type device

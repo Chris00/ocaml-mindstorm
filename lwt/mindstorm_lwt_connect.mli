@@ -2,4 +2,4 @@
 
 #define LWT
 #define LWT_t Lwt.t
-#include "mindstorm_connect.mli"
+#include "../src/mindstorm_connect.mli"

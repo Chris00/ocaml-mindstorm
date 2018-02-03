@@ -20,4 +20,4 @@
 #define MODULE_ERR(err) STRINGIFY(Mindstorm_lwt.NXT: err)
 #define MODULE(fn) STRINGIFY(Mindstorm_lwt.NXT.fn)
 
-#include "mindstorm__NXT.ml"
+#include "../src/mindstorm__NXT.ml"
