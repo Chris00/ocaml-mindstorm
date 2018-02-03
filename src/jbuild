@@ -24,3 +24,8 @@
  ((targets (c_flags.sexp c_library_flags.sexp))
   (deps    (../config/discover.exe))
   (action  (run ${<}))))
+
+(install
+ ((section lib)
+  (package mindstorm)
+  (files   (mindstorm.mld))))
