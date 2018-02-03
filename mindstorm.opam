@@ -18,13 +18,20 @@ build: [
 build-test: [["jbuilder" "runtest" "-p" name "-j" jobs]]
 depends: [
   "jbuilder" {build}
+  "configurator" {build}
   "stdio" {build}
+  "base" {build}
   "cppo" {build}
   "base-bytes"
   "base-unix"
 ]
-available: [ ocaml-version >= "3.12" ]
+available: [ ocaml-version >= "4.04.1" ]
 depexts: [
   [ [ "debian"  ] [ "libbluetooth-dev" ] ]
   [ [ "ubuntu"  ] [ "libbluetooth-dev" ] ]
+  [ [ "centos" ]  [ "bluez-libs-devel" ] ]
+  [ [ "fedora" ]  [ "bluez-libs-devel" ] ]
+  [ [ "mageia" ]  [ "bluez-libs-devel" ] ]
+  [ [ "opensuse"] [ "libbluetooth3" ] ]
+  [ [ "alpine" ]  [ "bluez-dev" ] ]
 ]

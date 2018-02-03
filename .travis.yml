@@ -4,11 +4,15 @@ os:
   - linux
   - osx
 env:
+  global:
+    - PACKAGE=mindstorm
   matrix:
-    - OCAML_VERSION=4.02 EXTRA_DEPS="oasis"
-    - OCAML_VERSION=4.01 EXTRA_DEPS="oasis"
+    - OCAML_VERSION=4.06
+    - OCAML_VERSION=4.05
+    - OCAML_VERSION=4.04
 
-script: bash -ex .travis-ci.sh
+install: wget https://raw.githubusercontent.com/ocaml/ocaml-ci-scripts/master/.travis-opam.sh
+script: bash -ex .travis-opam.sh
 
 notifications:
   email:

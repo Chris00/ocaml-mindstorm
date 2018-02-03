@@ -25,5 +25,4 @@ install:
   - curl -L -o C:/cygwin/bin/jq https://github.com/stedolan/jq/releases/download/jq-1.5/jq-win32.exe
 
 build_script:
-  - dir C:\Program Files
   - "%CYG_BASH% '${APPVEYOR_BUILD_FOLDER}/appveyor-opam.sh'"

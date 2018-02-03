@@ -19,12 +19,14 @@ build-test: [["jbuilder" "runtest" "-p" name "-j" jobs]]
 depends: [
   "mindstorm" "base-threads" "lwt"
   "jbuilder" {build}
+  "configurator" {build}
+  "base" {build}
   "stdio" {build}
   "cppo" {build}
   "base-bytes"
   "base-unix"
 ]
-available: [ ocaml-version >= "3.12" ]
+available: [ ocaml-version >= "4.04.1" ]
 depexts: [
   [ [ "debian"  ] [ "libbluetooth-dev" ] ]
   [ [ "ubuntu"  ] [ "libbluetooth-dev" ] ]
