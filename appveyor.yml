@@ -3,12 +3,18 @@
 platform:
   - x64
 
+image:
+  - Visual Studio 2017
+
 environment:
   global:
     PACKAGE: mindstorm
     CYG_ROOT: "C:\\cygwin"
     CYG_BASH: "%CYG_ROOT%\\bin\\bash -lc"
-    FORK_USER: Chris00
+    FORK_USER: ocaml
+  matrix:
+    - OPAM_SWITCH: 4.04.2+msvc64c
+    - OPAM_SWITCH: 4.04.2+mingw64c
 
 init:
   - 'echo System architecture: %PLATFORM%'
@@ -19,4 +25,5 @@ install:
   - curl -L -o C:/cygwin/bin/jq https://github.com/stedolan/jq/releases/download/jq-1.5/jq-win32.exe
 
 build_script:
+  - dir C:\Program Files
   - "%CYG_BASH% '${APPVEYOR_BUILD_FOLDER}/appveyor-opam.sh'"
