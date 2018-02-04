@@ -20,22 +20,22 @@ let write fname txt =
    with Unix.Unix_error(e, _, _) ->
      prerr_endline("Warning: chmod " ^ fname ^ ": " ^ Unix.error_message e))
 
-let substitute fname_in fname_out tr =
-  if Sys.file_exists fname_in then (
+let substitute fname_in ~dir fname_out tr =
+  if Sys.file_exists fname_in && Sys.file_exists dir then (
     let txt = read_all fname_in in
     let txt = List.fold_left (fun t (re, s) ->
                   Str.global_replace (Str.regexp re) s t) txt tr in
-    write fname_out txt
+    write (Filename.concat dir fname_out) txt
   )
 
 let () =
   let pp = Filename.concat "src" "mindstorm__NXT.mli.pp" in
-  substitute pp (Filename.concat "src" "mindstorm__NXT.mli")
+  substitute pp ~dir:"src" "mindstorm__NXT.mli"
     [" +LWT_t", "";
      " +IF_LWT(\\([^(),]*\\),\\([^(),]*\\))", "\\2";
      "MINDSTORM\\.NXT", "Mindstorm.NXT";
     ];
-  substitute pp (Filename.concat "lwt" "mindstorm_lwt__NXT.mli")
+  substitute pp ~dir:"lwt" "mindstorm_lwt__NXT.mli"
     [" +LWT_t", " Lwt.t";
      " +IF_LWT(\\([^(),]*\\),\\([^(),]*\\))", " \\1";
      "MINDSTORM\\.NXT", "Mindstorm_lwt.NXT";
