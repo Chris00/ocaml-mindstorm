@@ -141,9 +141,9 @@ struct
   external exit_libusb : unit -> unit = "ocaml_mindstorm_exit"
   external connect_device : device -> usb = "ocaml_mindstorm_connect_usb"
   external close : usb -> unit = "ocaml_mindstorm_close_usb"
-  external write : usb -> string -> int -> int -> unit
+  external write : usb -> bytes -> int -> int -> unit
     = "ocaml_mindstorm_usb_write"
-  external really_input : usb -> string -> int -> int -> unit
+  external really_input : usb -> bytes -> int -> int -> unit
     = "ocaml_mindstorm_usb_really_input"
 
   let () = at_exit exit_libusb
