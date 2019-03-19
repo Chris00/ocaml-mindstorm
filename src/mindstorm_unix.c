@@ -116,7 +116,11 @@ value ocaml_mindstorm_bricks(value vunit)
 
   if (libusb_must_init) {
     err = libusb_init(&ctx);
+#ifdef HAS_USB_SET_OPTION
+    libusb_set_option(ctx, LIBUSB_OPTION_LOG_LEVEL, LIBUSB_LOG_LEVEL_INFO);
+#else
     libusb_set_debug(ctx, 3);
+#endif
     if (err != 0) failwith("Mindstorm.USB.bricks: cannot initialize libusb!");
     libusb_must_init = 0;
   }

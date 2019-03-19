@@ -34,11 +34,22 @@ let get_usb c =
      | None -> None
      | Some p -> Some { p with P.cflags = "-DHAS_USB" :: p.P.cflags }
 
+let has_usb_set_option ?c_flags ?link_flags c =
+  C.c_test c ?c_flags ?link_flags
+    "#include <libusb.h>
+     int main() {
+       libusb_context *ctx = NULL;
+       libusb_set_option(ctx, LIBUSB_OPTION_LOG_LEVEL, LIBUSB_LOG_LEVEL_INFO);
+       return 0;
+     }"
+
 let discover c =
   let p = if Sys.word_size = 64 then { P.cflags = ["-DARCH64"]; libs = [] }
           else { P.cflags = []; libs = [] } in
   let p = merge_pkg p (get_bluetooth c) in
-  let p = merge_pkg p (get_usb c) in
+  let p, has_usb = match get_usb c with
+    | None -> (p, false)
+    | Some _ as usb -> (merge_pkg p usb, true) in
   let c_flags =
     match Sys.getenv "MINDSTORM_CFLAGS" with
     | exception Not_found -> p.P.cflags
@@ -47,6 +58,10 @@ let discover c =
     match Sys.getenv "MINDSTORM_LIBS" with
     | exception Not_found -> p.P.libs
     | alt_libs -> "-lm" :: C.Flags.extract_blank_separated_words alt_libs in
+  let c_flags =
+    if has_usb && has_usb_set_option c ~c_flags ~link_flags:libs then
+      "-DHAS_USB_SET_OPTION" :: c_flags
+    else c_flags in
   C.Flags.write_sexp "c_flags.sexp" c_flags;
   C.Flags.write_sexp "c_library_flags.sexp" libs
 
@@ -65,7 +80,6 @@ let () =
   let specs = [
       ("--cppo", Arg.Set_string cppo_file,
        " run cppo with the right arguments")] in
-  Arg.parse specs (fun _ -> raise(Arg.Bad "no anonymous arg"))
-    "discover";
+  Arg.parse specs (fun _ -> raise(Arg.Bad "no anonymous arg")) "discover";
   C.main ~name:"mindstorm"
     (if !cppo_file <> "" then cppo !cppo_file else discover)
