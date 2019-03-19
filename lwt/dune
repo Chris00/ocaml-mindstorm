@@ -6,7 +6,7 @@
  (preprocess (action (run %{exe:../config/discover.exe} --cppo %{input-file})))
  (preprocessor_deps ../src/mindstorm__NXT.ml
                     ../src/mindstorm_connect.ml ../src/mindstorm_connect.mli
-                    ../src/mindstorm_macros.ml
+                    ../src/mindstorm_macros.ml ../src/mindstorm_common.ml
                     mindstorm_win.c mindstorm_unix.c)
  (c_names   mindstorm_stubs)
  (c_flags   :standard (:include c_flags.sexp))
