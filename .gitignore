@@ -3,4 +3,3 @@ doc/
 _build/
 *.install
 .merlin
-packages

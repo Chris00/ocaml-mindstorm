@@ -1,4 +1,4 @@
-opam-version: "1.2"
+opam-version: "2.0"
 maintainer: "Christophe Troestler <Christophe.Troestler@umons.ac.be>"
 authors: [ "Christophe Troestler"
            "Julie De Pril"
@@ -6,18 +6,21 @@ authors: [ "Christophe Troestler"
            "Dany Maslowski" ]
 license: "LGPL-2.1 with OCaml linking exception"
 homepage: "https://github.com/Chris00/ocaml-mindstorm"
-dev-repo: "https://github.com/Chris00/ocaml-mindstorm.git"
+dev-repo: "git+https://github.com/Chris00/ocaml-mindstorm.git"
 bug-reports: "https://github.com/Chris00/ocaml-mindstorm/issues"
 doc: "https://Chris00.github.io/ocaml-mindstorm/doc"
 tags: [ "lego" "robotics" "mindstorms"
-        "clib:usb" "clib:bluetooth"  ]
+        "clib:usb" "clib:bluetooth" ]
 build: [
-  [ "jbuilder" "subst" ] {pinned}
-  [ "jbuilder" "build" "-p" name "-j" jobs ]
+  ["jbuilder" "subst"] {pinned}
+  ["jbuilder" "build" "-p" name "-j" jobs]
+  ["jbuilder" "runtest" "-p" name "-j" jobs] {with-test}
 ]
-build-test: [["jbuilder" "runtest" "-p" name "-j" jobs]]
 depends: [
-  "mindstorm" "base-threads" "lwt"
+  "ocaml" {>= "4.04.1"}
+  "mindstorm"
+  "base-threads"
+  "lwt"
   "jbuilder" {build}
   "configurator" {build}
   "base" {build}
@@ -26,8 +29,9 @@ depends: [
   "base-bytes"
   "base-unix"
 ]
-available: [ ocaml-version >= "4.04.1" ]
-depexts: [
-  [ [ "debian"  ] [ "libbluetooth-dev" ] ]
-  [ [ "ubuntu"  ] [ "libbluetooth-dev" ] ]
-]
+synopsis: "Drive Lego Mindstorms bricks from OCaml (LWT version)"
+description: """
+This library allows you to communicate with your Lego Mindstorms brick
+via bluetooth, enable the motors and retrieve data from various
+sensors.
+"""
