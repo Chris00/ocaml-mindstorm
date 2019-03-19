@@ -16,7 +16,7 @@ let test_touch conn =
    Thread.delay 0.3
  done;;
 
-let react_touch conn =
+let react_touch _conn =
  while true do
    Condition.wait c_touch m;
    printf "touche\n%!";

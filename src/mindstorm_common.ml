@@ -15,6 +15,8 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the file
    LICENSE for more details. *)
 
+[@@@warning "-32"]
+
 (* Specialised implementation for speed *)
 let min i j = if (i:int) < j then i else j
 
@@ -147,3 +149,5 @@ let blit_filename : string -> string -> Bytes.t -> int -> unit =
 
 let usleep sec =
   ignore(Unix.select [] [] [] sec)
+
+[@@@warning "@32"]

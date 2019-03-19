@@ -3,7 +3,6 @@
  (public_name mindstorm)
  (modules    Mindstorm Mindstorm__NXT Mindstorm__EV3 Mindstorm_connect)
  (libraries  bytes unix)
- (flags      :standard -w "-32")
  (preprocess (action (run %{exe:../config/discover.exe} --cppo %{input-file})))
  (preprocessor_deps mindstorm_connect.ml mindstorm_macros.ml
                     mindstorm_common.ml

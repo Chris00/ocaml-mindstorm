@@ -46,6 +46,7 @@ module EV3 : module type of Mindstorm__EV3
 
 
 (************************************************************************)
+[@@warning "-32"]
 (** {2:connectBluetooth How to connect the brick through bluetooth}
 
 You need to create a serial port connection using the instructions

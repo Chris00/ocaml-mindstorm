@@ -66,7 +66,7 @@ type error ONLY_LWT(= Mindstorm.NXT.error) =
   | Illegal_file_name
 (*  | Illegal_handle*)    (* SHOULD NOT HAPPEN *)
 
-  (** command_error *)
+  (* command_error *)
   | Pending (** Pending communication transaction in progress *)
   | Empty_mailbox (** Specified mailbox queue is empty *)
   | Failed (** Request failed (i.e. specified file not found) *)
@@ -309,7 +309,7 @@ let open_out conn (flag: out_flag) fname =
   | `Data len -> open_out_gen conn '\x8B' len fname (* OPEN WRITE DATA *)
   | `Append -> open_out_append conn fname
 
-let out_channel_length ch =
+let _out_channel_length ch =
   if ch.out_closed then raise(Sys_error "Closed NXT out_channel");
   ch.out_length
 
@@ -548,8 +548,8 @@ type brick_info ONLY_LWT(= Mindstorm.NXT.brick_info) = {
   free_user_flash : int;
 }
 
+(** Extract the brick name of "" if it fails (should not happen). *)
 let get_brick_name s i0 i1 =
-  (** Extract the brick name of "" if it fails (should not happen). *)
   try
     let j = min i1 (Bytes.index_from s i0 '\000') in
     Bytes.sub_string s i0 (j - i0)
@@ -1125,7 +1125,7 @@ struct
       UNLOCK(us.u_conn)
       check_status_as_exn (Bytes.get ans 2)
 
-    let data_ready us =
+    let _data_ready us =
       LOCK(us.u_conn)
       EXEC(Conn.send us.u_conn us.ls_status)
       LET(ans, Conn.recv us.u_conn 4)

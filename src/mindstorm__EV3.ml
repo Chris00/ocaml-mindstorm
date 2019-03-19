@@ -94,9 +94,9 @@ let connect_bluetooth addr =
  ***********************************************************************)
 
 module Cmd = struct
-    let system_reply = '\x01'
-    let system_no_reply = '\x81'
-    let direct_reply = '\x00'
+    (* let system_reply = '\x01' *)
+    (* let system_no_reply = '\x81' *)
+    (* let direct_reply = '\x00' *)
     let direct_no_reply = '\x80'
 
     (* [msg] is supposed to have space for the first 6 "control" bytes. *)
@@ -112,17 +112,17 @@ module Cmd = struct
       Conn.send conn.c msg
   end
 
-let primpar_short = 0x00
-let primpar_long  = 0x80
-let primpar_const = 0x00
+(* let primpar_short = 0x00 *)
+(* let primpar_long  = 0x80 *)
+(* let primpar_const = 0x00 *)
 let primpar_value = 0x3F
-let primpar_1_byte  = 1
-let primpar_2_bytes = 2
-let primpar_4_bytes = 3
-let primpar_string  = 4 (* zero terminated string *)
+(* let primpar_1_byte  = 1 *)
+(* let primpar_2_bytes = 2 *)
+(* let primpar_4_bytes = 3 *)
+(* let primpar_string  = 4 (\* zero terminated string *\) *)
 
 (* (v land primpar_value) lor primpar_short lor primpar_const *)
-let set_lc0 s ofs v = Bytes.set s ofs (Char.unsafe_chr(v land primpar_value))
+let _set_lc0 s ofs v = Bytes.set s ofs (Char.unsafe_chr(v land primpar_value))
 
 (* 2 bytes, v ∈ {-127,...,127} *)
 let set_data8 s ofs v =

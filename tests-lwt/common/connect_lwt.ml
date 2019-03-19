@@ -19,7 +19,7 @@ let default_args = [
 let and_do d =
   let args = Arg.align(default_args @ d.args) in
   let usage_msg = Printf.sprintf "%s (--bt addr|--usb)" Sys.argv.(0) in
-  Arg.parse args (fun a -> raise(Arg.Bad "no anonymous argument")) usage_msg;
+  Arg.parse args (fun _ -> raise(Arg.Bad "no anonymous argument")) usage_msg;
   match !dev with
   | Some(Bluetooth addr) ->
      Lwt_main.run (NXT.connect_bluetooth addr >>= fun conn ->

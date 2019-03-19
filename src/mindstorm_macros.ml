@@ -15,9 +15,9 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the file
    LICENSE for more details. *)
 
-(** Monadic bindings, Unix module,... and their imperative counterparts.
-    These macros allow to write a single version of the code that works
-    both for direct and Lwt modules. *)
+(* Monadic bindings, Unix module,... and their imperative counterparts.
+   These macros allow to write a single version of the code that works
+   both for direct and Lwt modules. *)
 #ifdef LWT
 open Lwt
 #define LWT_t Lwt.t

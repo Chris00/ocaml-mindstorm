@@ -3,7 +3,6 @@
  (public_name mindstorm-lwt)
  (modules   Mindstorm_lwt Mindstorm_lwt__NXT Mindstorm_lwt_connect)
  (libraries mindstorm bytes unix lwt lwt.unix) ;lwt.preemptive)
- (flags      :standard -w "-32")
  (preprocess (action (run %{exe:../config/discover.exe} --cppo %{input-file})))
  (preprocessor_deps ../src/mindstorm__NXT.ml
                     ../src/mindstorm_connect.ml ../src/mindstorm_connect.mli
