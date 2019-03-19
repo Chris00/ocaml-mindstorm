@@ -1,5 +1,0 @@
-(jbuild_version 1)
-
-(library
- ((name      connect_lwt)
-  (libraries (mindstorm-lwt))))

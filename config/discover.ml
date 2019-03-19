@@ -1,10 +1,6 @@
-open Stdio
 open Printf
-module C = Configurator
-module P = Configurator.Pkg_config
-
-let split_ws str =
-  Base.(String.(split str ~on:' ' |> List.filter ~f:((<>) "")))
+module C = Configurator.V1
+module P = C.Pkg_config
 
 let merge_pkg p1 p2 = match p2 with
   | Some p2 -> { P.cflags = p1.P.cflags @ p2.P.cflags;
@@ -44,35 +40,32 @@ let discover c =
   let p = merge_pkg p (get_bluetooth c) in
   let p = merge_pkg p (get_usb c) in
   let c_flags =
-    match Caml.Sys.getenv "MINDSTORM_CFLAGS" with
+    match Sys.getenv "MINDSTORM_CFLAGS" with
     | exception Not_found -> p.P.cflags
-    | alt_cflags -> split_ws alt_cflags in
+    | alt_cflags -> C.Flags.extract_blank_separated_words alt_cflags in
   let libs =
-    match Caml.Sys.getenv "MINDSTORM_LIBS" with
+    match Sys.getenv "MINDSTORM_LIBS" with
     | exception Not_found -> p.P.libs
-    | alt_libs -> "-lm" :: split_ws alt_libs in
-
-  let write_sexp file sexp =
-    Out_channel.write_all file ~data:(Base.Sexp.to_string sexp) in
-  write_sexp "c_flags.sexp" (Base.sexp_of_list Base.sexp_of_string c_flags);
-  write_sexp "c_library_flags.sexp" (Base.sexp_of_list Base.sexp_of_string libs)
+    | alt_libs -> "-lm" :: C.Flags.extract_blank_separated_words alt_libs in
+  C.Flags.write_sexp "c_flags.sexp" c_flags;
+  C.Flags.write_sexp "c_library_flags.sexp" libs
 
 let cppo file c =
   let ocaml_version = C.ocaml_config_var_exn c "version" in
   let system = C.ocaml_config_var_exn c "system" in
   let arch = C.ocaml_config_var_exn c "architecture" in
-  let has_usb = String.(get_usb c <> None) in
+  let has_usb = get_usb c <> None in
   let cmd = sprintf "cppo -D %s -D %s%s -V OCAML:%s %s"
                        system arch (if has_usb then " -D HAS_USB" else "")
                        ocaml_version (Filename.quote file) in
-  ignore(Caml.Sys.command cmd)
+  ignore(Sys.command cmd)
 
 let () =
   let cppo_file = ref "" in
   let specs = [
-      ("--cppo", Caml.Arg.Set_string cppo_file,
+      ("--cppo", Arg.Set_string cppo_file,
        " run cppo with the right arguments")] in
-  Caml.Arg.parse specs (fun _ -> raise(Caml.Arg.Bad "no anonymous arg"))
+  Arg.parse specs (fun _ -> raise(Arg.Bad "no anonymous arg"))
     "discover";
-  Configurator.main ~name:"mindstorm"
+  C.main ~name:"mindstorm"
     (if !cppo_file <> "" then cppo !cppo_file else discover)

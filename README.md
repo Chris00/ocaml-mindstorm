@@ -17,14 +17,14 @@ for the standard version and
 
 for the LWT one.  If you prefer to compile and install by hand, make
 sure you have [dune][] and the dependencies listed in
-[src/jbuild](src/jbuild) and [lwt/jbuild](lwt/jbuild), then run
+[src/dune](src/dune) and [lwt/dune](lwt/dune), then run
 
-    jbuilder build @install
-    jbuilder install mindstorm
-    jbuilder install mindstorm-lwt
+    dune build @install
+    dune install mindstorm
+    dune install mindstorm-lwt
 
 [OPAM]: https://opam.ocaml.org/
-[dune]: https://github.com/janestreet/jbuilder
+[dune]: https://github.com/ocaml/dune
 
 
 Usage

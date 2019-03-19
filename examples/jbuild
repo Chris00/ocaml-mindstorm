@@ -1,9 +1,0 @@
-(jbuild_version 1)
-
-(executables
- ((names        (roam run_push test_speed test_threads wander))
-  (libraries    (mindstorm threads))))
-
-(alias
- ((name examples)
-  (deps (roam.exe run_push.exe test_speed.exe test_threads.exe wander.exe))))

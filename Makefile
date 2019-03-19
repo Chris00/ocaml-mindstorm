@@ -1,19 +1,18 @@
 PKGVERSION = $(shell git describe --always --dirty)
 
 build:
-	jbuilder build @install @tests @examples -j 4 #--dev
+	dune build @install @tests @examples
 
 tests: build
-	jbuilder runtest
+	dune runtest --force
 
 install uninstall clean:
-	jbuilder $@
+	dune $@
 
 doc: build
-	sed -e 's/%%VERSION%%/$(PKGVERSION)/' src/mindstorm.mli \
-	  > _build/default/src/mindstorm.mli
-	jbuilder build @doc
-	echo '.def { background: #f0f0f0; }' >> _build/default/_doc/odoc.css
+	dune build @doc
+	sed -e 's/%%VERSION%%/$(PKGVERSION)/' --in-place \
+	  _build/default/_doc/_html/mindstorm/Mindstorm/index.html
 
 website:
 	@ if [ -d $(WEB_DIR)/ ] ; then \

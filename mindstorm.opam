@@ -12,16 +12,13 @@ doc: "https://Chris00.github.io/ocaml-mindstorm/doc"
 tags: [ "lego" "robotics" "mindstorms"
         "clib:usb" "clib:bluetooth" ]
 build: [
-  ["jbuilder" "subst"] {pinned}
-  ["jbuilder" "build" "-p" name "-j" jobs]
-  ["jbuilder" "runtest" "-p" name "-j" jobs] {with-test}
+  ["dune" "subst"] {pinned}
+  ["dune" "build" "-p" name "-j" jobs]
+  ["dune" "runtest" "-p" name "-j" jobs] {with-test}
 ]
 depends: [
   "ocaml" {>= "4.04.1"}
-  "jbuilder" {build}
-  "configurator" {build}
-  "stdio" {build}
-  "base" {build}
+  "dune" {build}
   "cppo" {build}
   "base-bytes"
   "base-unix"
