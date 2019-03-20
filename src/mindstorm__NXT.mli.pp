@@ -16,17 +16,20 @@
    LICENSE for more details. *)
 
 type usb
+(** USB connection type. *)
+
 type bluetooth
+(** Bluetooth connection type. *)
 
 type 'a conn
   (** Abstract type representing a connection to a LEGO® mindstorm
       brick.  The type parameter indicates whether this connection
-      is a USB or a bluetooth one. *)
+      is a USB or a Bluetooth one. *)
 
 val connect_bluetooth : ?check_status:bool -> string -> bluetooth conn LWT_t
   (** [connect_bluetooth bdaddr] connects through bluetooth to the
       brick with bluetooth address [bdaddr].  See the section
-      "{!section:Mindstorm.connectBluetooth}" for more information.
+      "{!section:connectBluetooth}" for more information.
 
       @param check_status set the default value for the [check_status]
       optional argument.  This global default allows to easily
@@ -56,7 +59,7 @@ sig
   val connect : ?check_status:bool -> device -> usb conn LWT_t
     (** [connect dev] connect through USB to the brick device [dev]
         (given by {!MINDSTORM.NXT.USB.bricks}).  See the section
-        "{!section:Mindstorm.connectUSB}" for more information.
+        "{!section:connectUSB}" for more information.
 
         @param check_status set the default value for the [check_status]
         optional argument.  For more information, see
