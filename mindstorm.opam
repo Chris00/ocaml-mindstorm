@@ -29,7 +29,7 @@ depexts: [
   ["bluez-libs-devel"] {os-distribution = "centos"}
   ["bluez-libs-devel"] {os-distribution = "fedora"}
   ["bluez-libs-devel"] {os-distribution = "mageia"}
-  ["bluez-devel"] {os-distribution = "opensuse"}
+  ["bluez-devel"] {os-family = "suse"}
   ["bluez-dev"] {os-distribution = "alpine"}
 ]
 synopsis: "Drive Lego Mindstorms bricks from OCaml"
