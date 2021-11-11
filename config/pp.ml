@@ -1,15 +1,15 @@
 (* Generate interfaces for standard IO and Lwt. *)
 
-#load "str.cma";;
-#load "unix.cma";;
-
 let read_all fname =
   (* Avoid Bytes for backward compatibility. *)
   let fh = open_in fname in
-  let len = in_channel_length fh in
-  let b = Buffer.create len in
-  Buffer.add_channel b fh len;
-  Buffer.contents b
+  let buf = Buffer.create 4096 in
+  let b = Bytes.create 4096 in
+  let n = ref 0 in
+  while n := input fh b 0 4096;  !n > 0 do
+    Buffer.add_subbytes buf b 0 !n
+  done;
+  Buffer.contents buf
 
 let write fname txt =
   (try Unix.chmod fname 0o666; Unix.unlink fname with _ -> ());

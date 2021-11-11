@@ -16,8 +16,8 @@
 
 (rule
  (targets mindstorm_lwt__NXT.mli)
- (deps    ../src/mindstorm__NXT.mli.pp %{workspace_root}/config/pp.ml)
- (action  (chdir %{workspace_root} (run %{bin:ocaml} config/pp.ml))))
+ (deps    ../src/mindstorm__NXT.mli.pp (:p %{workspace_root}/config/pp.exe))
+ (action  (chdir %{workspace_root} (run %{p}))))
 
 (rule
  (targets c_flags.sexp c_library_flags.sexp)

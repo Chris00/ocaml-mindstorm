@@ -2,3 +2,8 @@
  (name      discover)
  (modules   discover)
  (libraries dune-configurator))
+
+(executable
+ (name      pp)
+ (modules   pp)
+ (libraries str unix))

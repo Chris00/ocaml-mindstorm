@@ -20,8 +20,8 @@
 ;; Generate the interface, so it is easily readable.
 (rule
  (targets mindstorm__NXT.mli)
- (deps    mindstorm__NXT.mli.pp %{workspace_root}/config/pp.ml)
- (action  (chdir %{workspace_root} (run %{bin:ocaml} config/pp.ml))))
+ (deps    mindstorm__NXT.mli.pp (:p %{workspace_root}/config/pp.exe))
+ (action  (chdir %{workspace_root} (run %{p}))))
 
 (rule
  (targets c_flags.sexp c_library_flags.sexp)
