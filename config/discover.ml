@@ -8,9 +8,10 @@ let merge_pkg p1 p2 = match p2 with
   | None -> p1
 
 let get_bluetooth c =
-  let sys = C.ocaml_config_var_exn c "system"in
+  let sys = C.ocaml_config_var_exn c "system" in
   let ms_sdk = "\"C:\\Program Files\\Microsoft Platform SDK\\Include\"" in
-  if sys = "linux" then (
+  if sys = "linux" || sys = "linux_eabihf"
+     || sys = "linux_elf" || sys = "elf" then (
     match P.get c with
     | None -> None
     | Some p -> P.query p ~package:"bluez"
