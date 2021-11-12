@@ -50,8 +50,7 @@ this library work with the LEGO® drivers installed, submit a patch!)
 Prerequisite under Mac OS X
 ---------------------------
 
-Xcode.
-
+At the moment, the package is not compatible with OSX.
 
 Documentation
 -------------

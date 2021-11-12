@@ -12,7 +12,7 @@ doc: "https://Chris00.github.io/ocaml-mindstorm/doc"
 tags: [ "lego" "robotics" "mindstorms"
         "clib:usb" "clib:bluetooth" ]
 build: [
-  ["dune" "subst"] {pinned}
+  ["dune" "subst"] {dev}
   ["dune" "build" "-p" name "-j" jobs]
   ["dune" "runtest" "-p" name "-j" jobs] {with-test}
 ]
@@ -31,3 +31,4 @@ This library allows you to communicate with your Lego Mindstorms brick
 via bluetooth, enable the motors and retrieve data from various
 sensors.
 """
+available: os != "macos"
