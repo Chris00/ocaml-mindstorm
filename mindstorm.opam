@@ -19,7 +19,7 @@ build: [
 depends: [
   "ocaml" {>= "4.04.1"}
   "dune"
-  "dune-configurator"
+  "dune-configurator" {>= "2.0"}
   "cppo" {build}
   "base-bytes"
   "base-unix"
