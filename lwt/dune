@@ -4,7 +4,7 @@
  (modules   Mindstorm_lwt Mindstorm_lwt__NXT Mindstorm_lwt_connect)
  (libraries mindstorm bytes unix lwt lwt.unix) ;lwt.preemptive)
  (wrapped false)
- (preprocess (action (run %{exe:../config/discover.exe} --cppo %{input-file})))
+ (preprocess (action (run %{exe:../config/discover.exe} --cppo %{input-file} --cppo-bin %{bin:cppo})))
  (preprocessor_deps ../src/mindstorm__NXT.ml
                     ../src/mindstorm_connect.ml ../src/mindstorm_connect.mli
                     ../src/mindstorm_macros.ml ../src/mindstorm_common.ml
@@ -16,8 +16,8 @@
 
 (rule
  (targets mindstorm_lwt__NXT.mli)
- (deps    ../src/mindstorm__NXT.mli.pp (:p %{workspace_root}/config/pp.exe))
- (action  (chdir %{workspace_root} (run %{p}))))
+ (deps    ../src/mindstorm__NXT.mli.pp (:p %{project_root}/config/pp.exe))
+ (action  (chdir %{project_root} (run %{p}))))
 
 (rule
  (targets c_flags.sexp c_library_flags.sexp)
