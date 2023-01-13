@@ -66,21 +66,25 @@ let discover c =
   C.Flags.write_sexp "c_flags.sexp" c_flags;
   C.Flags.write_sexp "c_library_flags.sexp" libs
 
-let cppo file c =
+let cppo file cppo_bin c =
   let ocaml_version = C.ocaml_config_var_exn c "version" in
   let system = C.ocaml_config_var_exn c "system" in
   let arch = C.ocaml_config_var_exn c "architecture" in
   let has_usb = get_usb c <> None in
-  let cmd = sprintf "cppo -D %s -D %s%s -V OCAML:%s %s"
+  let cmd = sprintf "%s -D %s -D %s%s -V OCAML:%s %s"
+                       cppo_bin
                        system arch (if has_usb then " -D HAS_USB" else "")
                        ocaml_version (Filename.quote file) in
   ignore(Sys.command cmd)
 
 let () =
   let cppo_file = ref "" in
+  let cppo_bin = ref "cppo" in
   let specs = [
       ("--cppo", Arg.Set_string cppo_file,
-       " run cppo with the right arguments")] in
+       " run cppo with the right arguments");
+      ("--cppo-bin", Arg.Set_string cppo_bin,
+       " patht to the cppo binary to run")] in
   Arg.parse specs (fun _ -> raise(Arg.Bad "no anonymous arg")) "discover";
   C.main ~name:"mindstorm"
-    (if !cppo_file <> "" then cppo !cppo_file else discover)
+    (if !cppo_file <> "" then cppo !cppo_file !cppo_bin else discover)
