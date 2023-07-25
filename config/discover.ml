@@ -16,7 +16,7 @@ let get_bluetooth c =
     | None -> None
     | Some p -> P.query p ~package:"bluez"
   )
-  else if sys = "msvc" || sys = "win64" then
+  else if sys = "win32" || sys = "win64" then
     Some { P.cflags = ["/nologo"; "/DWIN32"; "/I" ^ ms_sdk];  libs = []}
   else if sys = "mingw64" then
     Some { P.cflags = ["-I"; ms_sdk];  libs = [] }
